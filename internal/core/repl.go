@@ -1,51 +1,56 @@
 package core
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/atinylittleshell/gsh/internal/terminal"
 	"golang.org/x/term"
-	"os"
-	"os/exec"
-	"strings"
+	"mvdan.cc/sh/v3/interp"
+	"mvdan.cc/sh/v3/syntax"
 )
 
 const (
 	EXIT_COMMAND = "exit"
 )
 
-// Shell represents the main shell structure
-type Shell struct {
+// REPL represents the an interactive shell session
+type REPL struct {
 	Prompt      string
 	History     []string
 	OriginalTTY *term.State
+	Runner      *interp.Runner
 }
 
-// NewShell creates and initializes a new shell instance
-func NewShell() (*Shell, error) {
+// NewREPL creates and initializes a new repl instance
+func NewREPL(runner *interp.Runner) (*REPL, error) {
 	origTTY, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		return nil, err
 	}
 
-	return &Shell{
+	return &REPL{
 		Prompt:      "gsh> ", // Default prompt
 		History:     []string{},
 		OriginalTTY: origTTY,
+		Runner:      runner,
 	}, nil
 }
 
-// Run starts the main shell loop
-func (s *Shell) Run() {
-	defer s.restoreTerminal()
+// Run starts the main repl loop
+func (repl *REPL) Run() error {
+	defer repl.restoreTerminal()
 
 	fmt.Print(terminal.CLEAR_SCREEN)
 
 	for {
 		// Display prompt
-		fmt.Print(s.Prompt)
+		fmt.Print(repl.Prompt)
 
 		// Read user input
-		input, err := s.readCommand()
+		input, err := repl.readCommand()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "gsh: error reading input - ", err)
 			continue
@@ -60,20 +65,22 @@ func (s *Shell) Run() {
 		}
 
 		// Execute command
-		if err := s.executeCommand(input); err != nil {
+		if err := repl.executeCommand(input); err != nil {
 			fmt.Fprintf(os.Stderr, "gsh: %s\n", err)
 		}
 		fmt.Print(terminal.RESET_CURSOR_COLUMN)
 
 		// Save to history
-		s.History = append(s.History, input)
+		repl.History = append(repl.History, input)
 	}
 
 	// Clear screen on exit
 	fmt.Print(terminal.CLEAR_SCREEN)
+
+	return nil
 }
 
-func (s *Shell) readCommand() (string, error) {
+func (repl *REPL) readCommand() (string, error) {
 	var input []byte = []byte{}
 	buffer := make([]byte, 1)
 
@@ -110,27 +117,21 @@ func (s *Shell) readCommand() (string, error) {
 }
 
 // cleanup restores the original terminal state
-func (s *Shell) restoreTerminal() error {
-	return term.Restore(int(os.Stdin.Fd()), s.OriginalTTY) // Restore terminal to original state
+func (repl *REPL) restoreTerminal() error {
+	return term.Restore(int(os.Stdin.Fd()), repl.OriginalTTY) // Restore terminal to original state
 }
 
 // executeCommand parses and executes a shell command
-func (s *Shell) executeCommand(input string) error {
-	// Split input into command and arguments
-	args := strings.Split(input, " ")
-	cmd := exec.Command(args[0], args[1:]...)
-
+func (repl *REPL) executeCommand(input string) error {
 	// Restore terminal to canonical mode
-	if err := s.restoreTerminal(); err != nil {
-		return fmt.Errorf("failed to restore terminal mode - %w", err)
+	if err := repl.restoreTerminal(); err != nil {
+		return err
 	}
 	defer term.MakeRaw(int(os.Stdin.Fd())) // Re-enter raw mode after the command
 
-	// Set command output to standard output/error
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	// Run the command
-	return cmd.Run()
+	prog, err := syntax.NewParser().Parse(strings.NewReader(input), "")
+	if err != nil {
+		return err
+	}
+	return repl.Runner.Run(context.Background(), prog)
 }
