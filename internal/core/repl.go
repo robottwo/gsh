@@ -2,11 +2,15 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/terminal"
+	"github.com/invopop/jsonschema"
+	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/option"
 	"golang.org/x/term"
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
@@ -18,10 +22,36 @@ const (
 
 // REPL represents the an interactive shell session
 type REPL struct {
-	Prompt      string
-	History     []string
-	OriginalTTY *term.State
-	Runner      *interp.Runner
+	prompt         string
+	history        []string
+	originalTTY    *term.State
+	runner         *interp.Runner
+	userInput      string
+	predictedInput string
+	llmClient      *openai.Client
+}
+
+func GenerateSchema[T any]() interface{} {
+	reflector := jsonschema.Reflector{
+		AllowAdditionalProperties: false,
+		DoNotReference:            true,
+	}
+	var v T
+	schema := reflector.Reflect(v)
+	return schema
+}
+
+type PredictedCommand struct {
+	FullCommand string `json:"full_command" jsonschema_description:"The full bash command predicted by the model" jsonschema_required:"true"`
+}
+
+var PREDICTED_COMMAND_SCHEMA = GenerateSchema[PredictedCommand]()
+
+var PREDICTED_COMMAND_SCHEMA_PARAM = openai.ResponseFormatJSONSchemaJSONSchemaParam{
+	Name:        openai.F("predicted_command"),
+	Description: openai.F("The predicted bash command"),
+	Schema:      openai.F(PREDICTED_COMMAND_SCHEMA),
+	Strict:      openai.Bool(true),
 }
 
 // NewREPL creates and initializes a new repl instance
@@ -32,10 +62,16 @@ func NewREPL(runner *interp.Runner) (*REPL, error) {
 	}
 
 	return &REPL{
-		Prompt:      "gsh> ", // Default prompt
-		History:     []string{},
-		OriginalTTY: origTTY,
-		Runner:      runner,
+		prompt:         "gsh> ", // Default prompt
+		history:        []string{},
+		originalTTY:    origTTY,
+		runner:         runner,
+		userInput:      "",
+		predictedInput: "",
+		llmClient: openai.NewClient(
+			option.WithAPIKey("ollama"),
+			option.WithBaseURL("http://localhost:11434/v1/"),
+		),
 	}, nil
 }
 
@@ -46,8 +82,7 @@ func (repl *REPL) Run() error {
 	fmt.Print(terminal.CLEAR_SCREEN)
 
 	for {
-		// Display prompt
-		fmt.Print(repl.Prompt)
+		repl.redrawLine()
 
 		// Read user input
 		input, err := repl.readCommand()
@@ -55,9 +90,6 @@ func (repl *REPL) Run() error {
 			fmt.Fprintln(os.Stderr, "gsh: error reading input - ", err)
 			continue
 		}
-
-		// Process input
-		input = strings.TrimSpace(input)
 
 		// Exit condition
 		if input == EXIT_COMMAND {
@@ -68,10 +100,9 @@ func (repl *REPL) Run() error {
 		if err := repl.executeCommand(input); err != nil {
 			fmt.Fprintf(os.Stderr, "gsh: %s\n", err)
 		}
-		fmt.Print(terminal.RESET_CURSOR_COLUMN)
 
 		// Save to history
-		repl.History = append(repl.History, input)
+		repl.history = append(repl.history, input)
 	}
 
 	// Clear screen on exit
@@ -80,8 +111,38 @@ func (repl *REPL) Run() error {
 	return nil
 }
 
+func (repl *REPL) redrawLine() error {
+	fmt.Print(terminal.CLEAR_LINE)
+
+	// Prompt
+	fmt.Print(terminal.WHITE)
+	fmt.Print(repl.prompt)
+	fmt.Print(terminal.RESET)
+
+	// User input
+	fmt.Print(terminal.WHITE)
+	fmt.Print(repl.userInput)
+	fmt.Print(terminal.RESET)
+
+	// Predicted input
+	if len(repl.predictedInput) > 0 && strings.HasPrefix(repl.predictedInput, repl.userInput) {
+		suffix := repl.predictedInput[len(repl.userInput):]
+		suffix_length := len(suffix)
+
+		fmt.Print(terminal.GRAY)
+		fmt.Print(suffix)
+		fmt.Print(terminal.RESET)
+
+		fmt.Print(terminal.ESC + fmt.Sprintf("[%dD", suffix_length))
+	}
+
+	return nil
+}
+
 func (repl *REPL) readCommand() (string, error) {
-	var input []byte = []byte{}
+	repl.userInput = ""
+	repl.predictedInput = ""
+
 	buffer := make([]byte, 1)
 
 	for {
@@ -92,33 +153,88 @@ func (repl *REPL) readCommand() (string, error) {
 
 		char := buffer[0]
 
-		// Backspace
-		if char == 127 {
-			if len(input) > 0 {
-				input = input[:len(input)-1]
-				fmt.Print(terminal.BACKSPACE) // Clear character from terminal
-			}
-			continue
-		}
-
 		// Enter
 		if char == '\n' || char == '\r' {
 			fmt.Println()
 			fmt.Print(terminal.RESET_CURSOR_COLUMN)
-			break
+
+			result := strings.TrimSpace(repl.userInput)
+
+			repl.userInput = ""
+			repl.predictedInput = ""
+
+			return result, nil
 		}
 
-		// Normal character
-		input = append(input, char)
-		fmt.Print(string(buffer))
+		if char == 127 {
+			// Backspace
+			if len(repl.userInput) > 0 {
+				repl.userInput = repl.userInput[:len(repl.userInput)-1]
+			}
+		} else {
+			// Normal character
+			repl.userInput += string(char)
+		}
+
+		// Predict input
+		repl.predictInput()
+
+		repl.redrawLine()
+
+	}
+}
+
+func (repl *REPL) predictInput() {
+	if len(repl.userInput) == 0 {
+		repl.predictedInput = ""
+		return
 	}
 
-	return string(input), nil
+	if strings.HasPrefix(repl.predictedInput, repl.userInput) {
+		return
+	}
+
+	go repl.generatePredictedInput(repl.userInput)
+}
+
+func (repl *REPL) generatePredictedInput(userInput string) {
+	chatCompletion, err := repl.llmClient.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
+		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
+			openai.UserMessage(fmt.Sprintf(`
+You are gsh, an intelligent shell program.
+You are asked to predict a complete bash command based on a partial one from the user.
+
+<partial_command>
+%s
+</partial_command>`, userInput)),
+		}),
+		ResponseFormat: openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](
+			openai.ResponseFormatJSONSchemaParam{
+				Type:       openai.F(openai.ResponseFormatJSONSchemaTypeJSONSchema),
+				JSONSchema: openai.F(PREDICTED_COMMAND_SCHEMA_PARAM),
+			},
+		),
+		Model: openai.F("qwen2.5"),
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	predictedCommand := PredictedCommand{}
+	_ = json.Unmarshal([]byte(chatCompletion.Choices[0].Message.Content), &predictedCommand)
+
+	if repl.userInput != userInput {
+		return
+	}
+
+	repl.predictedInput = predictedCommand.FullCommand
+	repl.redrawLine()
 }
 
 // cleanup restores the original terminal state
 func (repl *REPL) restoreTerminal() error {
-	return term.Restore(int(os.Stdin.Fd()), repl.OriginalTTY) // Restore terminal to original state
+	return term.Restore(int(os.Stdin.Fd()), repl.originalTTY) // Restore terminal to original state
 }
 
 // executeCommand parses and executes a shell command
@@ -128,10 +244,11 @@ func (repl *REPL) executeCommand(input string) error {
 		return err
 	}
 	defer term.MakeRaw(int(os.Stdin.Fd())) // Re-enter raw mode after the command
+	defer fmt.Print(terminal.RESET_CURSOR_COLUMN)
 
 	prog, err := syntax.NewParser().Parse(strings.NewReader(input), "")
 	if err != nil {
 		return err
 	}
-	return repl.Runner.Run(context.Background(), prog)
+	return repl.runner.Run(context.Background(), prog)
 }
