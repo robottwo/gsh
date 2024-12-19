@@ -24,14 +24,14 @@ const (
 
 // REPL represents the an interactive shell session
 type REPL struct {
-	prompt                string
-	history               []string
-	originalTTY           *term.State
-	runner                *interp.Runner
-	userInput             string
-	predictedInput        string
-	llmClient             *openai.Client
-	debouncedPredictInput func()
+	prompt                          string
+	history                         []string
+	originalTTY                     *term.State
+	runner                          *interp.Runner
+	userInput                       string
+	predictedInput                  string
+	llmClient                       *openai.Client
+	debouncedGeneratePredictedInput func()
 }
 
 func GenerateSchema[T any]() interface{} {
@@ -77,9 +77,8 @@ func NewREPL(runner *interp.Runner) (*REPL, error) {
 		),
 	}
 
-	// Create a debounced prediction function that triggers generatePredictedInput after a delay
-	repl.debouncedPredictInput = debounce.Debounce(200*time.Millisecond, func() {
-		repl.predictInput()
+	repl.debouncedGeneratePredictedInput = debounce.Debounce(200*time.Millisecond, func() {
+		repl.generatePredictedInput()
 	})
 
 	return repl, nil
@@ -185,7 +184,7 @@ func (repl *REPL) readCommand() (string, error) {
 			repl.userInput += string(char)
 		}
 
-		repl.debouncedPredictInput()
+		repl.predictInput()
 
 		repl.redrawLine()
 
@@ -202,10 +201,12 @@ func (repl *REPL) predictInput() {
 		return
 	}
 
-	go repl.generatePredictedInput(repl.userInput)
+	go repl.debouncedGeneratePredictedInput()
 }
 
-func (repl *REPL) generatePredictedInput(userInput string) {
+func (repl *REPL) generatePredictedInput() {
+	userInput := repl.userInput
+
 	chatCompletion, err := repl.llmClient.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
 		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
 			openai.UserMessage(fmt.Sprintf(`
