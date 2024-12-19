@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/atinylittleshell/gsh/internal/terminal"
+	"github.com/atinylittleshell/gsh/pkg/debounce"
 	"github.com/invopop/jsonschema"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -22,13 +24,14 @@ const (
 
 // REPL represents the an interactive shell session
 type REPL struct {
-	prompt         string
-	history        []string
-	originalTTY    *term.State
-	runner         *interp.Runner
-	userInput      string
-	predictedInput string
-	llmClient      *openai.Client
+	prompt                string
+	history               []string
+	originalTTY           *term.State
+	runner                *interp.Runner
+	userInput             string
+	predictedInput        string
+	llmClient             *openai.Client
+	debouncedPredictInput func()
 }
 
 func GenerateSchema[T any]() interface{} {
@@ -61,7 +64,7 @@ func NewREPL(runner *interp.Runner) (*REPL, error) {
 		return nil, err
 	}
 
-	return &REPL{
+	repl := &REPL{
 		prompt:         "gsh> ", // Default prompt
 		history:        []string{},
 		originalTTY:    origTTY,
@@ -72,7 +75,14 @@ func NewREPL(runner *interp.Runner) (*REPL, error) {
 			option.WithAPIKey("ollama"),
 			option.WithBaseURL("http://localhost:11434/v1/"),
 		),
-	}, nil
+	}
+
+	// Create a debounced prediction function that triggers generatePredictedInput after a delay
+	repl.debouncedPredictInput = debounce.Debounce(200*time.Millisecond, func() {
+		repl.predictInput()
+	})
+
+	return repl, nil
 }
 
 // Run starts the main repl loop
@@ -117,23 +127,22 @@ func (repl *REPL) redrawLine() error {
 	// Prompt
 	fmt.Print(terminal.WHITE)
 	fmt.Print(repl.prompt)
-	fmt.Print(terminal.RESET)
+	fmt.Print(terminal.RESET_COLOR)
 
 	// User input
 	fmt.Print(terminal.WHITE)
 	fmt.Print(repl.userInput)
-	fmt.Print(terminal.RESET)
+	fmt.Print(terminal.RESET_COLOR)
 
 	// Predicted input
 	if len(repl.predictedInput) > 0 && strings.HasPrefix(repl.predictedInput, repl.userInput) {
-		suffix := repl.predictedInput[len(repl.userInput):]
-		suffix_length := len(suffix)
+		fmt.Print(terminal.SAVE_CURSOR)
 
 		fmt.Print(terminal.GRAY)
-		fmt.Print(suffix)
-		fmt.Print(terminal.RESET)
+		fmt.Print(repl.predictedInput[len(repl.userInput):])
+		fmt.Print(terminal.RESET_COLOR)
 
-		fmt.Print(terminal.ESC + fmt.Sprintf("[%dD", suffix_length))
+		fmt.Print(terminal.RESTORE_CURSOR)
 	}
 
 	return nil
@@ -176,8 +185,7 @@ func (repl *REPL) readCommand() (string, error) {
 			repl.userInput += string(char)
 		}
 
-		// Predict input
-		repl.predictInput()
+		repl.debouncedPredictInput()
 
 		repl.redrawLine()
 

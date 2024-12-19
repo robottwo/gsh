@@ -8,6 +8,8 @@ const (
 	CLEAR_REMAINING_LINE = ESC + "[K"
 	CLEAR_LINE           = RESET_CURSOR_COLUMN + ESC + "[2K"
 	CLEAR_SCREEN         = RESET_CURSOR + ESC + "[2J"
+	SAVE_CURSOR          = ESC + "[s"
+	RESTORE_CURSOR       = ESC + "[u"
 
 	BLACK         = ESC + "[0;30m"
 	GRAY          = ESC + "[1;30m"
@@ -25,5 +27,5 @@ const (
 	LIGHT_CYAN    = ESC + "[1;36m"
 	WHITE         = ESC + "[0;37m"
 	LIGHT_WHITE   = ESC + "[1;37m"
-	RESET         = ESC + "[0m"
+	RESET_COLOR   = ESC + "[0m"
 )
