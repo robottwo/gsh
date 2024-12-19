@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/atinylittleshell/gsh/internal/terminal"
 	"github.com/atinylittleshell/gsh/pkg/debounce"
-	"github.com/invopop/jsonschema"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	"golang.org/x/term"
@@ -31,30 +29,7 @@ type REPL struct {
 	userInput                       string
 	predictedInput                  string
 	llmClient                       *openai.Client
-	debouncedGeneratePredictedInput func()
-}
-
-func GenerateSchema[T any]() interface{} {
-	reflector := jsonschema.Reflector{
-		AllowAdditionalProperties: false,
-		DoNotReference:            true,
-	}
-	var v T
-	schema := reflector.Reflect(v)
-	return schema
-}
-
-type PredictedCommand struct {
-	FullCommand string `json:"full_command" jsonschema_description:"The full bash command predicted by the model" jsonschema_required:"true"`
-}
-
-var PREDICTED_COMMAND_SCHEMA = GenerateSchema[PredictedCommand]()
-
-var PREDICTED_COMMAND_SCHEMA_PARAM = openai.ResponseFormatJSONSchemaJSONSchemaParam{
-	Name:        openai.F("predicted_command"),
-	Description: openai.F("The predicted bash command"),
-	Schema:      openai.F(PREDICTED_COMMAND_SCHEMA),
-	Strict:      openai.Bool(true),
+	generatePredictedInputDebounced func()
 }
 
 // NewREPL creates and initializes a new repl instance
@@ -77,7 +52,7 @@ func NewREPL(runner *interp.Runner) (*REPL, error) {
 		),
 	}
 
-	repl.debouncedGeneratePredictedInput = debounce.Debounce(200*time.Millisecond, func() {
+	repl.generatePredictedInputDebounced = debounce.Debounce(200*time.Millisecond, func() {
 		repl.generatePredictedInput()
 	})
 
@@ -161,8 +136,8 @@ func (repl *REPL) readCommand() (string, error) {
 
 		char := buffer[0]
 
-		// Enter
 		if char == '\n' || char == '\r' {
+			// Enter
 			fmt.Println()
 			fmt.Print(terminal.RESET_CURSOR_COLUMN)
 
@@ -187,7 +162,6 @@ func (repl *REPL) readCommand() (string, error) {
 		repl.predictInput()
 
 		repl.redrawLine()
-
 	}
 }
 
@@ -201,54 +175,34 @@ func (repl *REPL) predictInput() {
 		return
 	}
 
-	go repl.debouncedGeneratePredictedInput()
+	go repl.generatePredictedInputDebounced()
 }
 
 func (repl *REPL) generatePredictedInput() {
 	userInput := repl.userInput
 
-	chatCompletion, err := repl.llmClient.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
-		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
-			openai.UserMessage(fmt.Sprintf(`
-You are gsh, an intelligent shell program.
-You are asked to predict a complete bash command based on a partial one from the user.
-
-<partial_command>
-%s
-</partial_command>`, userInput)),
-		}),
-		ResponseFormat: openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](
-			openai.ResponseFormatJSONSchemaParam{
-				Type:       openai.F(openai.ResponseFormatJSONSchemaTypeJSONSchema),
-				JSONSchema: openai.F(PREDICTED_COMMAND_SCHEMA_PARAM),
-			},
-		),
-		Model: openai.F("qwen2.5"),
-	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	predictedCommand := PredictedCommand{}
-	_ = json.Unmarshal([]byte(chatCompletion.Choices[0].Message.Content), &predictedCommand)
+	predicted, err := predictInput(repl.llmClient, userInput)
 
 	if repl.userInput != userInput {
 		return
 	}
 
-	repl.predictedInput = predictedCommand.FullCommand
+	if err != nil {
+		repl.predictedInput = ""
+	} else {
+		repl.predictedInput = predicted
+	}
+
 	repl.redrawLine()
 }
 
 // cleanup restores the original terminal state
 func (repl *REPL) restoreTerminal() error {
-	return term.Restore(int(os.Stdin.Fd()), repl.originalTTY) // Restore terminal to original state
+	return term.Restore(int(os.Stdin.Fd()), repl.originalTTY)
 }
 
 // executeCommand parses and executes a shell command
 func (repl *REPL) executeCommand(input string) error {
-	// Restore terminal to canonical mode
 	if err := repl.restoreTerminal(); err != nil {
 		return err
 	}
