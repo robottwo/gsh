@@ -22,13 +22,16 @@ const (
 
 // REPL represents the an interactive shell session
 type REPL struct {
-	prompt                          string
-	history                         []string
-	originalTTY                     *term.State
-	runner                          *interp.Runner
-	userInput                       string
-	predictedInput                  string
-	llmClient                       *openai.Client
+	originalTTY *term.State
+	runner      *interp.Runner
+	llmClient   *openai.Client
+
+	prompt         string
+	promptRow      int
+	history        []string
+	userInput      string
+	predictedInput string
+
 	generatePredictedInputDebounced func()
 }
 
@@ -39,17 +42,25 @@ func NewREPL(runner *interp.Runner) (*REPL, error) {
 		return nil, err
 	}
 
+	llmClient := openai.NewClient(
+		option.WithAPIKey("ollama"),
+		option.WithBaseURL("http://localhost:11434/v1/"),
+	)
+
+	row, _, err := terminal.GetCursorPos()
+	if err != nil {
+		return nil, err
+	}
+
 	repl := &REPL{
-		prompt:         "gsh> ", // Default prompt
-		history:        []string{},
 		originalTTY:    origTTY,
 		runner:         runner,
+		llmClient:      llmClient,
+		prompt:         "gsh> ", // Default prompt
+		promptRow:      row,
+		history:        []string{},
 		userInput:      "",
 		predictedInput: "",
-		llmClient: openai.NewClient(
-			option.WithAPIKey("ollama"),
-			option.WithBaseURL("http://localhost:11434/v1/"),
-		),
 	}
 
 	repl.generatePredictedInputDebounced = debounce.Debounce(200*time.Millisecond, func() {

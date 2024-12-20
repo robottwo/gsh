@@ -8,8 +8,10 @@ const (
 	CLEAR_REMAINING_LINE = ESC + "[K"
 	CLEAR_LINE           = RESET_CURSOR_COLUMN + ESC + "[2K"
 	CLEAR_SCREEN         = RESET_CURSOR + ESC + "[2J"
+	CLEAR_AFTER_CURSOR   = ESC + "[J"
 	SAVE_CURSOR          = ESC + "[s"
 	RESTORE_CURSOR       = ESC + "[u"
+	GET_CURSOR_POS       = ESC + "[6n"
 
 	BLACK         = ESC + "[0;30m"
 	GRAY          = ESC + "[1;30m"
