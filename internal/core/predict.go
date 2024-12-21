@@ -5,25 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/invopop/jsonschema"
 	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/option"
 )
 
-func GenerateSchema[T any]() interface{} {
-	reflector := jsonschema.Reflector{
-		AllowAdditionalProperties: false,
-		DoNotReference:            true,
-	}
-	var v T
-	schema := reflector.Reflect(v)
-	return schema
-}
-
-type PredictedCommand struct {
+type predictedCommand struct {
 	FullCommand string `json:"full_command" jsonschema_description:"The full bash command predicted by the model" jsonschema_required:"true"`
 }
 
-var PREDICTED_COMMAND_SCHEMA = GenerateSchema[PredictedCommand]()
+var PREDICTED_COMMAND_SCHEMA = GenerateJsonSchema[predictedCommand]()
 
 var PREDICTED_COMMAND_SCHEMA_PARAM = openai.ResponseFormatJSONSchemaJSONSchemaParam{
 	Name:        openai.F("predicted_command"),
@@ -32,8 +22,20 @@ var PREDICTED_COMMAND_SCHEMA_PARAM = openai.ResponseFormatJSONSchemaJSONSchemaPa
 	Strict:      openai.Bool(true),
 }
 
-func predictInput(llmClient *openai.Client, userInput string) (string, error) {
-	chatCompletion, err := llmClient.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
+type LLMPredictor struct {
+	llmClient *openai.Client
+}
+
+func NewLLMPredictor() *LLMPredictor {
+	llmClient := openai.NewClient(
+		option.WithAPIKey("ollama"),
+		option.WithBaseURL("http://localhost:11434/v1/"),
+	)
+	return &LLMPredictor{llmClient: llmClient}
+}
+
+func (p *LLMPredictor) Predict(input string) (string, error) {
+	chatCompletion, err := p.llmClient.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
 		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
 			openai.UserMessage(fmt.Sprintf(`
 You are gsh, an intelligent shell program.
@@ -41,7 +43,7 @@ You are asked to predict a complete bash command based on a partial one from the
 
 <partial_command>
 %s
-</partial_command>`, userInput)),
+</partial_command>`, input)),
 		}),
 		ResponseFormat: openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](
 			openai.ResponseFormatJSONSchemaParam{
@@ -56,7 +58,7 @@ You are asked to predict a complete bash command based on a partial one from the
 		return "", err
 	}
 
-	predictedCommand := PredictedCommand{}
+	predictedCommand := predictedCommand{}
 	_ = json.Unmarshal([]byte(chatCompletion.Choices[0].Message.Content), &predictedCommand)
 
 	return predictedCommand.FullCommand, nil

@@ -20,12 +20,13 @@ func RunApp() error {
 	if err != nil {
 		return err
 	}
+	predictor := NewLLMPredictor()
 
 	commandIndex := 0
 
 	for {
 		// Read input
-		line, err := gline.NextLine("gsh> ", nil, gline.Options{
+		line, err := gline.NextLine("gsh> ", predictor, gline.Options{
 			ClearScreen: commandIndex == 0,
 		})
 		commandIndex++
