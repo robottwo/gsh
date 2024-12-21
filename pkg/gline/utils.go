@@ -1,4 +1,4 @@
-package terminal
+package gline
 
 import (
 	"fmt"

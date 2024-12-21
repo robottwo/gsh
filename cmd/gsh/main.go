@@ -43,11 +43,7 @@ func run() error {
 
 	if flag.NArg() == 0 {
 		if term.IsTerminal(int(os.Stdin.Fd())) {
-			repl, err := core.NewREPL(runner)
-			if err != nil {
-				return err
-			}
-			return repl.Run()
+			return core.RunApp()
 		}
 
 		return runCommand(runner, os.Stdin, "")

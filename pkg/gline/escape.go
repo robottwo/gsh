@@ -1,4 +1,4 @@
-package terminal
+package gline
 
 const (
 	ESC                  = "\033"
