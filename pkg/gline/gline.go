@@ -113,6 +113,7 @@ func (g *glineContext) readCommand() (string, error) {
 
 		if char == '\n' || char == '\r' {
 			// Enter
+			fmt.Print(CLEAR_REMAINING_LINE)
 			fmt.Println()
 			fmt.Print(RESET_CURSOR_COLUMN)
 

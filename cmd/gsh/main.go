@@ -1,17 +1,15 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
+	"github.com/atinylittleshell/gsh/internal/bash"
 	"github.com/atinylittleshell/gsh/internal/core"
 	"golang.org/x/term"
 	"mvdan.cc/sh/v3/interp"
-	"mvdan.cc/sh/v3/syntax"
 )
 
 var command = flag.String("c", "", "command to run")
@@ -38,41 +36,22 @@ func run() error {
 	}
 
 	if *command != "" {
-		return runCommand(runner, strings.NewReader(*command), "")
+		return bash.RunBashCommand(runner, strings.NewReader(*command), "")
 	}
 
 	if flag.NArg() == 0 {
 		if term.IsTerminal(int(os.Stdin.Fd())) {
-			return core.RunApp()
+			return core.RunApp(runner)
 		}
 
-		return runCommand(runner, os.Stdin, "")
+		return bash.RunBashCommand(runner, os.Stdin, "")
 	}
 
 	for _, filePath := range flag.Args() {
-		if err := runFile(runner, filePath); err != nil {
+		if err := bash.RunBashScript(runner, filePath); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func runCommand(runner *interp.Runner, reader io.Reader, name string) error {
-	prog, err := syntax.NewParser().Parse(reader, name)
-	if err != nil {
-		return err
-	}
-	runner.Reset()
-	ctx := context.Background()
-	return runner.Run(ctx, prog)
-}
-
-func runFile(runner *interp.Runner, filePath string) error {
-	f, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	return runCommand(runner, f, filePath)
 }
