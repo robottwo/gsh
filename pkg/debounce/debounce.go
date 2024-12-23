@@ -26,3 +26,22 @@ func Debounce(d time.Duration, fn func()) func() {
 	}
 }
 
+func DebounceWithParam[T any](d time.Duration, fn func(T)) func(T) {
+	var mu sync.Mutex
+	var timer *time.Timer
+
+	return func(t T) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		// If a timer is already running, stop it so we can reset
+		if timer != nil {
+			timer.Stop()
+		}
+
+		// Create a new timer that calls fn after d has passed without new calls
+		timer = time.AfterFunc(d, func() {
+			fn(t)
+		})
+	}
+}

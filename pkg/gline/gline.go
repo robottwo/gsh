@@ -26,7 +26,12 @@ type glineContext struct {
 	predictedInput string
 	stateId        atomic.Int64
 
-	generatePredictedInputDebounced func()
+	generatePredictedInputDebounced func(input predictionInput)
+}
+
+type predictionInput struct {
+	userInput string
+	stateId   int64
 }
 
 // NextLine starts a new prompt and waits for user input
@@ -58,8 +63,8 @@ func NextLine(prompt string, predictor Predictor, logger *zap.Logger, options Op
 		predictedInput: "",
 		stateId:        atomic.Int64{},
 	}
-	g.generatePredictedInputDebounced = debounce.Debounce(200*time.Millisecond, func() {
-		g.generatePredictedInput()
+	g.generatePredictedInputDebounced = debounce.DebounceWithParam(200*time.Millisecond, func(input predictionInput) {
+		g.generatePredictedInput(input)
 	})
 
 	g.redrawLine()
@@ -161,17 +166,20 @@ func (g *glineContext) predictInput() {
 		return
 	}
 
-	g.generatePredictedInputDebounced()
+	predictionInput := predictionInput{
+		userInput: g.userInput,
+		stateId:   g.stateId.Load(),
+	}
+	g.generatePredictedInputDebounced(predictionInput)
 }
 
-func (g *glineContext) generatePredictedInput() {
-	startStateId := g.stateId.Load()
+func (g *glineContext) generatePredictedInput(input predictionInput) {
+	startStateId := input.stateId
 
-	userInput := g.userInput
-	g.logger.Debug("gline predicting input", zap.Int64("stateId", startStateId), zap.String("input", userInput))
+	g.logger.Debug("gline predicting input", zap.Int64("stateId", startStateId), zap.String("input", input.userInput))
 
 	go func() {
-		predicted, err := g.predictor.Predict(userInput)
+		predicted, err := g.predictor.Predict(input.userInput)
 
 		newStateId := g.stateId.Load()
 		g.logger.Debug("gline predicted input", zap.Int64("stateId", newStateId), zap.String("predicted", predicted))
@@ -179,6 +187,11 @@ func (g *glineContext) generatePredictedInput() {
 		if startStateId != newStateId {
 			// if the stateId has changed, then the user has made more input,
 			// so we should discard this prediction
+			g.logger.Debug(
+				"gline discarding prediction",
+				zap.Int64("startStateId", startStateId),
+				zap.Int64("newStateId", newStateId),
+			)
 			return
 		}
 

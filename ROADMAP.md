@@ -1,10 +1,7 @@
 # Bugs
 
-- fix empty prefix prediction
-
 # P0
 
-- logging to fs
 - history management
 - keybind
 - chat agent
