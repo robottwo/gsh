@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/bash"
 	"github.com/atinylittleshell/gsh/pkg/gline"
+	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
 )
@@ -20,8 +20,12 @@ const (
 	DEFAULT_PROMPT = "gsh> "
 )
 
-func RunApp(runner *interp.Runner) error {
-	loadShellConfigs(runner)
+func RunApp(runner *interp.Runner, logger *zap.Logger) error {
+	err := loadShellConfigs(runner, logger)
+	if err != nil {
+		logger.Error("failed to load gshrc", zap.Error(err))
+		return err
+	}
 
 	predictor := NewLLMPredictor()
 
@@ -29,24 +33,29 @@ func RunApp(runner *interp.Runner) error {
 
 	for {
 		prompt := getPrompt(runner)
+		logger.Debug("prompt updated", zap.String("prompt", prompt))
 
 		// Read input
-		line, err := gline.NextLine(prompt, predictor, gline.Options{
-			ClearScreen: false,
+		line, err := gline.NextLine(prompt, predictor, logger, gline.Options{
+			ClearScreen: commandIndex == 0,
 		})
 		commandIndex++
 
+		logger.Debug("received command", zap.String("line", line))
+
 		if err != nil {
+			logger.Error("error reading input through gline", zap.Error(err))
 			return err
 		}
 
 		// Exit if the user types the exit command
 		if line == EXIT_COMMAND {
+			logger.Info("exiting")
 			break
 		}
 
 		// Execute the command
-		executeCommand(line, runner)
+		executeCommand(line, runner, logger)
 	}
 
 	// Clear screen on exit
@@ -54,9 +63,10 @@ func RunApp(runner *interp.Runner) error {
 	return nil
 }
 
-func executeCommand(input string, runner *interp.Runner) error {
+func executeCommand(input string, runner *interp.Runner, logger *zap.Logger) error {
 	prog, err := syntax.NewParser().Parse(strings.NewReader(input), "")
 	if err != nil {
+		logger.Error("error parsing command", zap.Error(err))
 		return err
 	}
 	return runner.Run(context.Background(), prog)
@@ -77,21 +87,15 @@ func getPrompt(runner *interp.Runner) string {
 }
 
 // loadShellConfigs loads and executes .gshrc
-func loadShellConfigs(runner *interp.Runner) error {
-	user, err := user.Current()
-	if err != nil {
-		return fmt.Errorf("unable to determine current user: %w", err)
-	}
-
-	homeDir := user.HomeDir
+func loadShellConfigs(runner *interp.Runner, logger *zap.Logger) error {
 	configFiles := []string{
-		filepath.Join(homeDir, ".gshrc"),
+		filepath.Join(HomeDir(), ".gshrc"),
 	}
 
 	for _, configFile := range configFiles {
 		if _, err := os.Stat(configFile); err == nil {
 			if err := bash.RunBashScript(runner, configFile); err != nil {
-				fmt.Fprintf(os.Stderr, "Error loading %s: %v\n", configFile, err)
+				logger.Error("error loading config file", zap.String("configFile", configFile), zap.Error(err))
 			}
 		}
 	}

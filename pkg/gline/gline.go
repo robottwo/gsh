@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/atinylittleshell/gsh/pkg/debounce"
+	"go.uber.org/zap"
 	"golang.org/x/term"
 )
 
@@ -17,6 +18,7 @@ const (
 
 type glineContext struct {
 	predictor Predictor
+	logger    *zap.Logger
 
 	prompt         string
 	promptRow      int
@@ -28,10 +30,11 @@ type glineContext struct {
 }
 
 // NextLine starts a new prompt and waits for user input
-func NextLine(prompt string, predictor Predictor, options Options) (string, error) {
+func NextLine(prompt string, predictor Predictor, logger *zap.Logger, options Options) (string, error) {
 	// enter raw mode and exit it when done
 	origTTY, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
+		logger.Error("failed to turn on raw terminal mode", zap.Error(err))
 		return "", err
 	}
 	defer term.Restore(int(os.Stdin.Fd()), origTTY)
@@ -42,11 +45,13 @@ func NextLine(prompt string, predictor Predictor, options Options) (string, erro
 
 	row, _, err := GetCursorPos()
 	if err != nil {
+		logger.Error("failed to get cursor position", zap.Error(err))
 		return "", err
 	}
 
 	g := &glineContext{
 		predictor:      predictor,
+		logger:         logger,
 		prompt:         prompt,
 		promptRow:      row,
 		userInput:      "",
@@ -62,6 +67,7 @@ func NextLine(prompt string, predictor Predictor, options Options) (string, erro
 	// Read user input
 	input, err := g.readCommand()
 	if err != nil {
+		logger.Error("failed to read command", zap.Error(err))
 		return "", err
 	}
 
@@ -104,12 +110,16 @@ func (g *glineContext) readCommand() (string, error) {
 	for {
 		_, err := os.Stdin.Read(buffer)
 		if err != nil {
+			g.logger.Error("gline failed to read from stdin", zap.Error(err))
 			return "", err
 		}
 
 		char := buffer[0]
+		g.logger.Debug("gline received character", zap.String("char", string(char)))
+
 		// increment stateId
 		g.stateId.Add(1)
+		g.logger.Debug("gline state id", zap.Int64("id", g.stateId.Load()))
 
 		if char == '\n' || char == '\r' {
 			// Enter
@@ -147,6 +157,7 @@ func (g *glineContext) predictInput() {
 	}
 
 	if strings.HasPrefix(g.predictedInput, g.userInput) {
+		g.logger.Debug("gline existing predicted input already starts with user input")
 		return
 	}
 
@@ -155,12 +166,16 @@ func (g *glineContext) predictInput() {
 
 func (g *glineContext) generatePredictedInput() {
 	startStateId := g.stateId.Load()
+
 	userInput := g.userInput
+	g.logger.Debug("gline predicting input", zap.Int64("stateId", startStateId), zap.String("input", userInput))
 
 	go func() {
 		predicted, err := g.predictor.Predict(userInput)
 
 		newStateId := g.stateId.Load()
+		g.logger.Debug("gline predicted input", zap.Int64("stateId", newStateId), zap.String("predicted", predicted))
+
 		if startStateId != newStateId {
 			// if the stateId has changed, then the user has made more input,
 			// so we should discard this prediction
