@@ -28,6 +28,7 @@ type HistoryEntry struct {
 func NewHistoryManager(dbFilePath string, logger *zap.Logger) (*HistoryManager, error) {
 	db, err := gorm.Open(sqlite.Open(dbFilePath), &gorm.Config{})
 	if err != nil {
+		logger.Error("error opening database", zap.Error(err))
 		return nil, err
 	}
 
@@ -46,8 +47,11 @@ func (historyManager *HistoryManager) StartCommand(command string) (*HistoryEntr
 
 	result := historyManager.db.Create(&entry)
 	if result.Error != nil {
+		historyManager.logger.Error("error creating history entry", zap.Error(result.Error))
 		return nil, result.Error
 	}
+
+	historyManager.logger.Debug("history entry started", zap.String("command", entry.Command))
 
 	return &entry, nil
 }
@@ -59,8 +63,11 @@ func (historyManager *HistoryManager) FinishCommand(entry *HistoryEntry, stdout,
 
 	result := historyManager.db.Save(entry)
 	if result.Error != nil {
+		historyManager.logger.Error("error saving history entry", zap.Error(result.Error))
 		return nil, result.Error
 	}
+
+	historyManager.logger.Debug("history entry finished", zap.String("command", entry.Command), zap.Int("exit_code", exitCode))
 
 	return entry, nil
 }
@@ -69,6 +76,7 @@ func (historyManager *HistoryManager) GetRecentEntries(limit int) ([]HistoryEntr
 	var entries []HistoryEntry
 	result := historyManager.db.Order("created_at desc").Limit(limit).Find(&entries)
 	if result.Error != nil {
+		historyManager.logger.Error("error fetching recent history entries", zap.Error(result.Error))
 		return nil, result.Error
 	}
 

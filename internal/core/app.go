@@ -3,8 +3,10 @@ package core
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/atinylittleshell/gsh/internal/history"
 	"github.com/atinylittleshell/gsh/pkg/gline"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -18,6 +20,11 @@ const (
 )
 
 func RunApp(runner *interp.Runner, logger *zap.Logger) error {
+	historyManager, err := history.NewHistoryManager(HistoryFile(), logger)
+	if err != nil {
+		return err
+	}
+
 	predictor := NewLLMPredictor()
 
 	commandIndex := 0
@@ -39,14 +46,16 @@ func RunApp(runner *interp.Runner, logger *zap.Logger) error {
 			return err
 		}
 
-		// Exit if the user types the exit command
-		if line == EXIT_COMMAND {
-			logger.Info("exiting")
-			break
+		// Execute the command
+		err = executeCommand(line, historyManager, runner, logger)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error executing command: %v\n", err)
 		}
 
-		// Execute the command
-		executeCommand(line, runner, logger)
+		if runner.Exited() {
+			logger.Debug("exiting...")
+			break
+		}
 	}
 
 	// Clear screen on exit
@@ -54,13 +63,28 @@ func RunApp(runner *interp.Runner, logger *zap.Logger) error {
 	return nil
 }
 
-func executeCommand(input string, runner *interp.Runner, logger *zap.Logger) error {
-	prog, err := syntax.NewParser().Parse(strings.NewReader(input), "")
+func executeCommand(input string, historyManager *history.HistoryManager, runner *interp.Runner, logger *zap.Logger) error {
+	var prog *syntax.Stmt
+	err := syntax.NewParser().Stmts(strings.NewReader(input), func(stmt *syntax.Stmt) bool {
+		prog = stmt
+		return false
+	})
 	if err != nil {
 		logger.Error("error parsing command", zap.Error(err))
 		return err
 	}
-	return runner.Run(context.Background(), prog)
+
+	historyEntry, _ := historyManager.StartCommand(input)
+
+	err = runner.Run(context.Background(), prog)
+	if err != nil {
+		status, _ := interp.IsExitStatus(err)
+		historyManager.FinishCommand(historyEntry, "", "", int(status))
+	} else {
+		historyManager.FinishCommand(historyEntry, "", "", 0)
+	}
+
+	return nil
 }
 
 func getPrompt(runner *interp.Runner) string {

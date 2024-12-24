@@ -1,9 +1,15 @@
 package history
 
-import "testing"
+import (
+	"testing"
+
+	"go.uber.org/zap"
+)
 
 func Test(t *testing.T) {
-	historyManager, err := NewHistoryManager(":memory:", nil)
+	logger := zap.NewNop()
+
+	historyManager, err := NewHistoryManager(":memory:", logger)
 	if err != nil {
 		t.Errorf("Failed to create history manager: %v", err)
 	}
