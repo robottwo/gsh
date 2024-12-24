@@ -3,11 +3,8 @@ package core
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/atinylittleshell/gsh/internal/bash"
 	"github.com/atinylittleshell/gsh/pkg/gline"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -21,12 +18,6 @@ const (
 )
 
 func RunApp(runner *interp.Runner, logger *zap.Logger) error {
-	err := loadShellConfigs(runner, logger)
-	if err != nil {
-		logger.Error("failed to load gshrc", zap.Error(err))
-		return err
-	}
-
 	predictor := NewLLMPredictor()
 
 	commandIndex := 0
@@ -84,21 +75,4 @@ func getPrompt(runner *interp.Runner) string {
 	}
 
 	return DEFAULT_PROMPT
-}
-
-// loadShellConfigs loads and executes .gshrc
-func loadShellConfigs(runner *interp.Runner, logger *zap.Logger) error {
-	configFiles := []string{
-		filepath.Join(HomeDir(), ".gshrc"),
-	}
-
-	for _, configFile := range configFiles {
-		if _, err := os.Stat(configFile); err == nil {
-			if err := bash.RunBashScript(runner, configFile); err != nil {
-				logger.Error("error loading config file", zap.String("configFile", configFile), zap.Error(err))
-			}
-		}
-	}
-
-	return nil
 }
