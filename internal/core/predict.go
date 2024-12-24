@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/atinylittleshell/gsh/internal/history"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
+	"go.uber.org/zap"
 )
 
 type predictedCommand struct {
@@ -23,27 +25,61 @@ var PREDICTED_COMMAND_SCHEMA_PARAM = openai.ResponseFormatJSONSchemaJSONSchemaPa
 }
 
 type LLMPredictor struct {
-	llmClient *openai.Client
+	llmClient      *openai.Client
+	historyManager *history.HistoryManager
+	logger         *zap.Logger
 }
 
-func NewLLMPredictor() *LLMPredictor {
+func NewLLMPredictor(historyManager *history.HistoryManager, logger *zap.Logger) *LLMPredictor {
 	llmClient := openai.NewClient(
 		option.WithAPIKey("ollama"),
 		option.WithBaseURL("http://localhost:11434/v1/"),
 	)
-	return &LLMPredictor{llmClient: llmClient}
+	return &LLMPredictor{
+		llmClient:      llmClient,
+		historyManager: historyManager,
+		logger:         logger,
+	}
 }
 
-func (p *LLMPredictor) Predict(input string) (string, error) {
-	chatCompletion, err := p.llmClient.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
-		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
-			openai.UserMessage(fmt.Sprintf(`
+func (p *LLMPredictor) Predict(input string, directory string) (string, error) {
+	historyEntries, err := p.historyManager.GetRecentEntries(10)
+	if err != nil {
+		return "", err
+	}
+
+	var commandHistory string
+	for _, entry := range historyEntries {
+		commandHistory += fmt.Sprintf("%s: %s\n", entry.Directory, entry.Command)
+	}
+
+	p.logger.Info("predicting with history", zap.String("commandHistory", commandHistory))
+
+	llmPrompt := fmt.Sprintf(
+		`
 You are gsh, an intelligent shell program.
 You are asked to predict a complete bash command based on a partial one from the user.
 
+<command_history>
+%s
+</command_history>
+
+<current_directory>
+%s
+</current_directory>
+
 <partial_command>
 %s
-</partial_command>`, input)),
+</partial_command>
+`,
+		commandHistory,
+		directory,
+		input,
+	)
+
+	chatCompletion, err := p.llmClient.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
+		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
+			openai.UserMessage(llmPrompt),
 		}),
 		ResponseFormat: openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](
 			openai.ResponseFormatJSONSchemaParam{
@@ -57,6 +93,8 @@ You are asked to predict a complete bash command based on a partial one from the
 	if err != nil {
 		return "", err
 	}
+
+	p.logger.Info("predicting using LLM", zap.String("prompt", llmPrompt))
 
 	predictedCommand := predictedCommand{}
 	_ = json.Unmarshal([]byte(chatCompletion.Choices[0].Message.Content), &predictedCommand)

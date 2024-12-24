@@ -22,6 +22,7 @@ type glineContext struct {
 
 	prompt         string
 	promptRow      int
+	directory      string
 	userInput      string
 	predictedInput string
 	stateId        atomic.Int64
@@ -31,11 +32,12 @@ type glineContext struct {
 
 type predictionInput struct {
 	userInput string
+	directory string
 	stateId   int64
 }
 
 // NextLine starts a new prompt and waits for user input
-func NextLine(prompt string, predictor Predictor, logger *zap.Logger, options Options) (string, error) {
+func NextLine(prompt string, directory string, predictor Predictor, logger *zap.Logger, options Options) (string, error) {
 	// enter raw mode and exit it when done
 	origTTY, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
@@ -59,6 +61,7 @@ func NextLine(prompt string, predictor Predictor, logger *zap.Logger, options Op
 		logger:         logger,
 		prompt:         prompt,
 		promptRow:      row,
+		directory:      directory,
 		userInput:      "",
 		predictedInput: "",
 		stateId:        atomic.Int64{},
@@ -169,6 +172,7 @@ func (g *glineContext) predictInput() {
 	predictionInput := predictionInput{
 		userInput: g.userInput,
 		stateId:   g.stateId.Load(),
+		directory: g.directory,
 	}
 	g.generatePredictedInputDebounced(predictionInput)
 }
@@ -179,7 +183,10 @@ func (g *glineContext) generatePredictedInput(input predictionInput) {
 	g.logger.Debug("gline predicting input", zap.Int64("stateId", startStateId), zap.String("input", input.userInput))
 
 	go func() {
-		predicted, err := g.predictor.Predict(input.userInput)
+		predicted, err := g.predictor.Predict(input.userInput, input.directory)
+		if err != nil {
+			g.logger.Error("gline prediction failed", zap.Error(err))
+		}
 
 		newStateId := g.stateId.Load()
 		g.logger.Debug("gline predicted input", zap.Int64("stateId", newStateId), zap.String("predicted", predicted))

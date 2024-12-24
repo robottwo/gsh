@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/atinylittleshell/gsh/pkg/reverse"
 	"go.uber.org/zap"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -19,10 +20,11 @@ type HistoryEntry struct {
 	CreatedAt time.Time `gorm:"index"`
 	UpdatedAt time.Time `gorm:"index"`
 
-	Command  string
-	Stdout   sql.NullString
-	Stderr   sql.NullString
-	ExitCode sql.NullInt32
+	Command   string
+	Directory string
+	Stdout    sql.NullString
+	Stderr    sql.NullString
+	ExitCode  sql.NullInt32
 }
 
 func NewHistoryManager(dbFilePath string, logger *zap.Logger) (*HistoryManager, error) {
@@ -40,9 +42,10 @@ func NewHistoryManager(dbFilePath string, logger *zap.Logger) (*HistoryManager, 
 	}, nil
 }
 
-func (historyManager *HistoryManager) StartCommand(command string) (*HistoryEntry, error) {
+func (historyManager *HistoryManager) StartCommand(command string, directory string) (*HistoryEntry, error) {
 	entry := HistoryEntry{
-		Command: command,
+		Command:   command,
+		Directory: directory,
 	}
 
 	result := historyManager.db.Create(&entry)
@@ -80,5 +83,6 @@ func (historyManager *HistoryManager) GetRecentEntries(limit int) ([]HistoryEntr
 		return nil, result.Error
 	}
 
+	reverse.Reverse(entries)
 	return entries, nil
 }

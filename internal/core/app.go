@@ -25,7 +25,7 @@ func RunApp(runner *interp.Runner, logger *zap.Logger) error {
 		return err
 	}
 
-	predictor := NewLLMPredictor()
+	predictor := NewLLMPredictor(historyManager, logger)
 
 	commandIndex := 0
 
@@ -34,7 +34,7 @@ func RunApp(runner *interp.Runner, logger *zap.Logger) error {
 		logger.Debug("prompt updated", zap.String("prompt", prompt))
 
 		// Read input
-		line, err := gline.NextLine(prompt, predictor, logger, gline.Options{
+		line, err := gline.NextLine(prompt, runner.Vars["PWD"].String(), predictor, logger, gline.Options{
 			ClearScreen: commandIndex == 0,
 		})
 		commandIndex++
@@ -74,7 +74,7 @@ func executeCommand(input string, historyManager *history.HistoryManager, runner
 		return err
 	}
 
-	historyEntry, _ := historyManager.StartCommand(input)
+	historyEntry, _ := historyManager.StartCommand(input, runner.Vars["PWD"].String())
 
 	err = runner.Run(context.Background(), prog)
 	if err != nil {
