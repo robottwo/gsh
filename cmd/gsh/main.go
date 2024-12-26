@@ -72,7 +72,7 @@ func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *
 		}
 
 		for _, entry := range entries {
-			fmt.Printf("%s\n", entry.Command)
+			fmt.Println(entry.Command)
 		}
 
 		return nil
