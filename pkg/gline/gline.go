@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/atinylittleshell/gsh/pkg/debounce"
+	"github.com/atinylittleshell/gsh/pkg/gline/keys"
 	"go.uber.org/zap"
 	"golang.org/x/term"
 )
@@ -113,23 +114,25 @@ func (g *glineContext) readCommand() (string, error) {
 	g.userInput = ""
 	g.predictedInput = ""
 
-	buffer := make([]byte, 1)
+	reader := NewTerminalReader(os.Stdin)
 
 	for {
-		_, err := os.Stdin.Read(buffer)
+		text, key, err := reader.Read()
 		if err != nil {
 			g.logger.Error("gline failed to read from stdin", zap.Error(err))
 			return "", err
 		}
 
-		char := buffer[0]
-		g.logger.Debug("gline received character", zap.String("char", string(char)))
+		g.logger.Debug("gline read", zap.String("text", text), zap.Any("key", key))
 
 		// increment stateId
 		g.stateId.Add(1)
 		g.logger.Debug("gline state id", zap.Int64("id", g.stateId.Load()))
 
-		if char == '\n' || char == '\r' {
+		if key.Code == keys.KeyNull {
+			// Normal text input
+			g.userInput += text
+		} else if key.Code == keys.KeyEnter {
 			// Enter
 			fmt.Print(CLEAR_REMAINING_LINE)
 			fmt.Println()
@@ -141,16 +144,11 @@ func (g *glineContext) readCommand() (string, error) {
 			g.predictedInput = ""
 
 			return result, nil
-		}
-
-		if char == 127 {
+		} else if key.Code == keys.KeyBackspace {
 			// Backspace
 			if len(g.userInput) > 0 {
 				g.userInput = g.userInput[:len(g.userInput)-1]
 			}
-		} else {
-			// Normal character
-			g.userInput += string(char)
 		}
 
 		g.redrawLine()

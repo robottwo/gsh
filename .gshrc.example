@@ -4,6 +4,7 @@ function GSH_UPDATE_PROMPT() {
 
 export STARSHIP_SHELL="gsh"
 export STARSHIP_SESSION_KEY=$(starship session)
+export STARSHIP_START_TIME="$(starship time)"
 
 export GSH_PROMPT="$(starship prompt)"
 export GSH_LOG_LEVEL="debug"
