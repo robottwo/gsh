@@ -6,6 +6,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/atinylittleshell/gsh/pkg/gline/keys"
+	"go.uber.org/zap"
 )
 
 type state int
@@ -19,14 +20,16 @@ const (
 
 type TerminalReader struct {
 	reader        *bufio.Reader
+	logger        *zap.Logger
 	state         state
 	partialEscape []byte
 	partialUTF8   []byte
 }
 
-func NewTerminalReader(reader io.Reader) *TerminalReader {
+func NewTerminalReader(reader io.Reader, logger *zap.Logger) *TerminalReader {
 	return &TerminalReader{
 		reader: bufio.NewReaderSize(reader, 32),
+		logger: logger,
 		state:  stateNormal,
 	}
 }
@@ -77,6 +80,8 @@ func (r *TerminalReader) Read() (string, keys.KeyPress, error) {
 				k, ok := keys.GetKeyPressFromInput(string(b))
 				if ok {
 					return "", k, nil
+				} else {
+					r.logger.Debug("unknown control character", zap.Int("code", int(b)), zap.String("char", string(b)))
 				}
 			} else {
 				// Possibly a UTF-8 character
@@ -91,11 +96,11 @@ func (r *TerminalReader) Read() (string, keys.KeyPress, error) {
 			// We just saw ESC. Let's see what the next byte is.
 			if b == '[' {
 				// ESC + '[' => CSI sequence
-				r.partialEscape = []byte{'\x01', '['}
+				r.partialEscape = []byte{'\x1b', '['}
 				r.state = stateCSI
 			} else if b == 'O' {
 				// ESC + 'O' => OSC or function key
-				r.partialEscape = []byte{'\x01', 'O'}
+				r.partialEscape = []byte{'\x1b', 'O'}
 				r.state = stateOSC
 			} else {
 				// ESC + something else (maybe just ESC alone, or ESC + letter)
@@ -111,11 +116,14 @@ func (r *TerminalReader) Read() (string, keys.KeyPress, error) {
 			// We’re accumulating bytes in a CSI sequence, e.g. ESC+[1;5A
 			r.partialEscape = append(r.partialEscape, b)
 			if isTerminator(b) {
-				k, ok := keys.GetKeyPressFromInput(string(r.partialEscape))
+				escapeSequence := string(r.partialEscape)
+				k, ok := keys.GetKeyPressFromInput(escapeSequence)
 				r.partialEscape = nil
 				r.state = stateNormal
 				if ok {
 					return "", k, nil
+				} else {
+					r.logger.Debug("unknown escape sequence", zap.String("sequence", escapeSequence))
 				}
 			}
 
@@ -123,11 +131,14 @@ func (r *TerminalReader) Read() (string, keys.KeyPress, error) {
 			// We’re accumulating bytes for OSC or function key sequences.
 			r.partialEscape = append(r.partialEscape, b)
 			if isTerminator(b) {
-				k, ok := keys.GetKeyPressFromInput(string(r.partialEscape))
+				escapeSequence := string(r.partialEscape)
+				k, ok := keys.GetKeyPressFromInput(escapeSequence)
 				r.partialEscape = nil
 				r.state = stateNormal
 				if ok {
 					return "", k, nil
+				} else {
+					r.logger.Debug("unknown escape sequence", zap.String("sequence", escapeSequence))
 				}
 			}
 		}

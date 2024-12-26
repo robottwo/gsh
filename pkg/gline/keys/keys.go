@@ -240,7 +240,10 @@ func (k KeyPress) String() string {
 
 func GetKeyPressFromInput(s string) (KeyPress, bool) {
 	k, ok := sequenceMapping[s]
-	return k[0], ok
+	if !ok {
+		return KeyPress{}, false
+	}
+	return k[0], true
 }
 
 func getAllSupportedKeyPresses() map[string]KeyPress {

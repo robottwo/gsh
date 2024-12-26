@@ -1,22 +1,24 @@
 # Bugs
 
-# P0
+# Core Features
 
-- cursor position
-- history prev/next
-- implement bash keybinds
 - chat agent
-
-# P1
-
-- multiline input
-- auto complete RAG
+- record stdout and stderr in history
+- history prev/next
+- implement all bash keybinds
+- improve auto complete RAG (git etc)
 - failed command handling
-- syntax highlighting
-- richer starship integration
 - non-ollama providers
 
-# Release
+# Enhancements
+
+- login shell
+- keybind configuration
+- multiline input
+- syntax highlighting
+- richer starship integration
+
+# Release Readiness
 
 - get rid of cgo sqlite
 - ci/cd

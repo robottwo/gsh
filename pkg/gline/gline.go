@@ -25,6 +25,7 @@ type glineContext struct {
 	prompt         string
 	promptRow      int
 	directory      string
+	cursorPosition int
 	userInput      string
 	predictedInput string
 	stateId        atomic.Int64
@@ -66,6 +67,7 @@ func NextLine(prompt string, directory string, predictor Predictor, logger *zap.
 		prompt:         prompt,
 		promptRow:      row,
 		directory:      directory,
+		cursorPosition: 0,
 		userInput:      "",
 		predictedInput: "",
 		stateId:        atomic.Int64{},
@@ -96,19 +98,23 @@ func (g *glineContext) redrawLine() error {
 
 	// User input
 	fmt.Print(WHITE)
-	fmt.Print(g.userInput)
+	// first print the part of the user input before the cursor
+	fmt.Print(g.userInput[:g.cursorPosition])
+	// then save the cursor position
+	fmt.Print(SAVE_CURSOR)
+	// then print the part of the user input after the cursor
+	fmt.Print(g.userInput[g.cursorPosition:])
 	fmt.Print(RESET_COLOR)
 
 	// Predicted input
 	if len(g.predictedInput) > 0 && strings.HasPrefix(g.predictedInput, g.userInput) {
-		fmt.Print(SAVE_CURSOR)
-
 		fmt.Print(GRAY)
 		fmt.Print(g.predictedInput[len(g.userInput):])
 		fmt.Print(RESET_COLOR)
-
-		fmt.Print(RESTORE_CURSOR)
 	}
+
+	// Restore cursor to the saved position
+	fmt.Print(RESTORE_CURSOR)
 
 	return nil
 }
@@ -117,7 +123,7 @@ func (g *glineContext) readCommand() (string, error) {
 	g.userInput = ""
 	g.predictedInput = ""
 
-	reader := NewTerminalReader(os.Stdin)
+	reader := NewTerminalReader(os.Stdin, g.logger)
 
 	var keybindMapping = make(map[keys.KeyPress]Command)
 	for command, keypresses := range g.options.Keybinds {
@@ -141,7 +147,8 @@ func (g *glineContext) readCommand() (string, error) {
 
 		if key.Code == keys.KeyNull {
 			// Normal text input
-			g.userInput += text
+			g.userInput = g.userInput[:g.cursorPosition] + text + g.userInput[g.cursorPosition:]
+			g.cursorPosition += len(text)
 		} else {
 			// Keybind
 			command, ok := keybindMapping[key]
@@ -160,23 +167,33 @@ func (g *glineContext) readCommand() (string, error) {
 
 				g.userInput = ""
 				g.predictedInput = ""
+				g.cursorPosition = 0
 
 				return result, nil
 			case CommandBackspace:
-				if len(g.userInput) > 0 {
-					g.userInput = g.userInput[:len(g.userInput)-1]
+				if g.cursorPosition > 0 {
+					g.userInput = g.userInput[:g.cursorPosition-1] + g.userInput[g.cursorPosition:]
+					g.cursorPosition--
 				}
 			case CommandHistoryPrevious:
 				// TODO
 			case CommandHistoryNext:
 				// TODO
 			case CommandCursorForward:
-				// TODO: implement cursor position and movement
-				if strings.HasPrefix(g.predictedInput, g.userInput) {
-					g.userInput = g.predictedInput
+				if g.cursorPosition < len(g.userInput) {
+					g.cursorPosition++
+				} else {
+					// if the cursor is at the end of the input, and there is a predicted input,
+					// then move the cursor to the end of the predicted input
+					if strings.HasPrefix(g.predictedInput, g.userInput) {
+						g.userInput = g.predictedInput
+						g.cursorPosition = len(g.userInput)
+					}
 				}
 			case CommandCursorBackward:
-				// TODO
+				if g.cursorPosition > 0 {
+					g.cursorPosition--
+				}
 			case CommandCursorDeleteToBeginningOfLine:
 				// TODO
 			case CommandCursorDeleteToEndOfLine:
