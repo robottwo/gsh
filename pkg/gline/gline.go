@@ -20,6 +20,7 @@ const (
 type glineContext struct {
 	predictor Predictor
 	logger    *zap.Logger
+	options   Options
 
 	prompt         string
 	promptRow      int
@@ -58,8 +59,10 @@ func NextLine(prompt string, directory string, predictor Predictor, logger *zap.
 	}
 
 	g := &glineContext{
-		predictor:      predictor,
-		logger:         logger,
+		predictor: predictor,
+		logger:    logger,
+		options:   options,
+
 		prompt:         prompt,
 		promptRow:      row,
 		directory:      directory,
@@ -116,6 +119,13 @@ func (g *glineContext) readCommand() (string, error) {
 
 	reader := NewTerminalReader(os.Stdin)
 
+	var keybindMapping = make(map[keys.KeyPress]Command)
+	for command, keypresses := range g.options.Keybinds {
+		for _, keypress := range keypresses {
+			keybindMapping[keypress] = command
+		}
+	}
+
 	for {
 		text, key, err := reader.Read()
 		if err != nil {
@@ -132,22 +142,49 @@ func (g *glineContext) readCommand() (string, error) {
 		if key.Code == keys.KeyNull {
 			// Normal text input
 			g.userInput += text
-		} else if key.Code == keys.KeyEnter {
-			// Enter
-			fmt.Print(CLEAR_REMAINING_LINE)
-			fmt.Println()
-			fmt.Print(RESET_CURSOR_COLUMN)
+		} else {
+			// Keybind
+			command, ok := keybindMapping[key]
+			if !ok {
+				g.logger.Debug("gline unknown key", zap.Any("key", key))
+				continue
+			}
 
-			result := strings.TrimSpace(g.userInput)
+			switch command {
+			case CommandExecute:
+				fmt.Print(CLEAR_REMAINING_LINE)
+				fmt.Println()
+				fmt.Print(RESET_CURSOR_COLUMN)
 
-			g.userInput = ""
-			g.predictedInput = ""
+				result := strings.TrimSpace(g.userInput)
 
-			return result, nil
-		} else if key.Code == keys.KeyBackspace {
-			// Backspace
-			if len(g.userInput) > 0 {
-				g.userInput = g.userInput[:len(g.userInput)-1]
+				g.userInput = ""
+				g.predictedInput = ""
+
+				return result, nil
+			case CommandBackspace:
+				if len(g.userInput) > 0 {
+					g.userInput = g.userInput[:len(g.userInput)-1]
+				}
+			case CommandHistoryPrevious:
+				// TODO
+			case CommandHistoryNext:
+				// TODO
+			case CommandCursorForward:
+				// TODO: implement cursor position and movement
+				if strings.HasPrefix(g.predictedInput, g.userInput) {
+					g.userInput = g.predictedInput
+				}
+			case CommandCursorBackward:
+				// TODO
+			case CommandCursorDeleteToBeginningOfLine:
+				// TODO
+			case CommandCursorDeleteToEndOfLine:
+				// TODO
+			case CommandCursorMoveToBeginningOfLine:
+				// TODO
+			case CommandCursorMoveToEndOfLine:
+				// TODO
 			}
 		}
 

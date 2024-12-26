@@ -33,10 +33,11 @@ func RunApp(runner *interp.Runner, logger *zap.Logger) error {
 		prompt := getPrompt(runner)
 		logger.Debug("prompt updated", zap.String("prompt", prompt))
 
+		options := gline.NewOptions()
+		options.ClearScreen = commandIndex == 0
+
 		// Read input
-		line, err := gline.NextLine(prompt, runner.Vars["PWD"].String(), predictor, logger, gline.Options{
-			ClearScreen: commandIndex == 0,
-		})
+		line, err := gline.NextLine(prompt, runner.Vars["PWD"].String(), predictor, logger, *options)
 		commandIndex++
 
 		logger.Debug("received command", zap.String("line", line))
