@@ -86,3 +86,13 @@ func (historyManager *HistoryManager) GetRecentEntries(limit int) ([]HistoryEntr
 	reverse.Reverse(entries)
 	return entries, nil
 }
+
+func (historyManager *HistoryManager) ResetHistory() error {
+	result := historyManager.db.Exec("DELETE FROM history_entries")
+	if result.Error != nil {
+		historyManager.logger.Error("error resetting history", zap.Error(result.Error))
+		return result.Error
+	}
+
+	return nil
+}

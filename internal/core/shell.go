@@ -14,17 +14,10 @@ import (
 )
 
 const (
-	EXIT_COMMAND = "exit"
-
 	DEFAULT_PROMPT = "gsh> "
 )
 
-func RunApp(runner *interp.Runner, logger *zap.Logger) error {
-	historyManager, err := history.NewHistoryManager(HistoryFile(), logger)
-	if err != nil {
-		return err
-	}
-
+func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
 	predictor := NewLLMPredictor(historyManager, logger)
 
 	commandIndex := 0
