@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"os"
@@ -14,6 +15,9 @@ import (
 	"golang.org/x/term"
 	"mvdan.cc/sh/v3/interp"
 )
+
+// go:embed ../../.gshrc.default
+var DEFAULT_VARS []byte
 
 var command = flag.String("c", "", "command to run")
 var listHistory = flag.Int("lh", 0, "list the most N history entries")
@@ -151,7 +155,13 @@ func initializeRunner() (*interp.Runner, error) {
 		panic(err)
 	}
 
+	// load default vars
+	if err := bash.RunBashCommandFromReader(runner, bytes.NewReader(DEFAULT_VARS), "DEFAULT_VARS"); err != nil {
+		panic(err)
+	}
+
 	configFiles := []string{
+		filepath.Join(core.HomeDir(), ".gshenv"),
 		filepath.Join(core.HomeDir(), ".gshrc"),
 	}
 

@@ -7,5 +7,3 @@ export STARSHIP_SESSION_KEY=$(starship session)
 export STARSHIP_START_TIME="$(starship time)"
 
 export GSH_PROMPT="$(starship prompt)"
-export GSH_LOG_LEVEL="debug"
-export GSH_CLEAN_LOG_FILE=1

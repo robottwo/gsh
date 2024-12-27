@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/atinylittleshell/gsh/internal/agent"
 	"github.com/atinylittleshell/gsh/internal/history"
 	"github.com/atinylittleshell/gsh/pkg/gline"
 	"go.uber.org/zap"
@@ -20,7 +21,8 @@ const (
 )
 
 func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
-	predictor := NewLLMPredictor(historyManager, logger)
+	predictor := NewLLMPredictor(runner, historyManager, logger)
+	agent := agent.NewAgent(runner, logger)
 
 	commandIndex := 0
 
@@ -40,6 +42,24 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 		if err != nil {
 			logger.Error("error reading input through gline", zap.Error(err))
 			return err
+		}
+
+		// Handle agent chat
+		if strings.HasPrefix(line, "#") {
+			chatMessage := line[1:]
+			chatChannel, err := agent.Chat(chatMessage)
+			if err != nil {
+				logger.Error("error chatting with agent", zap.Error(err))
+				continue
+			}
+
+			fmt.Print(gline.LIGHT_BLUE)
+			for message := range chatChannel {
+				fmt.Print(message)
+			}
+			fmt.Print(gline.RESET_COLOR)
+
+			continue
 		}
 
 		// Execute the command
