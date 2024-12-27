@@ -1,8 +1,10 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -41,12 +43,12 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 		}
 
 		// Execute the command
-		err = executeCommand(line, historyManager, runner, logger)
+		shouldExit, err := executeCommand(line, historyManager, runner, logger)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error executing command: %v\n", err)
 		}
 
-		if runner.Exited() {
+		if shouldExit {
 			logger.Debug("exiting...")
 			break
 		}
@@ -57,7 +59,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 	return nil
 }
 
-func executeCommand(input string, historyManager *history.HistoryManager, runner *interp.Runner, logger *zap.Logger) error {
+func executeCommand(input string, historyManager *history.HistoryManager, runner *interp.Runner, logger *zap.Logger) (bool, error) {
 	var prog *syntax.Stmt
 	err := syntax.NewParser().Stmts(strings.NewReader(input), func(stmt *syntax.Stmt) bool {
 		prog = stmt
@@ -65,20 +67,28 @@ func executeCommand(input string, historyManager *history.HistoryManager, runner
 	})
 	if err != nil {
 		logger.Error("error parsing command", zap.Error(err))
-		return err
+		return false, err
 	}
 
 	historyEntry, _ := historyManager.StartCommand(input, runner.Vars["PWD"].String())
 
-	err = runner.Run(context.Background(), prog)
+	outBuf := &bytes.Buffer{}
+	errBuf := &bytes.Buffer{}
+	multiOut := io.MultiWriter(os.Stdout, outBuf)
+	multiErr := io.MultiWriter(os.Stderr, errBuf)
+
+	childShell := runner.Subshell()
+	interp.StdIO(os.Stdin, multiOut, multiErr)(childShell)
+
+	err = childShell.Run(context.Background(), prog)
 	if err != nil {
 		status, _ := interp.IsExitStatus(err)
-		historyManager.FinishCommand(historyEntry, "", "", int(status))
+		historyManager.FinishCommand(historyEntry, outBuf.String(), errBuf.String(), int(status))
 	} else {
-		historyManager.FinishCommand(historyEntry, "", "", 0)
+		historyManager.FinishCommand(historyEntry, outBuf.String(), errBuf.String(), 0)
 	}
 
-	return nil
+	return childShell.Exited(), nil
 }
 
 func getPrompt(runner *interp.Runner) string {

@@ -3,7 +3,6 @@
 # Core Features
 
 - chat agent
-- record stdout and stderr in history
 - history prev/next
 - implement all bash keybinds
 - improve auto complete RAG (git etc)

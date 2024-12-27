@@ -73,6 +73,8 @@ func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *
 
 		for _, entry := range entries {
 			fmt.Println(entry.Command)
+			fmt.Print(entry.Stdout.String)
+			fmt.Print(entry.Stderr.String)
 		}
 
 		return nil
