@@ -7,6 +7,7 @@ import (
 	"io"
 	"strconv"
 
+	"github.com/atinylittleshell/gsh/internal/agent/tools"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -90,8 +91,8 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 					Model:    agent.modelId,
 					Messages: agent.messages,
 					Tools: []openai.Tool{
-						doneToolDefinition,
-						bashToolDefinition,
+						tools.DoneToolDefinition,
+						tools.BashToolDefinition,
 					},
 					Stream: true,
 				},
@@ -173,7 +174,7 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 
 	if toolCall.Function.Name == "bash" {
 		command := params["command"]
-		stdout, stderr, exitCode, executed := bashTool(agent.runner, agent.logger, command)
+		stdout, stderr, exitCode, executed := tools.BashTool(agent.runner, agent.logger, command)
 
 		jsonBuffer, err := json.Marshal(map[string]string{
 			"command_executed": strconv.FormatBool(executed),

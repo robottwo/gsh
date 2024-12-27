@@ -97,10 +97,10 @@ func executeCommand(input string, historyManager *history.HistoryManager, runner
 	multiOut := io.MultiWriter(os.Stdout, outBuf)
 	multiErr := io.MultiWriter(os.Stderr, errBuf)
 
-	childShell := runner.Subshell()
-	interp.StdIO(os.Stdin, multiOut, multiErr)(childShell)
+	interp.StdIO(os.Stdin, multiOut, multiErr)(runner)
+	defer interp.StdIO(os.Stdin, os.Stdout, os.Stderr)(runner)
 
-	err = childShell.Run(context.Background(), prog)
+	err = runner.Run(context.Background(), prog)
 	if err != nil {
 		status, _ := interp.IsExitStatus(err)
 		historyManager.FinishCommand(historyEntry, outBuf.String(), errBuf.String(), int(status))
@@ -108,7 +108,7 @@ func executeCommand(input string, historyManager *history.HistoryManager, runner
 		historyManager.FinishCommand(historyEntry, outBuf.String(), errBuf.String(), 0)
 	}
 
-	return childShell.Exited(), nil
+	return runner.Exited(), nil
 }
 
 func getPrompt(runner *interp.Runner) string {

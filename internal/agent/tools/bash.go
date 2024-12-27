@@ -1,4 +1,4 @@
-package agent
+package tools
 
 import (
 	"bytes"
@@ -16,15 +16,7 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 )
 
-var doneToolDefinition = openai.Tool{
-	Type: "function",
-	Function: &openai.FunctionDefinition{
-		Name:        "done",
-		Description: `Confirm that the current user request is done.`,
-	},
-}
-
-var bashToolDefinition = openai.Tool{
+var BashToolDefinition = openai.Tool{
 	Type: "function",
 	Function: &openai.FunctionDefinition{
 		Name: "bash",
@@ -39,7 +31,7 @@ var bashToolDefinition = openai.Tool{
 	},
 }
 
-func bashTool(runner *interp.Runner, logger *zap.Logger, command string) (string, string, int, bool) {
+func BashTool(runner *interp.Runner, logger *zap.Logger, command string) (string, string, int, bool) {
 	var prog *syntax.Stmt
 	err := syntax.NewParser().Stmts(strings.NewReader(command), func(stmt *syntax.Stmt) bool {
 		prog = stmt
@@ -75,10 +67,10 @@ func bashTool(runner *interp.Runner, logger *zap.Logger, command string) (string
 	multiOut := io.MultiWriter(os.Stdout, outBuf)
 	multiErr := io.MultiWriter(os.Stderr, errBuf)
 
-	childShell := runner.Subshell()
-	interp.StdIO(os.Stdin, multiOut, multiErr)(childShell)
+	interp.StdIO(os.Stdin, multiOut, multiErr)(runner)
+	defer interp.StdIO(os.Stdin, os.Stdout, os.Stderr)(runner)
 
-	err = childShell.Run(context.Background(), prog)
+	err = runner.Run(context.Background(), prog)
 	if err != nil {
 		exitCode, _ := interp.IsExitStatus(err)
 		return outBuf.String(), errBuf.String(), int(exitCode), true
