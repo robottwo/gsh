@@ -187,6 +187,12 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 	case tools.ViewDirectoryToolDefinition.Function.Name:
 		// view_directory
 		toolResponse = tools.ViewDirectoryTool(agent.runner, agent.logger, params)
+	case tools.CreateFileToolDefinition.Function.Name:
+		// create_file
+		toolResponse = tools.CreateFileTool(agent.runner, agent.logger, params)
+	case tools.EditFileToolDefinition.Function.Name:
+		// edit_file
+		toolResponse = tools.EditFileTool(agent.runner, agent.logger, params)
 	}
 
 	agent.messages = append(agent.messages, openai.ChatCompletionMessage{
