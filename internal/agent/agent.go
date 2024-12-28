@@ -60,6 +60,7 @@ You are gsh, an intelligent shell program. You answer users' questions or help t
 * Whenever possible, prefer using the bash tool to complete tasks for users rather than telling them how to do it themselves.
 * The user is able to see the output of any bash tool you run so there's no need to repeat that in your response. 
 * If you believe the output from the bash commands is sufficient for fulfilling the user's request, end the conversation by calling the "done" tool.
+* If you see a tool call response enclosed in <gsh_tool_call_error> tags, that means the tool call failed; otherwise, the tool call succeeded and whatever you see in the response is the actual result from the tool.
         `,
 			},
 		},
@@ -93,6 +94,8 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 					Tools: []openai.Tool{
 						tools.DoneToolDefinition,
 						tools.BashToolDefinition,
+						tools.ViewFileToolDefinition,
+						tools.ViewDirectoryToolDefinition,
 					},
 					Stream: true,
 				},
@@ -164,7 +167,7 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 		return false
 	}
 
-	var params map[string]string
+	var params map[string]any
 	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &params); err != nil {
 		agent.logger.Error("Failed to parse function call arguments", zap.Error(err))
 		return false
@@ -172,22 +175,16 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 
 	toolResponse := fmt.Sprintf("Unknown tool: %s", toolCall.Function.Name)
 
-	if toolCall.Function.Name == "bash" {
-		command := params["command"]
-		stdout, stderr, exitCode, executed := tools.BashTool(agent.runner, agent.logger, command)
-
-		jsonBuffer, err := json.Marshal(map[string]string{
-			"command_executed": strconv.FormatBool(executed),
-			"stdout":           stdout,
-			"stderr":           stderr,
-			"exitCode":         strconv.Itoa(exitCode),
-		})
-		if err != nil {
-			agent.logger.Error("Failed to marshal tool response", zap.Error(err))
-			return false
-		}
-
-		toolResponse = string(jsonBuffer)
+	switch toolCall.Function.Name {
+	case tools.BashToolDefinition.Function.Name:
+		// bash
+		toolResponse = tools.BashTool(agent.runner, agent.logger, params)
+	case tools.ViewFileToolDefinition.Function.Name:
+		// view_file
+		toolResponse = tools.ViewFileTool(agent.runner, agent.logger, params)
+	case tools.ViewDirectoryToolDefinition.Function.Name:
+		// view_directory
+		toolResponse = tools.ViewDirectoryTool(agent.runner, agent.logger, params)
 	}
 
 	agent.messages = append(agent.messages, openai.ChatCompletionMessage{

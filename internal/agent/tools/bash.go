@@ -3,6 +3,7 @@ package tools
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -31,7 +32,13 @@ var BashToolDefinition = openai.Tool{
 	},
 }
 
-func BashTool(runner *interp.Runner, logger *zap.Logger, command string) (string, string, int, bool) {
+func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) string {
+	command, ok := params["command"].(string)
+	if !ok {
+		logger.Error("The bash tool failed to parse parameter 'command'")
+		return failedToolResponse("The bash tool failed to parse parameter 'command'")
+	}
+
 	var prog *syntax.Stmt
 	err := syntax.NewParser().Stmts(strings.NewReader(command), func(stmt *syntax.Stmt) bool {
 		prog = stmt
@@ -39,11 +46,11 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, command string) (string
 	})
 	if err != nil {
 		logger.Error("LLM bash tool received invalid command", zap.Error(err))
-		return "", fmt.Sprintf("`%s` is not a valid bash command: %s", command, err), -1, false
+		return failedToolResponse(fmt.Sprintf("`%s` is not a valid bash command: %s", command, err))
 	}
 
 	prompt :=
-		gline.LIGHT_YELLOW + "gsh is requesting to run the following command: " + gline.SAVE_CURSOR + "\n" +
+		gline.LIGHT_YELLOW + "Do I have your permission to run the following command? " + gline.SAVE_CURSOR + "\n" +
 			gline.RESET_COLOR + gline.RESET_CURSOR_COLUMN + command +
 			gline.RESTORE_CURSOR + gline.LIGHT_YELLOW + "(y/N) " + gline.RESET_COLOR
 
@@ -52,14 +59,14 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, command string) (string
 	line, err := gline.NextLine(prompt, runner.Vars["PWD"].String(), nil, logger, *options)
 	if err != nil {
 		logger.Error("error reading user confirmation for bash tool", zap.Error(err))
-		return "", fmt.Sprintf("Error reading user confirmation: %s", err), -1, false
+		return failedToolResponse(fmt.Sprintf("Error reading user confirmation: %s", err))
 	}
 
 	fmt.Print(gline.CLEAR_AFTER_CURSOR)
 	fmt.Println(command)
 
 	if strings.ToLower(line) != "y" {
-		return "", "User refused to run the command", -1, false
+		return failedToolResponse("User refused to run the command")
 	}
 
 	outBuf := &bytes.Buffer{}
@@ -71,10 +78,30 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, command string) (string
 	defer interp.StdIO(os.Stdin, os.Stdout, os.Stderr)(runner)
 
 	err = runner.Run(context.Background(), prog)
+
+	exitCode := -1
 	if err != nil {
-		exitCode, _ := interp.IsExitStatus(err)
-		return outBuf.String(), errBuf.String(), int(exitCode), true
+		status, ok := interp.IsExitStatus(err)
+		if ok {
+			exitCode = int(status)
+		} else {
+			return failedToolResponse(fmt.Sprintf("Error running command: %s", err))
+		}
 	} else {
-		return outBuf.String(), errBuf.String(), 0, true
+		exitCode = 0
 	}
+	stdout := outBuf.String()
+	stderr := errBuf.String()
+
+	jsonBuffer, err := json.Marshal(map[string]any{
+		"stdout":   stdout,
+		"stderr":   stderr,
+		"exitCode": exitCode,
+	})
+	if err != nil {
+		logger.Error("Failed to marshal tool response", zap.Error(err))
+		return failedToolResponse(fmt.Sprintf("Failed to marshal tool response: %s", err))
+	}
+
+	return string(jsonBuffer)
 }
