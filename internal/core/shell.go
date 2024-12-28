@@ -10,6 +10,7 @@ import (
 
 	"github.com/atinylittleshell/gsh/internal/agent"
 	"github.com/atinylittleshell/gsh/internal/history"
+	"github.com/atinylittleshell/gsh/internal/predict"
 	"github.com/atinylittleshell/gsh/pkg/gline"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -21,7 +22,7 @@ const (
 )
 
 func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
-	predictor := NewLLMPredictor(runner, historyManager, logger)
+	predictor := predict.NewLLMPredictor(runner, historyManager, logger)
 	agent := agent.NewAgent(runner, logger)
 
 	commandIndex := 0

@@ -1,9 +1,9 @@
 function GSH_UPDATE_PROMPT() {
-  export GSH_PROMPT="$(starship prompt)"
+  GSH_PROMPT="$(starship prompt)"
 }
 
-export STARSHIP_SHELL="gsh"
-export STARSHIP_SESSION_KEY=$(starship session)
-export STARSHIP_START_TIME="$(starship time)"
+STARSHIP_SHELL="gsh"
+STARSHIP_SESSION_KEY=$(starship session)
+STARSHIP_START_TIME="$(starship time)"
 
-export GSH_PROMPT="$(starship prompt)"
+GSH_PROMPT="$(starship prompt)"
