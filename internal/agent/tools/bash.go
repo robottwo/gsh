@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/utils"
-	"github.com/atinylittleshell/gsh/pkg/gline"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -49,24 +48,8 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) 
 		return failedToolResponse(fmt.Sprintf("`%s` is not a valid bash command: %s", command, err))
 	}
 
-	prompt :=
-		gline.LIGHT_YELLOW + "Do I have your permission to run the following command? " + gline.SAVE_CURSOR + "\n" +
-			gline.RESET_COLOR + gline.RESET_CURSOR_COLUMN + command +
-			gline.RESTORE_CURSOR + gline.LIGHT_YELLOW + "(y/N) " + gline.RESET_COLOR
-
-	options := gline.NewOptions()
-
-	line, err := gline.NextLine(prompt, runner.Vars["PWD"].String(), nil, logger, *options)
-	if err != nil {
-		logger.Error("error reading user confirmation for bash tool", zap.Error(err))
-		return failedToolResponse(fmt.Sprintf("Error reading user confirmation: %s", err))
-	}
-
-	fmt.Print(gline.CLEAR_AFTER_CURSOR)
-	fmt.Println(command)
-
-	if strings.ToLower(line) != "y" {
-		return failedToolResponse("User refused to run the command")
+	if !userConfirmation(runner, logger, "Do I have your permission to run the following command?", command) {
+		return failedToolResponse("User declined this request")
 	}
 
 	outBuf := &bytes.Buffer{}

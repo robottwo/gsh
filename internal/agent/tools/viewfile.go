@@ -60,7 +60,8 @@ func ViewFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 	}
 	defer file.Close()
 
-	printToolMessage(fmt.Sprintf("I'm reading a file: %s", path))
+	printToolMessage("I'm reading the following file:")
+	fmt.Println(path)
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, file)

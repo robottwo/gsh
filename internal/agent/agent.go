@@ -96,6 +96,7 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 						tools.BashToolDefinition,
 						tools.ViewFileToolDefinition,
 						tools.ViewDirectoryToolDefinition,
+						tools.EditFileToolDefinition,
 					},
 					Stream: true,
 				},
