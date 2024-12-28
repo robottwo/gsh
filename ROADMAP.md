@@ -2,20 +2,23 @@
 
 # Core Features
 
-- chat agent
+- improve agent rag (cwd, git dir, git status)
+- improve auto complete RAG (cwd, git dir, git status)
+- failed command handling
+- auto prune agent messages
 - history prev/next
 - implement all bash keybinds
-- improve auto complete RAG (git etc)
-- failed command handling
-- non-ollama providers
 
 # Enhancements
 
 - login shell
+- allow colors
 - keybind configuration
 - multiline input
+- persist agent message history
 - syntax highlighting
 - richer starship integration
+- readme rag
 
 # Release Readiness
 

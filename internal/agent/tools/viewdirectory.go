@@ -57,16 +57,18 @@ func walkDir(logger *zap.Logger, writer io.StringWriter, dir string, depth int) 
 		return
 	}
 
-	// Print each entry, and if it's a directory, recurse into it (unless at depth 2).
+	// Print each entry, and if it's a directory, recurse into it (unless at max depth).
 	for _, entry := range entries {
 		fullPath := filepath.Join(dir, entry.Name())
 
-		// Print the entry. You could also format the depth with indentation if you like.
-		writer.WriteString(fullPath + "\n")
+		if entry.IsDir() {
+			writer.WriteString(fullPath + string(os.PathSeparator) + "\n")
 
-		// If it's a directory, recurse one level deeper.
-		if entry.IsDir() && depth < MAX_DEPTH {
-			walkDir(logger, writer, fullPath, depth+1)
+			if depth < MAX_DEPTH {
+				walkDir(logger, writer, fullPath, depth+1)
+			}
+		} else {
+			writer.WriteString(fullPath + "\n")
 		}
 	}
 }
