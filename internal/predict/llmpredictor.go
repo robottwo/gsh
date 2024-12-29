@@ -15,6 +15,7 @@ import (
 )
 
 type predictedCommand struct {
+	UserIntent       string `json:"user_intent" jsonschema_description:"Your concise analysis of the user's intent" jsonschema_required:"true"`
 	PredictedCommand string `json:"predicted_command" jsonschema_description:"The full bash command predicted by the model" jsonschema_required:"true"`
 }
 
@@ -83,7 +84,7 @@ You will be given a partial bash command prefix entered by the user, enclosed in
 You are asked to predict what the complete bash command is.
 
 Instructions:
-* Analyze the user's intent based on the context you have
+* Based on the prefix and other context, analyze the user's potential intent
 * Your prediction must start with the partial command as a prefix
 * Your prediction must be a valid, single-line, complete bash command`
 

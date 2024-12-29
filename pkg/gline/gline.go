@@ -213,6 +213,7 @@ func (g *glineContext) readCommand() (string, error) {
 func (g *glineContext) predictInput() {
 	if len(g.userInput) == 0 || g.predictor == nil {
 		g.predictedInput = ""
+		g.redrawLine()
 		return
 	}
 
