@@ -60,8 +60,12 @@ func NewLLMPredictor(
 		temperature = 0.1
 	}
 
+	var headers map[string]string
+	json.Unmarshal([]byte(runner.Vars["GSH_SLOW_MODEL_HEADERS"].String()), &headers)
+
 	llmClientConfig := openai.DefaultConfig(apiKey)
 	llmClientConfig.BaseURL = baseURL
+	llmClientConfig.HTTPClient = utils.NewLLMHttpClient(headers)
 
 	llmClient := openai.NewClientWithConfig(llmClientConfig)
 	return &LLMPredictor{

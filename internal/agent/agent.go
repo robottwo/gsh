@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/atinylittleshell/gsh/internal/agent/tools"
+	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -41,8 +42,12 @@ func NewAgent(runner *interp.Runner, logger *zap.Logger) *Agent {
 		temperature = 0.1
 	}
 
+	var headers map[string]string
+	json.Unmarshal([]byte(runner.Vars["GSH_SLOW_MODEL_HEADERS"].String()), &headers)
+
 	llmClientConfig := openai.DefaultConfig(apiKey)
 	llmClientConfig.BaseURL = baseURL
+	llmClientConfig.HTTPClient = utils.NewLLMHttpClient(headers)
 
 	llmClient := openai.NewClientWithConfig(llmClientConfig)
 
