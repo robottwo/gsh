@@ -72,7 +72,7 @@ func NextLine(prompt string, directory string, predictor Predictor, logger *zap.
 		predictedInput: "",
 		stateId:        atomic.Int64{},
 	}
-	g.generatePredictedInputDebounced = debounce.DebounceWithParam(200*time.Millisecond, func(input predictionInput) {
+	g.generatePredictedInputDebounced = debounce.DebounceWithParam(300*time.Millisecond, func(input predictionInput) {
 		g.generatePredictedInput(input)
 	})
 
@@ -217,7 +217,7 @@ func (g *glineContext) predictInput() {
 	}
 
 	if strings.HasPrefix(g.predictedInput, g.userInput) {
-		g.logger.Debug("gline existing predicted input already starts with user input")
+		g.logger.Debug("gline existing predicted input already starts with user input", zap.String("userInput", g.userInput))
 		return
 	}
 

@@ -22,9 +22,9 @@ var BashToolDefinition = openai.Tool{
 		Name: "bash",
 		Description: `Run commands in a bash shell.
 * When invoking this tool, the contents of the \"command\" parameter does NOT need to be XML-escaped.
+* Avoid combining multiple bash commands into one using && or ;. Instead, run each command separately.
 * You don't have access to the internet via this tool.
-* State is persistent across command calls and discussions with the user.
-* To inspect a particular line range of a file, e.g. lines 10-25, try 'sed -n 10,25p /path/to/the/file'.`,
+* State is persistent across command calls and discussions with the user.`,
 		Parameters: utils.GenerateJsonSchema(struct {
 			Command string `json:"command" jsonschema_description:"The bash command to run" jsonschema_required:"true"`
 		}{}),

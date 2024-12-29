@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
-	"github.com/atinylittleshell/gsh/internal/history"
+	"github.com/atinylittleshell/gsh/internal/rag"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -14,7 +15,7 @@ import (
 )
 
 type predictedCommand struct {
-	FullCommand string `json:"full_command" jsonschema_description:"The full bash command predicted by the model" jsonschema_required:"true"`
+	PredictedCommand string `json:"predicted_command" jsonschema_description:"The full bash command predicted by the model" jsonschema_required:"true"`
 }
 
 var PREDICTED_COMMAND_SCHEMA = utils.GenerateJsonSchema(&predictedCommand{})
@@ -22,22 +23,25 @@ var PREDICTED_COMMAND_SCHEMA = utils.GenerateJsonSchema(&predictedCommand{})
 var PREDICTED_COMMAND_SCHEMA_PARAM = openai.ChatCompletionResponseFormat{
 	Type: openai.ChatCompletionResponseFormatTypeJSONSchema,
 	JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
-		Name:        "predicted_command",
-		Description: "The predicted bash command",
-		Schema:      PREDICTED_COMMAND_SCHEMA,
-		Strict:      true,
+		Name:   "prediction",
+		Schema: PREDICTED_COMMAND_SCHEMA,
+		Strict: true,
 	},
 }
 
 type LLMPredictor struct {
-	llmClient      *openai.Client
-	historyManager *history.HistoryManager
-	logger         *zap.Logger
-	modelId        string
-	temperature    float32
+	llmClient       *openai.Client
+	contextProvider *rag.ContextProvider
+	logger          *zap.Logger
+	modelId         string
+	temperature     float32
 }
 
-func NewLLMPredictor(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) *LLMPredictor {
+func NewLLMPredictor(
+	runner *interp.Runner,
+	contextProvider *rag.ContextProvider,
+	logger *zap.Logger,
+) *LLMPredictor {
 	apiKey := runner.Vars["GSH_FAST_MODEL_API_KEY"].String()
 	if apiKey == "" {
 		apiKey = "ollama"
@@ -60,47 +64,42 @@ func NewLLMPredictor(runner *interp.Runner, historyManager *history.HistoryManag
 
 	llmClient := openai.NewClientWithConfig(llmClientConfig)
 	return &LLMPredictor{
-		llmClient:      llmClient,
-		historyManager: historyManager,
-		logger:         logger,
-		modelId:        modelId,
-		temperature:    float32(temperature),
+		llmClient:       llmClient,
+		contextProvider: contextProvider,
+		logger:          logger,
+		modelId:         modelId,
+		temperature:     float32(temperature),
 	}
 }
 
 func (p *LLMPredictor) Predict(input string, directory string) (string, error) {
-	historyEntries, err := p.historyManager.GetRecentEntries(10)
-	if err != nil {
-		return "", err
+	if strings.HasPrefix(input, "#") {
+		// Don't do prediction for agent chat messages
+		return "", nil
 	}
 
-	var commandHistory string
-	for _, entry := range historyEntries {
-		commandHistory += fmt.Sprintf("%s: %s\n", entry.Directory, entry.Command)
-	}
+	systemMessage := `You are gsh, an intelligent shell program.
+You will be given a partial bash command prefix entered by the user, enclosed in <prefix> tags.
+You are asked to predict what the complete bash command is.
 
-	p.logger.Info("predicting with history", zap.String("commandHistory", commandHistory))
+Instructions:
+* Analyze the user's intent based on the context you have
+* Your prediction must start with the partial command as a prefix
+* Your prediction must be a valid, single-line, complete bash command`
 
-	llmPrompt := fmt.Sprintf(
-		`
-You are gsh, an intelligent shell program.
-You are asked to predict a complete bash command based on a partial one from the user.
+	userMessage := fmt.Sprintf(
+		`<prefix>%s</prefix>
 
-<command_history>
-%s
-</command_history>
-
-<current_directory>
-%s
-</current_directory>
-
-<partial_command>
-%s
-</partial_command>
-`,
-		commandHistory,
-		directory,
+Additional context to be aware of:
+%s`,
 		input,
+		p.contextProvider.GetContext(),
+	)
+
+	p.logger.Debug(
+		"predicting using LLM",
+		zap.String("system", systemMessage),
+		zap.String("user", userMessage),
 	)
 
 	chatCompletion, err := p.llmClient.CreateChatCompletion(context.TODO(), openai.ChatCompletionRequest{
@@ -108,8 +107,12 @@ You are asked to predict a complete bash command based on a partial one from the
 		Temperature: p.temperature,
 		Messages: []openai.ChatCompletionMessage{
 			{
+				Role:    "system",
+				Content: systemMessage,
+			},
+			{
 				Role:    "user",
-				Content: llmPrompt,
+				Content: userMessage,
 			},
 		},
 		ResponseFormat: &PREDICTED_COMMAND_SCHEMA_PARAM,
@@ -119,10 +122,13 @@ You are asked to predict a complete bash command based on a partial one from the
 		return "", err
 	}
 
-	p.logger.Info("predicting using LLM", zap.String("prompt", llmPrompt))
+	prediction := predictedCommand{}
+	_ = json.Unmarshal([]byte(chatCompletion.Choices[0].Message.Content), &prediction)
 
-	predictedCommand := predictedCommand{}
-	_ = json.Unmarshal([]byte(chatCompletion.Choices[0].Message.Content), &predictedCommand)
+	p.logger.Debug(
+		"LLM prediction response",
+		zap.Any("response", prediction),
+	)
 
-	return predictedCommand.FullCommand, nil
+	return prediction.PredictedCommand, nil
 }

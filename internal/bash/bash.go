@@ -1,15 +1,17 @@
 package bash
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
+	"strings"
 
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
 )
 
-func RunBashCommandFromReader(runner *interp.Runner, reader io.Reader, name string) error {
+func RunBashScriptFromReader(runner *interp.Runner, reader io.Reader, name string) error {
 	prog, err := syntax.NewParser().Parse(reader, name)
 	if err != nil {
 		return err
@@ -18,11 +20,37 @@ func RunBashCommandFromReader(runner *interp.Runner, reader io.Reader, name stri
 	return runner.Run(ctx, prog)
 }
 
-func RunBashScript(runner *interp.Runner, filePath string) error {
+func RunBashScriptFromFile(runner *interp.Runner, filePath string) error {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return RunBashCommandFromReader(runner, f, filePath)
+	return RunBashScriptFromReader(runner, f, filePath)
+}
+
+func RunBashCommandInSubShell(runner *interp.Runner, command string) (string, string, error) {
+	subShell := runner.Subshell()
+
+	outBuf := &bytes.Buffer{}
+	outWriter := io.Writer(outBuf)
+	errBuf := &bytes.Buffer{}
+	errWriter := io.Writer(errBuf)
+	interp.StdIO(nil, outWriter, errWriter)(subShell)
+
+	var prog *syntax.Stmt
+	err := syntax.NewParser().Stmts(strings.NewReader(command), func(stmt *syntax.Stmt) bool {
+		prog = stmt
+		return false
+	})
+	if err != nil {
+		return "", "", err
+	}
+
+	err = subShell.Run(context.Background(), prog)
+	if err != nil {
+		return "", "", err
+	}
+
+	return outBuf.String(), errBuf.String(), nil
 }

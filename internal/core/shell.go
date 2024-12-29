@@ -1,16 +1,16 @@
 package core
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/agent"
 	"github.com/atinylittleshell/gsh/internal/history"
 	"github.com/atinylittleshell/gsh/internal/predict"
+	"github.com/atinylittleshell/gsh/internal/rag"
+	"github.com/atinylittleshell/gsh/internal/rag/retrievers"
 	"github.com/atinylittleshell/gsh/pkg/gline"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -22,7 +22,15 @@ const (
 )
 
 func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
-	predictor := predict.NewLLMPredictor(runner, historyManager, logger)
+	contextProvider := &rag.ContextProvider{
+		Logger: logger,
+		Retrievers: []rag.ContextRetriever{
+			retrievers.WorkingDirectoryContextRetriever{Runner: runner},
+			retrievers.GitContextRetriever{Runner: runner},
+			retrievers.HistoryContextRetriever{Runner: runner, HistoryManager: historyManager},
+		},
+	}
+	predictor := predict.NewLLMPredictor(runner, contextProvider, logger)
 	agent := agent.NewAgent(runner, logger)
 
 	commandIndex := 0
@@ -47,7 +55,10 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 
 		// Handle agent chat
 		if strings.HasPrefix(line, "#") {
-			chatMessage := line[1:]
+			chatMessage := fmt.Sprintf(
+				"%s\n\nContext:\n%s",
+				line[1:],
+				contextProvider.GetContext())
 			chatChannel, err := agent.Chat(chatMessage)
 			if err != nil {
 				logger.Error("error chatting with agent", zap.Error(err))
@@ -60,6 +71,11 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 			}
 			fmt.Print(gline.RESET_COLOR)
 
+			continue
+		}
+
+		// Handle empty input
+		if strings.TrimSpace(line) == "" {
 			continue
 		}
 
@@ -86,27 +102,29 @@ func executeCommand(input string, historyManager *history.HistoryManager, runner
 		prog = stmt
 		return false
 	})
+	if prog == nil {
+		logger.Error("invalid command", zap.String("command", input))
+		return false, nil
+	}
 	if err != nil {
-		logger.Error("error parsing command", zap.Error(err))
+		logger.Error("error parsing command", zap.String("command", input), zap.Error(err))
 		return false, err
 	}
 
 	historyEntry, _ := historyManager.StartCommand(input, runner.Vars["PWD"].String())
 
-	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	multiOut := io.MultiWriter(os.Stdout, outBuf)
-	multiErr := io.MultiWriter(os.Stderr, errBuf)
-
-	interp.StdIO(os.Stdin, multiOut, multiErr)(runner)
-	defer interp.StdIO(os.Stdin, os.Stdout, os.Stderr)(runner)
-
 	err = runner.Run(context.Background(), prog)
 	if err != nil {
-		status, _ := interp.IsExitStatus(err)
-		historyManager.FinishCommand(historyEntry, outBuf.String(), errBuf.String(), int(status))
+		var exitCode int
+		status, ok := interp.IsExitStatus(err)
+		if !ok {
+			exitCode = -1
+		} else {
+			exitCode = int(status)
+		}
+		historyManager.FinishCommand(historyEntry, exitCode)
 	} else {
-		historyManager.FinishCommand(historyEntry, outBuf.String(), errBuf.String(), 0)
+		historyManager.FinishCommand(historyEntry, 0)
 	}
 
 	return runner.Exited(), nil

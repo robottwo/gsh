@@ -58,10 +58,11 @@ func NewAgent(runner *interp.Runner, logger *zap.Logger) *Agent {
 				Content: `
 You are gsh, an intelligent shell program. You answer users' questions or help them complete tasks.
 * Whenever possible, prefer using the bash tool to complete tasks for users rather than telling them how to do it themselves.
+* You do not need to complete the task with a single command. You are able to run multiple commands in sequence.
 * The user is able to see the output of any bash tool you run so there's no need to repeat that in your response. 
 * If you believe the output from the bash commands is sufficient for fulfilling the user's request, end the conversation by calling the "done" tool.
 * If you see a tool call response enclosed in <gsh_tool_call_error> tags, that means the tool call failed; otherwise, the tool call succeeded and whatever you see in the response is the actual result from the tool.
-        `,
+`,
 			},
 		},
 	}
@@ -123,7 +124,7 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 				}
 
 				msg := response.Choices[0]
-				agent.logger.Debug("LLM chat response", zap.Any("message", msg))
+				agent.logger.Debug("LLM chat response", zap.Any("messages", agent.messages), zap.Any("response", msg))
 
 				if len(msg.Delta.ToolCalls) > 0 {
 					currentToolCall.ID += msg.Delta.ToolCalls[0].ID
@@ -171,7 +172,7 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 
 	var params map[string]any
 	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &params); err != nil {
-		agent.logger.Error("Failed to parse function call arguments", zap.Error(err))
+		agent.logger.Error("Failed to parse function call arguments", zap.Error(err), zap.String("arguments", toolCall.Function.Arguments))
 		return false
 	}
 

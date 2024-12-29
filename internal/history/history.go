@@ -22,8 +22,6 @@ type HistoryEntry struct {
 
 	Command   string
 	Directory string
-	Stdout    sql.NullString
-	Stderr    sql.NullString
 	ExitCode  sql.NullInt32
 }
 
@@ -59,9 +57,7 @@ func (historyManager *HistoryManager) StartCommand(command string, directory str
 	return &entry, nil
 }
 
-func (historyManager *HistoryManager) FinishCommand(entry *HistoryEntry, stdout, stderr string, exitCode int) (*HistoryEntry, error) {
-	entry.Stdout = sql.NullString{String: stdout, Valid: stdout != ""}
-	entry.Stderr = sql.NullString{String: stderr, Valid: stderr != ""}
+func (historyManager *HistoryManager) FinishCommand(entry *HistoryEntry, exitCode int) (*HistoryEntry, error) {
 	entry.ExitCode = sql.NullInt32{Int32: int32(exitCode), Valid: true}
 
 	result := historyManager.db.Save(entry)

@@ -1,0 +1,41 @@
+package retrievers
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/atinylittleshell/gsh/internal/history"
+	"mvdan.cc/sh/v3/interp"
+)
+
+type HistoryContextRetriever struct {
+	Runner         *interp.Runner
+	HistoryManager *history.HistoryManager
+}
+
+func (r HistoryContextRetriever) GetContext() (string, error) {
+	historyEntries, err := r.HistoryManager.GetRecentEntries(30)
+	if err != nil {
+		return "", err
+	}
+
+	var commandHistory string
+	for _, entry := range historyEntries {
+		commandHistory += fmt.Sprintf(`<entry>
+  <time>%s</time>
+  <dir>%s</dir>
+  <cmd>%s</cmd>
+  <exit_code>%d</exit_code>
+</entry>
+`,
+			entry.CreatedAt.Format("2006-01-02T15:04:05"),
+			entry.Directory,
+			entry.Command,
+			entry.ExitCode.Int32,
+		)
+	}
+
+	return fmt.Sprintf(`<recent_commands>
+%s
+</recent_commands>`, strings.TrimSpace(commandHistory)), nil
+}

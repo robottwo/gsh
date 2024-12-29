@@ -65,7 +65,7 @@ func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *
 
 	// gsh -c "echo hello"
 	if *command != "" {
-		return bash.RunBashCommandFromReader(runner, strings.NewReader(*command), "")
+		return bash.RunBashScriptFromReader(runner, strings.NewReader(*command), "")
 	}
 
 	// gsh -lh 5
@@ -77,8 +77,6 @@ func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *
 
 		for _, entry := range entries {
 			fmt.Println(entry.Command)
-			fmt.Print(entry.Stdout.String)
-			fmt.Print(entry.Stderr.String)
 		}
 
 		return nil
@@ -99,12 +97,12 @@ func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *
 			return core.RunInteractiveShell(runner, historyManager, logger)
 		}
 
-		return bash.RunBashCommandFromReader(runner, os.Stdin, "")
+		return bash.RunBashScriptFromReader(runner, os.Stdin, "")
 	}
 
 	// gsh script.sh
 	for _, filePath := range flag.Args() {
-		if err := bash.RunBashScript(runner, filePath); err != nil {
+		if err := bash.RunBashScriptFromFile(runner, filePath); err != nil {
 			return err
 		}
 	}
@@ -156,7 +154,7 @@ func initializeRunner() (*interp.Runner, error) {
 	}
 
 	// load default vars
-	if err := bash.RunBashCommandFromReader(runner, bytes.NewReader(DEFAULT_VARS), "DEFAULT_VARS"); err != nil {
+	if err := bash.RunBashScriptFromReader(runner, bytes.NewReader(DEFAULT_VARS), "DEFAULT_VARS"); err != nil {
 		panic(err)
 	}
 
@@ -167,7 +165,7 @@ func initializeRunner() (*interp.Runner, error) {
 
 	for _, configFile := range configFiles {
 		if _, err := os.Stat(configFile); err == nil {
-			if err := bash.RunBashScript(runner, configFile); err != nil {
+			if err := bash.RunBashScriptFromFile(runner, configFile); err != nil {
 				fmt.Fprintf(os.Stderr, "failed to load %s: %v\n", configFile, err)
 			}
 		}
