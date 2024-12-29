@@ -72,7 +72,7 @@ func NextLine(prompt string, directory string, predictor Predictor, logger *zap.
 		predictedInput: "",
 		stateId:        atomic.Int64{},
 	}
-	g.generatePredictedInputDebounced = debounce.DebounceWithParam(300*time.Millisecond, func(input predictionInput) {
+	g.generatePredictedInputDebounced = debounce.DebounceWithParam(200*time.Millisecond, func(input predictionInput) {
 		g.generatePredictedInput(input)
 	})
 
@@ -122,6 +122,12 @@ func (g *glineContext) redrawLine() error {
 func (g *glineContext) readCommand() (string, error) {
 	g.userInput = ""
 	g.predictedInput = ""
+
+	g.generatePredictedInput(predictionInput{
+		userInput: "",
+		stateId:   g.stateId.Load(),
+		directory: g.directory,
+	})
 
 	reader := NewTerminalReader(os.Stdin, g.logger)
 

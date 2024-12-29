@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/rag"
@@ -14,23 +13,7 @@ import (
 	"mvdan.cc/sh/v3/interp"
 )
 
-type predictedCommand struct {
-	UserIntent       string `json:"user_intent" jsonschema_description:"Your concise analysis of the user's intent" jsonschema_required:"true"`
-	PredictedCommand string `json:"predicted_command" jsonschema_description:"The full bash command predicted by the model" jsonschema_required:"true"`
-}
-
-var PREDICTED_COMMAND_SCHEMA = utils.GenerateJsonSchema(&predictedCommand{})
-
-var PREDICTED_COMMAND_SCHEMA_PARAM = openai.ChatCompletionResponseFormat{
-	Type: openai.ChatCompletionResponseFormatTypeJSONSchema,
-	JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
-		Name:   "prediction",
-		Schema: PREDICTED_COMMAND_SCHEMA,
-		Strict: true,
-	},
-}
-
-type LLMPredictor struct {
+type LLMPrefixPredictor struct {
 	llmClient       *openai.Client
 	contextProvider *rag.ContextProvider
 	logger          *zap.Logger
@@ -38,37 +21,13 @@ type LLMPredictor struct {
 	temperature     float32
 }
 
-func NewLLMPredictor(
+func NewLLMPrefixPredictor(
 	runner *interp.Runner,
 	contextProvider *rag.ContextProvider,
 	logger *zap.Logger,
-) *LLMPredictor {
-	apiKey := runner.Vars["GSH_FAST_MODEL_API_KEY"].String()
-	if apiKey == "" {
-		apiKey = "ollama"
-	}
-	baseURL := runner.Vars["GSH_FAST_MODEL_BASE_URL"].String()
-	if baseURL == "" {
-		baseURL = "http://localhost:11434/v1/"
-	}
-	modelId := runner.Vars["GSH_FAST_MODEL_ID"].String()
-	if modelId == "" {
-		modelId = "qwen2.5"
-	}
-	temperature, err := strconv.ParseFloat(runner.Vars["GSH_FAST_MODEL_TEMPERATURE"].String(), 32)
-	if err != nil {
-		temperature = 0.1
-	}
-
-	var headers map[string]string
-	json.Unmarshal([]byte(runner.Vars["GSH_SLOW_MODEL_HEADERS"].String()), &headers)
-
-	llmClientConfig := openai.DefaultConfig(apiKey)
-	llmClientConfig.BaseURL = baseURL
-	llmClientConfig.HTTPClient = utils.NewLLMHttpClient(headers)
-
-	llmClient := openai.NewClientWithConfig(llmClientConfig)
-	return &LLMPredictor{
+) *LLMPrefixPredictor {
+	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.FastModel)
+	return &LLMPrefixPredictor{
 		llmClient:       llmClient,
 		contextProvider: contextProvider,
 		logger:          logger,
@@ -77,7 +36,7 @@ func NewLLMPredictor(
 	}
 }
 
-func (p *LLMPredictor) Predict(input string, directory string) (string, error) {
+func (p *LLMPrefixPredictor) Predict(input string, directory string) (string, error) {
 	if strings.HasPrefix(input, "#") {
 		// Don't do prediction for agent chat messages
 		return "", nil

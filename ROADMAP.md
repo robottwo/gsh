@@ -1,6 +1,7 @@
 # Bugs
 
 - better handling of tool call parsing errors
+- nvm bash completion script not working
 
 # Core Features
 
@@ -9,11 +10,11 @@
 - auto prune agent messages
 - history prev/next
 - implement all bash keybinds
+- bash completion
 
 # Enhancements
 
 - login shell
-- allow colors
 - keybind configuration
 - multiline input
 - better rendering of agent loading state

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strconv"
 
 	"github.com/atinylittleshell/gsh/internal/agent/tools"
 	"github.com/atinylittleshell/gsh/internal/utils"
@@ -20,36 +19,12 @@ type Agent struct {
 	llmClient *openai.Client
 
 	modelId     string
-	temperature float64
+	temperature float32
 	messages    []openai.ChatCompletionMessage
 }
 
 func NewAgent(runner *interp.Runner, logger *zap.Logger) *Agent {
-	apiKey := runner.Vars["GSH_SLOW_MODEL_API_KEY"].String()
-	if apiKey == "" {
-		apiKey = "ollama"
-	}
-	baseURL := runner.Vars["GSH_SLOW_MODEL_BASE_URL"].String()
-	if baseURL == "" {
-		baseURL = "http://localhost:11434/v1/"
-	}
-	modelId := runner.Vars["GSH_SLOW_MODEL_ID"].String()
-	if modelId == "" {
-		modelId = "qwen2.5:32b"
-	}
-	temperature, err := strconv.ParseFloat(runner.Vars["GSH_SLOW_MODEL_TEMPERATURE"].String(), 64)
-	if err != nil {
-		temperature = 0.1
-	}
-
-	var headers map[string]string
-	json.Unmarshal([]byte(runner.Vars["GSH_SLOW_MODEL_HEADERS"].String()), &headers)
-
-	llmClientConfig := openai.DefaultConfig(apiKey)
-	llmClientConfig.BaseURL = baseURL
-	llmClientConfig.HTTPClient = utils.NewLLMHttpClient(headers)
-
-	llmClient := openai.NewClientWithConfig(llmClientConfig)
+	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.SlowModel)
 
 	return &Agent{
 		runner:      runner,
@@ -95,8 +70,9 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 			stream, err := agent.llmClient.CreateChatCompletionStream(
 				context.Background(),
 				openai.ChatCompletionRequest{
-					Model:    agent.modelId,
-					Messages: agent.messages,
+					Model:       agent.modelId,
+					Messages:    agent.messages,
+					Temperature: agent.temperature,
 					Tools: []openai.Tool{
 						tools.DoneToolDefinition,
 						tools.BashToolDefinition,
