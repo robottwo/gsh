@@ -5,7 +5,6 @@
 
 # Core Features
 
-- predict null state
 - failed command handling
 - auto prune agent messages
 - history prev/next

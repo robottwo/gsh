@@ -92,7 +92,9 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 
 			currentMessageRole := ""
 			currentMessageContent := ""
-			currentToolCall := openai.ToolCall{}
+			currentToolCall := openai.ToolCall{
+				Type: "function",
+			}
 
 			for {
 				response, err := stream.Recv()
@@ -121,15 +123,21 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 				}
 
 				if msg.FinishReason == "stop" || msg.FinishReason == "tool_calls" || msg.FinishReason == "function_call" {
+					hasToolCall := currentToolCall.ID != "" && currentToolCall.Function.Name != ""
+					toolCalls := []openai.ToolCall{}
+					if hasToolCall {
+						toolCalls = append(toolCalls, currentToolCall)
+					}
+					agent.messages = append(agent.messages, openai.ChatCompletionMessage{
+						Role:      currentMessageRole,
+						Content:   currentMessageContent,
+						ToolCalls: toolCalls,
+					})
+
 					if currentMessageContent != "" {
-						agent.messages = append(agent.messages, openai.ChatCompletionMessage{
-							Role:    currentMessageRole,
-							Content: currentMessageContent,
-						})
 						fmt.Println()
 					}
 
-					hasToolCall := currentToolCall.ID != "" && currentToolCall.Function.Name != ""
 					if hasToolCall {
 						continueSession = agent.handleToolCall(currentToolCall)
 					}
@@ -178,8 +186,9 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 	}
 
 	agent.messages = append(agent.messages, openai.ChatCompletionMessage{
-		Role:    "tool",
-		Content: toolResponse,
+		Role:       "tool",
+		ToolCallID: toolCall.ID,
+		Content:    toolResponse,
 	})
 	return true
 }

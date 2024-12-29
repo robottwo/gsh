@@ -30,7 +30,7 @@ type glineContext struct {
 	predictedInput string
 	stateId        atomic.Int64
 
-	generatePredictedInputDebounced func(input predictionInput)
+	generatePredictionDebounced func(input predictionInput)
 }
 
 type predictionInput struct {
@@ -72,8 +72,8 @@ func NextLine(prompt string, directory string, predictor Predictor, logger *zap.
 		predictedInput: "",
 		stateId:        atomic.Int64{},
 	}
-	g.generatePredictedInputDebounced = debounce.DebounceWithParam(200*time.Millisecond, func(input predictionInput) {
-		g.generatePredictedInput(input)
+	g.generatePredictionDebounced = debounce.DebounceWithParam(200*time.Millisecond, func(input predictionInput) {
+		g.generatePrediction(input)
 	})
 
 	g.redrawLine()
@@ -123,7 +123,7 @@ func (g *glineContext) readCommand() (string, error) {
 	g.userInput = ""
 	g.predictedInput = ""
 
-	g.generatePredictedInput(predictionInput{
+	g.generatePrediction(predictionInput{
 		userInput: "",
 		stateId:   g.stateId.Load(),
 		directory: g.directory,
@@ -212,18 +212,12 @@ func (g *glineContext) readCommand() (string, error) {
 		}
 
 		g.redrawLine()
-		g.predictInput()
+		g.predictOnUserInput()
 	}
 }
 
-func (g *glineContext) predictInput() {
-	if len(g.userInput) == 0 || g.predictor == nil {
-		g.predictedInput = ""
-		g.redrawLine()
-		return
-	}
-
-	if strings.HasPrefix(g.predictedInput, g.userInput) {
+func (g *glineContext) predictOnUserInput() {
+	if len(g.userInput) > 0 && strings.HasPrefix(g.predictedInput, g.userInput) {
 		g.logger.Debug("gline existing predicted input already starts with user input", zap.String("userInput", g.userInput))
 		return
 	}
@@ -233,10 +227,14 @@ func (g *glineContext) predictInput() {
 		stateId:   g.stateId.Load(),
 		directory: g.directory,
 	}
-	g.generatePredictedInputDebounced(predictionInput)
+	g.generatePredictionDebounced(predictionInput)
 }
 
-func (g *glineContext) generatePredictedInput(input predictionInput) {
+func (g *glineContext) generatePrediction(input predictionInput) {
+	if g.predictor == nil {
+		return
+	}
+
 	startStateId := input.stateId
 
 	g.logger.Debug("gline predicting input", zap.Int64("stateId", startStateId), zap.String("input", input.userInput))
