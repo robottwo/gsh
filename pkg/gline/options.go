@@ -3,8 +3,7 @@ package gline
 import "github.com/atinylittleshell/gsh/pkg/gline/keys"
 
 type Options struct {
-	ClearScreen bool
-	Keybinds    map[Command][]keys.KeyPress
+	Keybinds map[Command][]keys.KeyPress
 }
 
 type Command int
@@ -24,7 +23,6 @@ const (
 
 func NewOptions() *Options {
 	return &Options{
-		ClearScreen: false,
 		Keybinds: map[Command][]keys.KeyPress{
 			CommandExecute:                       {{Code: keys.KeyEnter}, {Code: keys.KeyM, Ctrl: true}},
 			CommandBackspace:                     {{Code: keys.KeyBackspace}},

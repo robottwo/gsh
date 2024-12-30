@@ -159,11 +159,6 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 }
 
 func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
-	// the "done" tool is a special tool that signals the end of the conversation
-	if toolCall.Function.Name == "done" {
-		return false
-	}
-
 	var params map[string]any
 	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &params); err != nil {
 		agent.logger.Error(fmt.Sprintf("Failed to parse function call arguments: %v", err), zap.String("arguments", toolCall.Function.Arguments))
@@ -174,6 +169,9 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 	toolResponse := fmt.Sprintf("Unknown tool: %s", toolCall.Function.Name)
 
 	switch toolCall.Function.Name {
+	case tools.DoneToolDefinition.Function.Name:
+		// done
+		toolResponse = "ok"
 	case tools.BashToolDefinition.Function.Name:
 		// bash
 		toolResponse = tools.BashTool(agent.runner, agent.logger, params)

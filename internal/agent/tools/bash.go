@@ -48,7 +48,7 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) 
 		return failedToolResponse(fmt.Sprintf("`%s` is not a valid bash command: %s", command, err))
 	}
 
-	if !userConfirmation(runner, logger, "Do I have your permission to run the following command?", command) {
+	if !userConfirmation(logger, "Do I have your permission to run the following command?", command) {
 		return failedToolResponse("User declined this request")
 	}
 

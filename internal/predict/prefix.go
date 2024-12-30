@@ -36,7 +36,7 @@ func NewLLMPrefixPredictor(
 	}
 }
 
-func (p *LLMPrefixPredictor) Predict(input string, directory string) (string, error) {
+func (p *LLMPrefixPredictor) Predict(input string) (string, error) {
 	if strings.HasPrefix(input, "#") {
 		// Don't do prediction for agent chat messages
 		return "", nil

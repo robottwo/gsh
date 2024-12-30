@@ -46,10 +46,9 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 		logger.Debug("prompt updated", zap.String("prompt", prompt))
 
 		options := gline.NewOptions()
-		options.ClearScreen = commandIndex == 0
 
 		// Read input
-		line, err := gline.NextLine(prompt, runner.Vars["PWD"].String(), predictor, logger, *options)
+		line, err := gline.NextLine(prompt, "", predictor, logger, *options)
 		commandIndex++
 
 		logger.Debug("received command", zap.String("line", line))

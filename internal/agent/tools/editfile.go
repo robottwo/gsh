@@ -52,7 +52,7 @@ func EditFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 	}
 	defer file.Close()
 
-	if !userConfirmation(runner, logger, "Do I have your permission to edit the following file?", path) {
+	if !userConfirmation(logger, "Do I have your permission to edit the following file?", path) {
 		return failedToolResponse("User declined this request")
 	}
 

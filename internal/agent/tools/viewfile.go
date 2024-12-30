@@ -34,23 +34,25 @@ func ViewFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 	}
 
 	startLine := -1
-	startLineVal, startLineExists := params["startLine"]
+	startLineVal, startLineExists := params["start_line"]
 	if startLineExists {
-		startLine, ok = startLineVal.(int)
+		startLineFloat, ok := startLineVal.(float64)
 		if !ok {
-			logger.Error("The view_file tool failed to parse parameter 'startLine'")
-			return failedToolResponse("The view_file tool failed to parse parameter 'startLine'")
+			logger.Error("The view_file tool failed to parse parameter 'start_line'")
+			return failedToolResponse("The view_file tool failed to parse parameter 'start_line'")
 		}
+		startLine = int(startLineFloat)
 	}
 
 	endLine := -1
-	endLineVal, endLineExists := params["endLine"]
+	endLineVal, endLineExists := params["end_line"]
 	if endLineExists {
-		endLine, ok = endLineVal.(int)
+		endLineFloat, ok := endLineVal.(float64)
 		if !ok {
-			logger.Error("The view_file tool failed to parse parameter 'endLine'")
-			return failedToolResponse("The view_file tool failed to parse parameter 'endLine'")
+			logger.Error("The view_file tool failed to parse parameter 'end_line'")
+			return failedToolResponse("The view_file tool failed to parse parameter 'end_line'")
 		}
+		endLine = int(endLineFloat)
 	}
 
 	file, err := os.Open(path)
@@ -72,19 +74,19 @@ func ViewFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 
 	lines := strings.Split(buf.String(), "\n")
 	if startLine < 0 {
-		startLine = 0
+		return failedToolResponse("start_line must be greater than or equal to 0")
 	}
 	if startLine > len(lines) {
-		startLine = len(lines)
+		return failedToolResponse("start_line is greater than the number of lines in the file")
 	}
 	if endLine < 0 {
-		endLine = len(lines)
+		return failedToolResponse("end_line must be greater than or equal to 0")
 	}
 	if endLine > len(lines) {
 		endLine = len(lines)
 	}
 	if endLine <= startLine {
-		return failedToolResponse("EndLine must be greater than StartLine")
+		return failedToolResponse("end_line must be greater than start_line")
 	}
 
 	result := strings.Join(lines[startLine:endLine], "\n")

@@ -25,7 +25,7 @@ type glineContext struct {
 
 	prompt         string
 	promptRow      int
-	directory      string
+	preview        string
 	cursorPosition int
 	userInput      string
 	predictedInput string
@@ -36,7 +36,6 @@ type glineContext struct {
 
 type predictionInput struct {
 	userInput string
-	directory string
 	stateId   int64
 }
 
@@ -44,7 +43,7 @@ var WHITE = color.New(color.FgWhite).PrintFunc()
 var GRAY = color.New(color.FgHiBlack).PrintFunc()
 
 // NextLine starts a new prompt and waits for user input
-func NextLine(prompt string, directory string, predictor Predictor, logger *zap.Logger, options Options) (string, error) {
+func NextLine(prompt string, preview string, predictor Predictor, logger *zap.Logger, options Options) (string, error) {
 	// enter raw mode and exit it when done
 	origTTY, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
@@ -52,10 +51,6 @@ func NextLine(prompt string, directory string, predictor Predictor, logger *zap.
 		return "", err
 	}
 	defer term.Restore(int(os.Stdin.Fd()), origTTY)
-
-	if options.ClearScreen {
-		fmt.Print(CLEAR_SCREEN)
-	}
 
 	row, _, err := GetCursorPos()
 	if err != nil {
@@ -70,7 +65,7 @@ func NextLine(prompt string, directory string, predictor Predictor, logger *zap.
 
 		prompt:         prompt,
 		promptRow:      row,
-		directory:      directory,
+		preview:        preview,
 		cursorPosition: 0,
 		userInput:      "",
 		predictedInput: "",
@@ -112,6 +107,12 @@ func (g *glineContext) redrawLine() error {
 		GRAY(g.predictedInput[len(g.userInput):])
 	}
 
+	// Preview
+	if len(g.preview) > 0 {
+		fmt.Println()
+		WHITE(g.preview)
+	}
+
 	// Restore cursor to the saved position
 	fmt.Print(RESTORE_CURSOR)
 
@@ -125,7 +126,6 @@ func (g *glineContext) readCommand() (string, error) {
 	g.generatePrediction(predictionInput{
 		userInput: "",
 		stateId:   g.stateId.Load(),
-		directory: g.directory,
 	})
 
 	reader := NewTerminalReader(os.Stdin, g.logger)
@@ -224,7 +224,6 @@ func (g *glineContext) predictOnUserInput() {
 	predictionInput := predictionInput{
 		userInput: g.userInput,
 		stateId:   g.stateId.Load(),
-		directory: g.directory,
 	}
 	g.generatePredictionDebounced(predictionInput)
 }
@@ -239,7 +238,7 @@ func (g *glineContext) generatePrediction(input predictionInput) {
 	g.logger.Debug("gline predicting input", zap.Int64("stateId", startStateId), zap.String("input", input.userInput))
 
 	go func() {
-		predicted, err := g.predictor.Predict(input.userInput, input.directory)
+		predicted, err := g.predictor.Predict(input.userInput)
 		if err != nil {
 			g.logger.Error("gline prediction failed", zap.Error(err))
 		}

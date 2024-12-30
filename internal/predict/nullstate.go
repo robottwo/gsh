@@ -35,7 +35,7 @@ func NewLLMNullStatePredictor(
 	}
 }
 
-func (p *LLMNullStatePredictor) Predict(input string, directory string) (string, error) {
+func (p *LLMNullStatePredictor) Predict(input string) (string, error) {
 	if input != "" {
 		// this predictor is only for null state
 		return "", nil
