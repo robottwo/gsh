@@ -22,6 +22,7 @@ var DEFAULT_VARS []byte
 var command = flag.String("c", "", "command to run")
 var listHistory = flag.Int("lh", 0, "list the most N history entries")
 var resetHistory = flag.Bool("rh", false, "reset the history")
+var loginShell = flag.Bool("l", false, "run as a login shell")
 
 func main() {
 	// Initialize the shell interpreter
@@ -161,6 +162,12 @@ func initializeRunner() (*interp.Runner, error) {
 	configFiles := []string{
 		filepath.Join(core.HomeDir(), ".gshenv"),
 		filepath.Join(core.HomeDir(), ".gshrc"),
+	}
+
+	// Check if this is a login shell
+	if *loginShell {
+		// Prepend .gsh_profile to the list of config files
+		configFiles = append([]string{filepath.Join(core.HomeDir(), ".gsh_profile")}, configFiles...)
 	}
 
 	for _, configFile := range configFiles {

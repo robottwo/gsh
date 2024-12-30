@@ -12,7 +12,6 @@
 
 # Enhancements
 
-- login shell
 - keybind configuration
 - multiline input
 - better rendering of agent loading state
