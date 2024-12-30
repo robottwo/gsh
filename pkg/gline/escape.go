@@ -12,6 +12,7 @@ const (
 	SAVE_CURSOR          = ESC + "[s"
 	RESTORE_CURSOR       = ESC + "[u"
 	GET_CURSOR_POS       = ESC + "[6n"
+	MOVE_CURSOR          = ESC + "[%d;%dH"
 
 	BLACK         = ESC + "[0;30m"
 	GRAY          = ESC + "[1;30m"

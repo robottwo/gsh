@@ -89,7 +89,8 @@ func NextLine(prompt string, directory string, predictor Predictor, logger *zap.
 }
 
 func (g *glineContext) redrawLine() error {
-	fmt.Print(CLEAR_LINE)
+	fmt.Printf(MOVE_CURSOR, g.promptRow, 0)
+	fmt.Print(CLEAR_AFTER_CURSOR)
 
 	// Prompt
 	fmt.Print(WHITE)
