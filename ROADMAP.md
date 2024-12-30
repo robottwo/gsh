@@ -1,6 +1,5 @@
 # Bugs
 
-- better handling of tool call parsing errors
 - nvm bash completion script not working
 
 # Core Features

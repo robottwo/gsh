@@ -12,6 +12,7 @@ import (
 	"github.com/atinylittleshell/gsh/internal/rag"
 	"github.com/atinylittleshell/gsh/internal/rag/retrievers"
 	"github.com/atinylittleshell/gsh/pkg/gline"
+	"github.com/fatih/color"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
@@ -20,6 +21,8 @@ import (
 const (
 	DEFAULT_PROMPT = "gsh> "
 )
+
+var LIGHT_BLUE = color.New(color.FgHiBlue).PrintFunc()
 
 func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
 	contextProvider := &rag.ContextProvider{
@@ -69,11 +72,9 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 				continue
 			}
 
-			fmt.Print(gline.LIGHT_BLUE)
 			for message := range chatChannel {
-				fmt.Print(message)
+				LIGHT_BLUE(message)
 			}
-			fmt.Print(gline.RESET_COLOR)
 
 			continue
 		}

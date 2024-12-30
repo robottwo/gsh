@@ -5,25 +5,27 @@ import (
 	"strings"
 
 	"github.com/atinylittleshell/gsh/pkg/gline"
+	"github.com/fatih/color"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
 )
+
+var LIGHT_YELLOW_BOLD = color.New(color.Bold, color.FgHiYellow).SprintFunc()
+var WHITE = color.New(color.FgWhite).SprintFunc()
 
 func failedToolResponse(errorMessage string) string {
 	return fmt.Sprintf("<gsh_tool_call_error>%s</gsh_tool_call_error>", errorMessage)
 }
 
 func printToolMessage(message string) {
-	fmt.Print(gline.LIGHT_YELLOW)
-	fmt.Printf(message + "\n")
-	fmt.Print(gline.RESET_COLOR)
+	LIGHT_YELLOW_BOLD(message + "\n")
 }
 
 func userConfirmation(runner *interp.Runner, logger *zap.Logger, question string, preview string) bool {
 	prompt :=
-		gline.LIGHT_YELLOW + question + gline.SAVE_CURSOR + "\n" +
-			gline.RESET_COLOR + gline.RESET_CURSOR_COLUMN + preview +
-			gline.RESTORE_CURSOR + gline.LIGHT_YELLOW + "(y/N) " + gline.RESET_COLOR
+		LIGHT_YELLOW_BOLD(question) + gline.SAVE_CURSOR + "\n" +
+			gline.RESET_CURSOR_COLUMN + WHITE(preview) +
+			gline.RESTORE_CURSOR + LIGHT_YELLOW_BOLD("(y/N) ")
 
 	options := gline.NewOptions()
 

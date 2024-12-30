@@ -8,6 +8,7 @@ import (
 
 	"github.com/atinylittleshell/gsh/internal/agent/tools"
 	"github.com/atinylittleshell/gsh/internal/utils"
+	"github.com/fatih/color"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -22,6 +23,8 @@ type Agent struct {
 	temperature float32
 	messages    []openai.ChatCompletionMessage
 }
+
+var RED = color.New(color.FgRed).PrintlnFunc()
 
 func NewAgent(runner *interp.Runner, logger *zap.Logger) *Agent {
 	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.SlowModel)
@@ -85,6 +88,7 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 				},
 			)
 			if err != nil {
+				RED(fmt.Sprintf("Error sending request to LLM: %s", err))
 				agent.logger.Error("Error creating LLM chat stream", zap.Error(err))
 				return
 			}
@@ -102,6 +106,7 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 					if err == io.EOF {
 						return
 					}
+					RED(fmt.Sprintf("Error receiving response from LLM: %s", err))
 					agent.logger.Error("Error receiving LLM chat response", zap.Error(err))
 					return
 				}
@@ -161,7 +166,8 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 
 	var params map[string]any
 	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &params); err != nil {
-		agent.logger.Error("Failed to parse function call arguments", zap.Error(err), zap.String("arguments", toolCall.Function.Arguments))
+		agent.logger.Error(fmt.Sprintf("Failed to parse function call arguments: %v", err), zap.String("arguments", toolCall.Function.Arguments))
+		RED("LLM responded with something invalid. This is typically an indication that the model being used is not intelligent enough for the current task. Please try again.")
 		return false
 	}
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/atinylittleshell/gsh/pkg/debounce"
 	"github.com/atinylittleshell/gsh/pkg/gline/keys"
+	"github.com/fatih/color"
 	"go.uber.org/zap"
 	"golang.org/x/term"
 )
@@ -38,6 +39,9 @@ type predictionInput struct {
 	directory string
 	stateId   int64
 }
+
+var WHITE = color.New(color.FgWhite).PrintFunc()
+var GRAY = color.New(color.FgHiBlack).PrintFunc()
 
 // NextLine starts a new prompt and waits for user input
 func NextLine(prompt string, directory string, predictor Predictor, logger *zap.Logger, options Options) (string, error) {
@@ -93,25 +97,19 @@ func (g *glineContext) redrawLine() error {
 	fmt.Print(CLEAR_AFTER_CURSOR)
 
 	// Prompt
-	fmt.Print(WHITE)
-	fmt.Print(g.prompt)
-	fmt.Print(RESET_COLOR)
+	WHITE(g.prompt)
 
 	// User input
-	fmt.Print(WHITE)
 	// first print the part of the user input before the cursor
-	fmt.Print(g.userInput[:g.cursorPosition])
+	WHITE(g.userInput[:g.cursorPosition])
 	// then save the cursor position
 	fmt.Print(SAVE_CURSOR)
 	// then print the part of the user input after the cursor
-	fmt.Print(g.userInput[g.cursorPosition:])
-	fmt.Print(RESET_COLOR)
+	WHITE(g.userInput[g.cursorPosition:])
 
 	// Predicted input
 	if len(g.predictedInput) > 0 && strings.HasPrefix(g.predictedInput, g.userInput) {
-		fmt.Print(GRAY)
-		fmt.Print(g.predictedInput[len(g.userInput):])
-		fmt.Print(RESET_COLOR)
+		GRAY(g.predictedInput[len(g.userInput):])
 	}
 
 	// Restore cursor to the saved position
