@@ -25,6 +25,8 @@ var resetHistory = flag.Bool("rh", false, "reset the history")
 var loginShell = flag.Bool("l", false, "run as a login shell")
 
 func main() {
+	flag.Parse()
+
 	// Initialize the shell interpreter
 	runner, err := initializeRunner()
 	if err != nil {
@@ -61,8 +63,6 @@ func main() {
 
 func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
 	logger.Info("-------- new gsh session --------")
-
-	flag.Parse()
 
 	// gsh -c "echo hello"
 	if *command != "" {
@@ -171,7 +171,7 @@ func initializeRunner() (*interp.Runner, error) {
 	}
 
 	for _, configFile := range configFiles {
-		if _, err := os.Stat(configFile); err == nil {
+		if stat, err := os.Stat(configFile); err == nil && stat.Size() > 0 {
 			if err := bash.RunBashScriptFromFile(runner, configFile); err != nil {
 				fmt.Fprintf(os.Stderr, "failed to load %s: %v\n", configFile, err)
 			}
