@@ -70,7 +70,7 @@ func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *
 
 	// gsh -lh 5
 	if *listHistory > 0 {
-		entries, err := historyManager.GetRecentEntries(*listHistory)
+		entries, err := historyManager.GetRecentEntries("", *listHistory)
 		if err != nil {
 			return err
 		}

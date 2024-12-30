@@ -14,7 +14,7 @@ func Test(t *testing.T) {
 		t.Errorf("Failed to create history manager: %v", err)
 	}
 
-	entry, err := historyManager.StartCommand("echo hello")
+	entry, err := historyManager.StartCommand("echo hello", "/")
 	if err != nil {
 		t.Errorf("Failed to start command: %v", err)
 	}
@@ -25,31 +25,41 @@ func Test(t *testing.T) {
 		t.Errorf("Expected UpdatedAt to be set")
 	}
 
-	entry, err = historyManager.FinishCommand(entry, "hello\n", "", 0)
+	entry, err = historyManager.FinishCommand(entry, 0)
 	if err != nil {
 		t.Errorf("Failed to finish command: %v", err)
 	}
 
-	entry, err = historyManager.StartCommand("echo world")
+	entry, err = historyManager.StartCommand("echo world", "/")
 	if err != nil {
 		t.Errorf("Failed to start command: %v", err)
 	}
 
-	entry, err = historyManager.FinishCommand(entry, "world\n", "", 0)
+	entry, err = historyManager.FinishCommand(entry, 0)
 	if err != nil {
 		t.Errorf("Failed to finish command: %v", err)
 	}
 
-	entries, err := historyManager.GetRecentEntries(3)
+	allEntries, err := historyManager.GetRecentEntries("", 3)
 	if err != nil {
 		t.Errorf("Failed to get recent entries: %v", err)
 	}
 
-	if len(entries) != 2 {
-		t.Errorf("Expected 2 entries, got %d", len(entries))
+	if len(allEntries) != 2 {
+		t.Errorf("Expected 2 entries, got %d", len(allEntries))
 	}
 
-	if entries[0].Command != "echo world" {
-		t.Errorf("Expected most recent command to be 'echo world', got '%s'", entries[0].Command)
+	if allEntries[0].Command != "echo hello" {
+		t.Errorf("Expected most recent command to be 'echo hello', got '%s'", allEntries[0].Command)
+	}
+
+	targetEntries, err := historyManager.GetRecentEntries("/", 3)
+	if len(targetEntries) != 2 {
+		t.Errorf("Expected 2 entries, got %d", len(allEntries))
+	}
+
+	nonTargetEntries, err := historyManager.GetRecentEntries("/tmp", 3)
+	if len(nonTargetEntries) != 0 {
+		t.Errorf("Expected 0 entries, got %d", len(allEntries))
 	}
 }

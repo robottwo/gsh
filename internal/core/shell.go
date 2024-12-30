@@ -61,7 +61,8 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 			chatMessage := fmt.Sprintf(
 				"%s\n\nContext:\n%s",
 				line[1:],
-				contextProvider.GetContext())
+				contextProvider.GetContext(rag.ContextRetrievalOptions{Concise: false}),
+			)
 			chatChannel, err := agent.Chat(chatMessage)
 			if err != nil {
 				logger.Error("error chatting with agent", zap.Error(err))

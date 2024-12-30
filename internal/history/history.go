@@ -71,9 +71,13 @@ func (historyManager *HistoryManager) FinishCommand(entry *HistoryEntry, exitCod
 	return entry, nil
 }
 
-func (historyManager *HistoryManager) GetRecentEntries(limit int) ([]HistoryEntry, error) {
+func (historyManager *HistoryManager) GetRecentEntries(directory string, limit int) ([]HistoryEntry, error) {
 	var entries []HistoryEntry
-	result := historyManager.db.Order("created_at desc").Limit(limit).Find(&entries)
+	var db = historyManager.db
+	if directory != "" {
+		db = db.Where("directory = ?", directory)
+	}
+	result := db.Order("created_at desc").Limit(limit).Find(&entries)
 	if result.Error != nil {
 		historyManager.logger.Error("error fetching recent history entries", zap.Error(result.Error))
 		return nil, result.Error

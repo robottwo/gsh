@@ -11,10 +11,14 @@ type ContextProvider struct {
 	Retrievers []ContextRetriever
 }
 
-func (p *ContextProvider) GetContext() string {
+type ContextRetrievalOptions struct {
+	Concise bool
+}
+
+func (p *ContextProvider) GetContext(options ContextRetrievalOptions) string {
 	var result string
 	for _, retriever := range p.Retrievers {
-		output, err := retriever.GetContext()
+		output, err := retriever.GetContext(options)
 		if err != nil {
 			p.Logger.Error("error getting context", zap.Error(err))
 			continue

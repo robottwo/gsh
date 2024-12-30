@@ -1,5 +1,5 @@
 package rag
 
 type ContextRetriever interface {
-	GetContext() (string, error)
+	GetContext(options ContextRetrievalOptions) (string, error)
 }

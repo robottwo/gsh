@@ -53,8 +53,7 @@ Instructions:
 %s
 
 Now predict what the next command should be.`,
-		input,
-		p.contextProvider.GetContext(),
+		p.contextProvider.GetContext(rag.ContextRetrievalOptions{Concise: false}),
 	)
 
 	p.logger.Debug(

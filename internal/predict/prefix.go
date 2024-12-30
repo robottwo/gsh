@@ -57,7 +57,7 @@ Instructions:
 Additional context to be aware of:
 %s`,
 		input,
-		p.contextProvider.GetContext(),
+		p.contextProvider.GetContext(rag.ContextRetrievalOptions{Concise: true}),
 	)
 
 	p.logger.Debug(
