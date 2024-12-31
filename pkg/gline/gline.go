@@ -110,6 +110,7 @@ func (g *glineContext) redrawLine() error {
 	// Preview
 	if len(g.preview) > 0 {
 		fmt.Println()
+		fmt.Print(RESET_CURSOR_COLUMN)
 		WHITE(g.preview)
 	}
 
