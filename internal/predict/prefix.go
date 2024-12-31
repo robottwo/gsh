@@ -49,7 +49,8 @@ You are asked to predict what the complete bash command is.
 Instructions:
 * Based on the prefix and other context, analyze the user's potential intent
 * Your prediction must start with the partial command as a prefix
-* Your prediction must be a valid, single-line, complete bash command`
+* Your prediction must be a valid, single-line, complete bash command
+` + BEST_PRACTICES
 
 	userMessage := fmt.Sprintf(
 		`<prefix>%s</prefix>

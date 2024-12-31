@@ -46,7 +46,8 @@ You are asked to predict the next command the user is likely to want to run.
 
 Instructions:
 * Based on the context, analyze the user's potential intent
-* Your prediction must be a valid, single-line, complete bash command`
+* Your prediction must be a valid, single-line, complete bash command
+` + BEST_PRACTICES
 
 	userMessage := fmt.Sprintf(
 		`Context:
