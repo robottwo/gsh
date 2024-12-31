@@ -3,7 +3,7 @@ function GSH_UPDATE_PROMPT() {
 }
 
 STARSHIP_SHELL="gsh"
-STARSHIP_SESSION_KEY=$(starship session)
+STARSHIP_SESSION_KEY="$(starship session)"
 STARSHIP_START_TIME="$(starship time)"
 
 GSH_PROMPT="$(starship prompt)"
