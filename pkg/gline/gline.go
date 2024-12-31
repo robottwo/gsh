@@ -111,7 +111,7 @@ func (g *glineContext) redrawLine() error {
 	if len(g.preview) > 0 {
 		fmt.Println()
 		fmt.Print(RESET_CURSOR_COLUMN)
-		WHITE(g.preview)
+		WHITE(strings.ReplaceAll(g.preview, "\n", "\n"+RESET_CURSOR_COLUMN))
 	}
 
 	// Restore cursor to the saved position

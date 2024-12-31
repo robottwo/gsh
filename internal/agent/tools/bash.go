@@ -20,10 +20,9 @@ var BashToolDefinition = openai.Tool{
 	Type: "function",
 	Function: &openai.FunctionDefinition{
 		Name: "bash",
-		Description: `Run commands in a bash shell.
+		Description: `Run a single-line command in a bash shell.
 * When invoking this tool, the contents of the \"command\" parameter does NOT need to be XML-escaped.
-* Avoid combining multiple bash commands into one using && or ;. Instead, run each command separately.
-* You don't have access to the internet via this tool.
+* Avoid combining multiple bash commands into one using "&&", ";" or multiple lines. Instead, run each command separately.
 * State is persistent across command calls and discussions with the user.`,
 		Parameters: utils.GenerateJsonSchema(struct {
 			Command string `json:"command" jsonschema_description:"The bash command to run" jsonschema_required:"true"`
