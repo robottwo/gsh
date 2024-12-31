@@ -58,8 +58,11 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) 
 
 	LIGHT_BLUE(reason)
 
-	if !userConfirmation(logger, "Do I have your permission to run the following command?", command) {
+	confirmResponse := userConfirmation(logger, "Do I have your permission to run the following command?", command)
+	if confirmResponse == "n" {
 		return failedToolResponse("User declined this request")
+	} else if confirmResponse != "y" {
+		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
 	outBuf := &bytes.Buffer{}

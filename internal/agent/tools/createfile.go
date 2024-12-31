@@ -35,8 +35,11 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 		return failedToolResponse("The create_file tool failed to parse parameter 'content'")
 	}
 
-	if !userConfirmation(logger, "Do I have your permission to create the following file?", path) {
+	confirmResponse := userConfirmation(logger, "Do I have your permission to create the following file?", path)
+	if confirmResponse == "n" {
 		return failedToolResponse("User declined this request")
+	} else if confirmResponse != "y" {
+		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
 	file, err := os.Create(path)

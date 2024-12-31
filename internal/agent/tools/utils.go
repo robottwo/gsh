@@ -20,23 +20,29 @@ func printToolMessage(message string) {
 	fmt.Println(LIGHT_YELLOW_BOLD(message))
 }
 
-func userConfirmation(logger *zap.Logger, question string, preview string) bool {
+func userConfirmation(logger *zap.Logger, question string, preview string) string {
 	prompt :=
-		LIGHT_YELLOW_BOLD(question + "(y/N) ")
+		LIGHT_YELLOW_BOLD(question + "(y/N/[freeform feedback]) ")
 
 	options := gline.NewOptions()
 
 	line, err := gline.NextLine(prompt, preview, nil, logger, *options)
 	if err != nil {
-		return false
+		return "no"
 	}
 
 	fmt.Print(gline.CLEAR_AFTER_CURSOR)
 	fmt.Println(preview)
 
-	if strings.ToLower(line) != "y" {
-		return false
+	lowerLine := strings.ToLower(line)
+
+	if lowerLine == "y" || lowerLine == "yes" {
+		return "y"
 	}
 
-	return true
+	if lowerLine == "n" || lowerLine == "no" {
+		return "n"
+	}
+
+	return line
 }
