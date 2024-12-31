@@ -10,11 +10,14 @@ import (
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/utils"
+	"github.com/fatih/color"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
 )
+
+var LIGHT_BLUE = color.New(color.FgHiBlue).PrintlnFunc()
 
 var BashToolDefinition = openai.Tool{
 	Type: "function",
@@ -25,12 +28,18 @@ var BashToolDefinition = openai.Tool{
 * Avoid combining multiple bash commands into one using "&&", ";" or multiple lines. Instead, run each command separately.
 * State is persistent across command calls and discussions with the user.`,
 		Parameters: utils.GenerateJsonSchema(struct {
+			Reason  string `json:"reason" jsonschema_description:"A concise reason for why you need to run this command" jsonschema_required:"true"`
 			Command string `json:"command" jsonschema_description:"The bash command to run" jsonschema_required:"true"`
 		}{}),
 	},
 }
 
 func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) string {
+	reason, ok := params["reason"].(string)
+	if !ok {
+		logger.Error("The bash tool failed to parse parameter 'reason'")
+		return failedToolResponse("The bash tool failed to parse parameter 'reason'")
+	}
 	command, ok := params["command"].(string)
 	if !ok {
 		logger.Error("The bash tool failed to parse parameter 'command'")
@@ -46,6 +55,8 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) 
 		logger.Error("LLM bash tool received invalid command", zap.Error(err))
 		return failedToolResponse(fmt.Sprintf("`%s` is not a valid bash command: %s", command, err))
 	}
+
+	LIGHT_BLUE(reason)
 
 	if !userConfirmation(logger, "Do I have your permission to run the following command?", command) {
 		return failedToolResponse("User declined this request")

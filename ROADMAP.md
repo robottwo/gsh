@@ -1,12 +1,12 @@
 # Bugs
 
 - nvm bash completion script not working
+- concurrent vars map read write crash
 
 # Core Features
 
-- explanation of prediction
-- explanation of bash command request
-- failed command handling
+- backspace to clear prediction
+- allow user to decline tool call with reason
 - auto prune agent messages
 - history prev/next
 - implement all bash keybinds
