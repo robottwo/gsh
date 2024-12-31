@@ -36,18 +36,18 @@ func NewLLMPrefixPredictor(
 	}
 }
 
-func (p *LLMPrefixPredictor) Predict(input string) (string, error) {
+func (p *LLMPrefixPredictor) Predict(input string) (string, string, error) {
 	if strings.HasPrefix(input, "#") {
 		// Don't do prediction for agent chat messages
-		return "", nil
+		return "", "", nil
 	}
 
 	systemMessage := `You are gsh, an intelligent shell program.
-You will be given a partial bash command prefix entered by the user, enclosed in <prefix> tags.
+You will be given a partial bash command prefix entered by me, enclosed in <prefix> tags.
 You are asked to predict what the complete bash command is.
 
 Instructions:
-* Based on the prefix and other context, analyze the user's potential intent
+* Based on the prefix and other context, analyze the my potential intent
 * Your prediction must start with the partial command as a prefix
 * Your prediction must be a valid, single-line, complete bash command
 ` + BEST_PRACTICES
@@ -84,7 +84,7 @@ Additional context to be aware of:
 	})
 
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	prediction := predictedCommand{}
@@ -95,5 +95,5 @@ Additional context to be aware of:
 		zap.Any("response", prediction),
 	)
 
-	return prediction.PredictedCommand, nil
+	return prediction.PredictedCommand, fmt.Sprintf("(%s)", prediction.Explanation), nil
 }

@@ -6,8 +6,9 @@ import (
 )
 
 type predictedCommand struct {
-	UserIntent       string `json:"user_intent" jsonschema_description:"Your concise analysis of the user's intent" jsonschema_required:"true"`
+	Thought          string `json:"thought" jsonschema_description:"Your step by step thinking for what my intent might be" jsonschema_required:"true"`
 	PredictedCommand string `json:"predicted_command" jsonschema_description:"The full bash command predicted by the model" jsonschema_required:"true"`
+	Explanation      string `json:"explanation" jsonschema_description:"A concise explanation of what the predicted command will do for me" jsonschema_required:"true"`
 }
 
 var PREDICTED_COMMAND_SCHEMA = utils.GenerateJsonSchema(&predictedCommand{})

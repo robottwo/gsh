@@ -35,17 +35,17 @@ func NewLLMNullStatePredictor(
 	}
 }
 
-func (p *LLMNullStatePredictor) Predict(input string) (string, error) {
+func (p *LLMNullStatePredictor) Predict(input string) (string, string, error) {
 	if input != "" {
 		// this predictor is only for null state
-		return "", nil
+		return "", "", nil
 	}
 
 	systemMessage := `You are gsh, an intelligent shell program.
-You are asked to predict the next command the user is likely to want to run.
+You are asked to predict the next command I'm likely to want to run.
 
 Instructions:
-* Based on the context, analyze the user's potential intent
+* Based on the context, analyze the my potential intent
 * Your prediction must be a valid, single-line, complete bash command
 ` + BEST_PRACTICES
 
@@ -53,7 +53,7 @@ Instructions:
 		`Context:
 %s
 
-Now predict what the next command should be.`,
+Now predict what my next command should be.`,
 		p.contextProvider.GetContext(rag.ContextRetrievalOptions{Concise: false}),
 	)
 
@@ -80,7 +80,7 @@ Now predict what the next command should be.`,
 	})
 
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	prediction := predictedCommand{}
@@ -91,5 +91,5 @@ Now predict what the next command should be.`,
 		zap.Any("response", prediction),
 	)
 
-	return prediction.PredictedCommand, nil
+	return prediction.PredictedCommand, fmt.Sprintf("(%s)", prediction.Explanation), nil
 }

@@ -239,7 +239,7 @@ func (g *glineContext) generatePrediction(input predictionInput) {
 	g.logger.Debug("gline predicting input", zap.Int64("stateId", startStateId), zap.String("input", input.userInput))
 
 	go func() {
-		predicted, err := g.predictor.Predict(input.userInput)
+		predicted, explanation, err := g.predictor.Predict(input.userInput)
 		if err != nil {
 			g.logger.Error("gline prediction failed", zap.Error(err))
 		}
@@ -260,8 +260,10 @@ func (g *glineContext) generatePrediction(input predictionInput) {
 
 		if err != nil {
 			g.predictedInput = ""
+			g.preview = ""
 		} else {
 			g.predictedInput = predicted
+			g.preview = explanation
 		}
 
 		g.redrawLine()
