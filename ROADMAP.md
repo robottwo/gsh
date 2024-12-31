@@ -6,7 +6,6 @@
 # Core Features
 
 - backspace to clear prediction
-- allow user to decline tool call with reason
 - auto prune agent messages
 - history prev/next
 - implement all bash keybinds
@@ -22,7 +21,6 @@
 - syntax highlighting
 - richer starship integration
 - readme rag
-- bash tool best practices prompt
 
 # Release Readiness
 
