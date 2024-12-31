@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/atinylittleshell/gsh/pkg/reverse"
+	"github.com/glebarez/sqlite"
 	"go.uber.org/zap"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
