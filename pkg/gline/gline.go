@@ -165,7 +165,7 @@ func (g *glineContext) readCommand() (string, error) {
 
 			switch command {
 			case CommandExecute:
-				fmt.Print(CLEAR_REMAINING_LINE)
+				fmt.Print(CLEAR_AFTER_CURSOR)
 				fmt.Println()
 				fmt.Print(RESET_CURSOR_COLUMN)
 
