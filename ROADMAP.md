@@ -4,6 +4,8 @@
 
 # Core Features
 
+- explanation of prediction
+- explanation of bash command request
 - failed command handling
 - auto prune agent messages
 - history prev/next
@@ -20,9 +22,9 @@
 - syntax highlighting
 - richer starship integration
 - readme rag
+- bash tool best practices prompt
 
 # Release Readiness
 
-- get rid of cgo sqlite
 - ci/cd
 - documentation

@@ -95,8 +95,6 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 		}
 	}
 
-	// Clear screen on exit
-	fmt.Print(gline.CLEAR_SCREEN)
 	return nil
 }
 
