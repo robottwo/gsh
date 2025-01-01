@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
+	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/agent/tools"
 	"github.com/atinylittleshell/gsh/internal/utils"
@@ -84,7 +84,7 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 			// in which case we'll set this to true and continue the session.
 			continueSession = false
 
-			stream, err := agent.llmClient.CreateChatCompletionStream(
+			response, err := agent.llmClient.CreateChatCompletion(
 				context.Background(),
 				openai.ChatCompletionRequest{
 					Model:       agent.modelId,
@@ -98,94 +98,40 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 						tools.CreateFileToolDefinition,
 						tools.EditFileToolDefinition,
 					},
-					Stream: true,
 				},
 			)
 			if err != nil {
 				fmt.Println(RED(fmt.Sprintf("Error sending request to LLM: %s", err)))
-				agent.logger.Error("Error creating LLM chat stream", zap.Error(err))
+				agent.logger.Error("Error sending request to LLM", zap.Error(err))
 				return
 			}
-			defer stream.Close()
 
-			currentMessageRole := ""
-			currentMessageContent := ""
-			currentToolCalls := map[int]*openai.ToolCall{}
+			msg := response.Choices[0]
+			agent.messages = append(agent.messages, msg.Message)
+			agent.logger.Debug("LLM chat response", zap.Any("messages", agent.messages), zap.Any("response", msg))
 
-			for {
-				response, err := stream.Recv()
-				if err != nil {
-					if err == io.EOF {
-						return
-					}
-					RED(fmt.Sprintf("Error receiving response from LLM: %s", err))
-					agent.logger.Error("Error receiving LLM chat response", zap.Error(err))
-					return
+			if msg.FinishReason == "stop" || msg.FinishReason == "tool_calls" || msg.FinishReason == "function_call" {
+				if msg.Message.Content != "" {
+					responseChannel <- strings.TrimSpace(msg.Message.Content)
+					responseChannel <- "\n"
 				}
 
-				msg := response.Choices[0]
-				agent.logger.Debug("LLM chat response", zap.Any("messages", agent.messages), zap.Any("response", msg))
-
-				if len(msg.Delta.ToolCalls) > 0 {
-					for _, toolCallDelta := range msg.Delta.ToolCalls {
-						toolCallIndex := 0
-						if toolCallDelta.Index != nil {
-							toolCallIndex = int(*toolCallDelta.Index)
-						}
-						existing, exists := currentToolCalls[toolCallIndex]
-						if !exists || existing == nil {
-							existing = &openai.ToolCall{}
-							currentToolCalls[toolCallIndex] = existing
-						}
-						existing.ID += toolCallDelta.ID
-						existing.Type += toolCallDelta.Type
-						existing.Function.Name += toolCallDelta.Function.Name
-						existing.Function.Arguments += toolCallDelta.Function.Arguments
-					}
-				}
-				if msg.Delta.Role != "" {
-					currentMessageRole += msg.Delta.Role
-				}
-				if msg.Delta.Content != "" {
-					currentMessageContent += msg.Delta.Content
-					responseChannel <- msg.Delta.Content
-				}
-
-				if msg.FinishReason == "stop" || msg.FinishReason == "tool_calls" || msg.FinishReason == "function_call" {
-					hasToolCall := len(currentToolCalls) > 0
-					toolCalls := []openai.ToolCall{}
-					if hasToolCall {
-						for _, toolCall := range currentToolCalls {
-							toolCalls = append(toolCalls, *toolCall)
+				if len(msg.Message.ToolCalls) > 0 {
+					allToolCallsSucceeded := true
+					for _, toolCall := range msg.Message.ToolCalls {
+						if !agent.handleToolCall(toolCall) {
+							allToolCallsSucceeded = false
 						}
 					}
-					agent.messages = append(agent.messages, openai.ChatCompletionMessage{
-						Role:      currentMessageRole,
-						Content:   currentMessageContent,
-						ToolCalls: toolCalls,
-					})
 
-					if currentMessageContent != "" {
-						fmt.Println()
+					if allToolCallsSucceeded {
+						continueSession = true
 					}
-
-					if hasToolCall {
-						allToolCallsSucceeded := true
-						for _, toolCall := range toolCalls {
-							if !agent.handleToolCall(toolCall) {
-								allToolCallsSucceeded = false
-							}
-						}
-
-						if allToolCallsSucceeded {
-							continueSession = true
-						}
-					}
-					break
-				} else if msg.FinishReason != "" {
-					agent.logger.Warn("LLM chat response finished for unexpected reason", zap.String("reason", string(msg.FinishReason)))
-					break
 				}
+				break
+			} else if msg.FinishReason != "" {
+				agent.logger.Warn("LLM chat response finished for unexpected reason", zap.String("reason", string(msg.FinishReason)))
+				break
 			}
 		}
 	}()
