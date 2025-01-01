@@ -2,6 +2,7 @@ package tools
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -12,6 +13,7 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
+	"mvdan.cc/sh/v3/syntax"
 )
 
 var EditFileToolDefinition = openai.Tool{
@@ -53,15 +55,6 @@ func EditFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 	}
 	defer file.Close()
 
-	confirmResponse := userConfirmation(logger, "Do I have your permission to edit the following file?", path)
-	if confirmResponse == "n" {
-		return failedToolResponse("User declined this request")
-	} else if confirmResponse != "y" {
-		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
-	}
-
-	fmt.Println(styles.LIGHT_BLUE(path))
-
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, file)
 	if err != nil {
@@ -77,6 +70,33 @@ func EditFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 
 	newContents := strings.ReplaceAll(contents, oldStr, newStr)
 
+	tmpFile, err := os.CreateTemp("", "gsh_edit_file_preview")
+	if err != nil {
+		logger.Error("edit_file tool failed to create temporary file", zap.Error(err))
+		return failedToolResponse(fmt.Sprintf("Error creating temporary file: %s", err))
+	}
+	defer os.Remove(tmpFile.Name())
+
+	_, err = tmpFile.WriteString(newContents)
+	if err != nil {
+		logger.Error("edit_file tool failed to write to temporary file", zap.Error(err))
+		return failedToolResponse(fmt.Sprintf("Error writing to temporary file: %s", err))
+	}
+
+	diff, err := getDiff(runner, logger, path, tmpFile.Name())
+	if err != nil {
+		return failedToolResponse(fmt.Sprintf("Error generating diff: %s", err))
+	}
+
+	confirmResponse := userConfirmation(logger, "Do I have your permission to edit the following file?", diff)
+	if confirmResponse == "n" {
+		return failedToolResponse("User declined this request")
+	} else if confirmResponse != "y" {
+		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
+	}
+
+	fmt.Println(styles.LIGHT_BLUE(path))
+
 	file, err = os.Create(path)
 	if err != nil {
 		logger.Error("edit_file tool failed to create file", zap.Error(err))
@@ -90,4 +110,45 @@ func EditFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 	}
 
 	return fmt.Sprintf("File successfully edited at %s", path)
+}
+
+func getDiff(runner *interp.Runner, logger *zap.Logger, file1, file2 string) (string, error) {
+	command := fmt.Sprintf("git diff --color=always --no-index %s %s", file1, file2)
+
+	var prog *syntax.Stmt
+	err := syntax.NewParser().Stmts(strings.NewReader(command), func(stmt *syntax.Stmt) bool {
+		prog = stmt
+		return false
+	})
+	if err != nil {
+		logger.Error("Failed to preview code edits", zap.Error(err))
+		return "", err
+	}
+
+	outBuf := &bytes.Buffer{}
+	errBuf := &bytes.Buffer{}
+	outWriter := io.Writer(outBuf)
+	errWriter := io.Writer(errBuf)
+
+	subShell := runner.Subshell()
+	interp.StdIO(nil, outWriter, errWriter)(subShell)
+
+	err = subShell.Run(context.Background(), prog)
+
+	exitCode := -1
+	if err != nil {
+		status, ok := interp.IsExitStatus(err)
+		if ok {
+			exitCode = int(status)
+		}
+	} else {
+		exitCode = 0
+	}
+
+	if exitCode == 128 {
+		return "", fmt.Errorf("Error running git diff command: %s", errBuf.String())
+	}
+
+	result := strings.ReplaceAll(outBuf.String(), "b"+file2, "")
+	return result, nil
 }

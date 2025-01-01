@@ -5,7 +5,6 @@
 
 # Core Features
 
-- preview code edits
 - auto prune agent messages
 - history prev/next
 - bash completion
