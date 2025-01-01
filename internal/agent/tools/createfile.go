@@ -42,6 +42,8 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
+	LIGHT_BLUE(path)
+
 	file, err := os.Create(path)
 	if err != nil {
 		logger.Error("create_file tool failed to create file", zap.Error(err))

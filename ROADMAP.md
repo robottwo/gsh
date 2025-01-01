@@ -2,13 +2,12 @@
 
 - nvm bash completion script not working
 - concurrent vars map read write crash
+- refactor color styling to lipgloss
 
 # Core Features
 
-- backspace to clear prediction
 - auto prune agent messages
 - history prev/next
-- implement all bash keybinds
 - bash completion
 
 # Enhancements

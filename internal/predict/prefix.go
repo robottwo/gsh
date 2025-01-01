@@ -95,5 +95,5 @@ Additional context to be aware of:
 		zap.Any("response", prediction),
 	)
 
-	return prediction.PredictedCommand, fmt.Sprintf("(%s)", prediction.Explanation), nil
+	return prediction.PredictedCommand, prediction.Explanation, nil
 }

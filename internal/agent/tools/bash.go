@@ -65,6 +65,8 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) 
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
+	LIGHT_BLUE(command)
+
 	outBuf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 	multiOut := io.MultiWriter(os.Stdout, outBuf)

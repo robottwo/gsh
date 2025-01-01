@@ -59,6 +59,8 @@ func EditFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
+	LIGHT_BLUE(path)
+
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, file)
 	if err != nil {

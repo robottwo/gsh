@@ -22,17 +22,12 @@ func printToolMessage(message string) {
 
 func userConfirmation(logger *zap.Logger, question string, preview string) string {
 	prompt :=
-		LIGHT_YELLOW_BOLD(question + "(y/N/[freeform feedback]) ")
+		LIGHT_YELLOW_BOLD(question + " (y/N/freeform reply) ")
 
-	options := gline.NewOptions()
-
-	line, err := gline.NextLine(prompt, preview, nil, logger, *options)
+	line, err := gline.Gline(prompt, preview, nil, logger)
 	if err != nil {
 		return "no"
 	}
-
-	fmt.Print(gline.CLEAR_AFTER_CURSOR)
-	fmt.Println(preview)
 
 	lowerLine := strings.ToLower(line)
 

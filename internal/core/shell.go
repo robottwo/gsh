@@ -39,17 +39,12 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 	}
 	agent := agent.NewAgent(runner, logger)
 
-	commandIndex := 0
-
 	for {
 		prompt := getPrompt(runner)
 		logger.Debug("prompt updated", zap.String("prompt", prompt))
 
-		options := gline.NewOptions()
-
 		// Read input
-		line, err := gline.NextLine(prompt, "", predictor, logger, *options)
-		commandIndex++
+		line, err := gline.Gline(prompt, "", predictor, logger)
 
 		logger.Debug("received command", zap.String("line", line))
 
