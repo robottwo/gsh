@@ -66,7 +66,7 @@ func initialModel(prompt string, preview string, predictor Predictor, logger *za
 
 		previewStyle: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#9C27B0")),
+			BorderForeground(lipgloss.Color("12")),
 	}
 }
 

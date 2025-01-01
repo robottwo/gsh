@@ -3,6 +3,7 @@
 - nvm bash completion script not working
 - concurrent vars map read write crash
 - refactor color styling to lipgloss
+- bash tool commands should also add into history
 
 # Core Features
 
