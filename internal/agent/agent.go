@@ -8,8 +8,8 @@ import (
 
 	"github.com/atinylittleshell/gsh/internal/agent/tools"
 	"github.com/atinylittleshell/gsh/internal/history"
+	"github.com/atinylittleshell/gsh/internal/styles"
 	"github.com/atinylittleshell/gsh/internal/utils"
-	"github.com/charmbracelet/lipgloss"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -25,8 +25,6 @@ type Agent struct {
 	temperature float32
 	messages    []openai.ChatCompletionMessage
 }
-
-var RED = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render
 
 func NewAgent(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) *Agent {
 	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.SlowModel)
@@ -104,7 +102,7 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 				},
 			)
 			if err != nil {
-				fmt.Println(RED(fmt.Sprintf("Error sending request to LLM: %s", err)))
+				fmt.Println(styles.RED(fmt.Sprintf("Error sending request to LLM: %s", err)))
 				agent.logger.Error("Error sending request to LLM", zap.Error(err))
 				return
 			}
@@ -131,10 +129,8 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 						continueSession = true
 					}
 				}
-				break
 			} else if msg.FinishReason != "" {
 				agent.logger.Warn("LLM chat response finished for unexpected reason", zap.String("reason", string(msg.FinishReason)))
-				break
 			}
 		}
 	}()
@@ -146,7 +142,7 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 	var params map[string]any
 	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &params); err != nil {
 		agent.logger.Error(fmt.Sprintf("Failed to parse function call arguments: %v", err), zap.String("arguments", toolCall.Function.Arguments))
-		RED("LLM responded with something invalid. This is typically an indication that the model being used is not intelligent enough for the current task. Please try again.")
+		fmt.Println(styles.RED("LLM responded with something invalid. This is typically an indication that the model being used is not intelligent enough for the current task. Please try again."))
 		return false
 	}
 
