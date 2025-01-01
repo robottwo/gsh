@@ -110,9 +110,7 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 
 			currentMessageRole := ""
 			currentMessageContent := ""
-			currentToolCall := openai.ToolCall{
-				Type: "function",
-			}
+			currentToolCalls := map[int]*openai.ToolCall{}
 
 			for {
 				response, err := stream.Recv()
@@ -129,9 +127,21 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 				agent.logger.Debug("LLM chat response", zap.Any("messages", agent.messages), zap.Any("response", msg))
 
 				if len(msg.Delta.ToolCalls) > 0 {
-					currentToolCall.ID += msg.Delta.ToolCalls[0].ID
-					currentToolCall.Function.Name += msg.Delta.ToolCalls[0].Function.Name
-					currentToolCall.Function.Arguments += msg.Delta.ToolCalls[0].Function.Arguments
+					for _, toolCallDelta := range msg.Delta.ToolCalls {
+						toolCallIndex := 0
+						if toolCallDelta.Index != nil {
+							toolCallIndex = int(*toolCallDelta.Index)
+						}
+						existing, exists := currentToolCalls[toolCallIndex]
+						if !exists || existing == nil {
+							existing = &openai.ToolCall{}
+							currentToolCalls[toolCallIndex] = existing
+						}
+						existing.ID += toolCallDelta.ID
+						existing.Type += toolCallDelta.Type
+						existing.Function.Name += toolCallDelta.Function.Name
+						existing.Function.Arguments += toolCallDelta.Function.Arguments
+					}
 				}
 				if msg.Delta.Role != "" {
 					currentMessageRole += msg.Delta.Role
@@ -142,10 +152,12 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 				}
 
 				if msg.FinishReason == "stop" || msg.FinishReason == "tool_calls" || msg.FinishReason == "function_call" {
-					hasToolCall := currentToolCall.ID != "" && currentToolCall.Function.Name != ""
+					hasToolCall := len(currentToolCalls) > 0
 					toolCalls := []openai.ToolCall{}
 					if hasToolCall {
-						toolCalls = append(toolCalls, currentToolCall)
+						for _, toolCall := range currentToolCalls {
+							toolCalls = append(toolCalls, *toolCall)
+						}
 					}
 					agent.messages = append(agent.messages, openai.ChatCompletionMessage{
 						Role:      currentMessageRole,
@@ -158,7 +170,16 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 					}
 
 					if hasToolCall {
-						continueSession = agent.handleToolCall(currentToolCall)
+						allToolCallsSucceeded := true
+						for _, toolCall := range toolCalls {
+							if !agent.handleToolCall(toolCall) {
+								allToolCallsSucceeded = false
+							}
+						}
+
+						if allToolCallsSucceeded {
+							continueSession = true
+						}
 					}
 					break
 				} else if msg.FinishReason != "" {
