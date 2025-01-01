@@ -26,6 +26,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 	contextProvider := &rag.ContextProvider{
 		Logger: logger,
 		Retrievers: []rag.ContextRetriever{
+			retrievers.SystemInfoContextRetriever{Runner: runner},
 			retrievers.WorkingDirectoryContextRetriever{Runner: runner},
 			retrievers.GitContextRetriever{Runner: runner},
 			retrievers.HistoryContextRetriever{Runner: runner, HistoryManager: historyManager},
