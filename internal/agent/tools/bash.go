@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/atinylittleshell/gsh/internal/styles"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -53,7 +54,7 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) 
 		return failedToolResponse(fmt.Sprintf("`%s` is not a valid bash command: %s", command, err))
 	}
 
-	fmt.Println(utils.LIGHT_BLUE(reason))
+	fmt.Println(styles.LIGHT_BLUE(reason))
 
 	confirmResponse := userConfirmation(logger, "Do I have your permission to run the following command?", command)
 	if confirmResponse == "n" {
@@ -62,7 +63,7 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) 
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-	fmt.Println(utils.LIGHT_BLUE(command))
+	fmt.Println(styles.LIGHT_BLUE(command))
 
 	outBuf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}

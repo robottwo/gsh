@@ -11,7 +11,7 @@ import (
 	"github.com/atinylittleshell/gsh/internal/predict"
 	"github.com/atinylittleshell/gsh/internal/rag"
 	"github.com/atinylittleshell/gsh/internal/rag/retrievers"
-	"github.com/atinylittleshell/gsh/internal/utils"
+	"github.com/atinylittleshell/gsh/internal/styles"
 	"github.com/atinylittleshell/gsh/pkg/gline"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -65,7 +65,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 			}
 
 			for message := range chatChannel {
-				fmt.Print(utils.LIGHT_BLUE(message))
+				fmt.Print(styles.LIGHT_BLUE(message))
 			}
 
 			continue

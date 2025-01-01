@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/atinylittleshell/gsh/internal/styles"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -42,7 +43,7 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-	utils.LIGHT_BLUE(path)
+	fmt.Println(styles.LIGHT_BLUE(path))
 
 	file, err := os.Create(path)
 	if err != nil {

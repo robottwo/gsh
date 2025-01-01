@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/atinylittleshell/gsh/internal/styles"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -59,7 +60,7 @@ func EditFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-	utils.LIGHT_BLUE(path)
+	fmt.Println(styles.LIGHT_BLUE(path))
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, file)
