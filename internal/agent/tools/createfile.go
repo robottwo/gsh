@@ -42,7 +42,7 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-	LIGHT_BLUE(path)
+	utils.LIGHT_BLUE(path)
 
 	file, err := os.Create(path)
 	if err != nil {

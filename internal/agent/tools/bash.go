@@ -10,14 +10,11 @@ import (
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/utils"
-	"github.com/fatih/color"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
 )
-
-var LIGHT_BLUE = color.New(color.FgHiBlue).PrintlnFunc()
 
 var BashToolDefinition = openai.Tool{
 	Type: "function",
@@ -56,7 +53,7 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) 
 		return failedToolResponse(fmt.Sprintf("`%s` is not a valid bash command: %s", command, err))
 	}
 
-	LIGHT_BLUE(reason)
+	fmt.Println(utils.LIGHT_BLUE(reason))
 
 	confirmResponse := userConfirmation(logger, "Do I have your permission to run the following command?", command)
 	if confirmResponse == "n" {
@@ -65,7 +62,7 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) 
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-	LIGHT_BLUE(command)
+	fmt.Println(utils.LIGHT_BLUE(command))
 
 	outBuf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}

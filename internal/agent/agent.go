@@ -8,7 +8,7 @@ import (
 
 	"github.com/atinylittleshell/gsh/internal/agent/tools"
 	"github.com/atinylittleshell/gsh/internal/utils"
-	"github.com/fatih/color"
+	"github.com/charmbracelet/lipgloss"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -24,7 +24,7 @@ type Agent struct {
 	messages    []openai.ChatCompletionMessage
 }
 
-var RED = color.New(color.FgRed).PrintlnFunc()
+var RED = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render
 
 func NewAgent(runner *interp.Runner, logger *zap.Logger) *Agent {
 	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.SlowModel)
@@ -102,7 +102,7 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 				},
 			)
 			if err != nil {
-				RED(fmt.Sprintf("Error sending request to LLM: %s", err))
+				fmt.Println(RED(fmt.Sprintf("Error sending request to LLM: %s", err)))
 				agent.logger.Error("Error creating LLM chat stream", zap.Error(err))
 				return
 			}
