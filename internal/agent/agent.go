@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/agent/tools"
+	"github.com/atinylittleshell/gsh/internal/history"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	"github.com/charmbracelet/lipgloss"
 	openai "github.com/sashabaranov/go-openai"
@@ -15,9 +16,10 @@ import (
 )
 
 type Agent struct {
-	runner    *interp.Runner
-	logger    *zap.Logger
-	llmClient *openai.Client
+	runner         *interp.Runner
+	historyManager *history.HistoryManager
+	logger         *zap.Logger
+	llmClient      *openai.Client
 
 	modelId     string
 	temperature float32
@@ -26,15 +28,16 @@ type Agent struct {
 
 var RED = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render
 
-func NewAgent(runner *interp.Runner, logger *zap.Logger) *Agent {
+func NewAgent(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) *Agent {
 	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.SlowModel)
 
 	return &Agent{
-		runner:      runner,
-		logger:      logger,
-		llmClient:   llmClient,
-		modelId:     modelId,
-		temperature: temperature,
+		runner:         runner,
+		historyManager: historyManager,
+		logger:         logger,
+		llmClient:      llmClient,
+		modelId:        modelId,
+		temperature:    temperature,
 		messages: []openai.ChatCompletionMessage{
 			{
 				Role: "system",
@@ -155,7 +158,7 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 		toolResponse = "ok"
 	case tools.BashToolDefinition.Function.Name:
 		// bash
-		toolResponse = tools.BashTool(agent.runner, agent.logger, params)
+		toolResponse = tools.BashTool(agent.runner, agent.historyManager, agent.logger, params)
 	case tools.ViewFileToolDefinition.Function.Name:
 		// view_file
 		toolResponse = tools.ViewFileTool(agent.runner, agent.logger, params)

@@ -35,7 +35,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 		PrefixPredictor:    predict.NewLLMPrefixPredictor(runner, contextProvider, logger),
 		NullStatePredictor: predict.NewLLMNullStatePredictor(runner, contextProvider, logger),
 	}
-	agent := agent.NewAgent(runner, logger)
+	agent := agent.NewAgent(runner, historyManager, logger)
 
 	for {
 		prompt := getPrompt(runner)

@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/atinylittleshell/gsh/internal/history"
 	"github.com/atinylittleshell/gsh/internal/styles"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
@@ -32,7 +33,7 @@ var BashToolDefinition = openai.Tool{
 	},
 }
 
-func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) string {
+func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger, params map[string]any) string {
 	reason, ok := params["reason"].(string)
 	if !ok {
 		logger.Error("The bash tool failed to parse parameter 'reason'")
@@ -73,6 +74,8 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) 
 	interp.StdIO(os.Stdin, multiOut, multiErr)(runner)
 	defer interp.StdIO(os.Stdin, os.Stdout, os.Stderr)(runner)
 
+	historyEntry, _ := historyManager.StartCommand(command, runner.Vars["PWD"].String())
+
 	err = runner.Run(context.Background(), prog)
 
 	exitCode := -1
@@ -88,6 +91,8 @@ func BashTool(runner *interp.Runner, logger *zap.Logger, params map[string]any) 
 	}
 	stdout := outBuf.String()
 	stderr := errBuf.String()
+
+	historyManager.FinishCommand(historyEntry, exitCode)
 
 	jsonBuffer, err := json.Marshal(map[string]any{
 		"stdout":   stdout,
