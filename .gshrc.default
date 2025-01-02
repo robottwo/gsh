@@ -14,6 +14,9 @@ GSH_LOG_LEVEL="info"
 # Whether gsh should remove existing content in the log file when it starts
 GSH_CLEAN_LOG_FILE=0
 
+# Minimum number of lines the shell prompt would occupy
+GSH_MINIMUM_HEIGHT=8
+
 # -------- Large Language Model Configuration --------
 # - gsh invokes Large Language Models through OpenAI-compatible API
 # - You can choose to use Ollama which runs LLM on your local machine
