@@ -22,11 +22,19 @@ var DEFAULT_VARS []byte
 
 var command = flag.String("c", "", "command to run")
 var listHistory = flag.Int("lh", 0, "list the most N history entries")
-var resetHistory = flag.Bool("rh", false, "reset the history")
+var resetHistory = flag.Bool("rh", false, "reset history")
 var loginShell = flag.Bool("l", false, "run as a login shell")
+
+var helpFlag = flag.Bool("h", false, "display help information")
 
 func main() {
 	flag.Parse()
+
+	if *helpFlag {
+		fmt.Println("Usage of gsh:")
+		flag.PrintDefaults()
+		return
+	}
 
 	// Initialize the shell interpreter
 	runner, err := initializeRunner()

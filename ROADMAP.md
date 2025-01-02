@@ -7,10 +7,10 @@
 
 - auto prune agent messages
 - history prev/next
-- bash completion
 
 # Enhancements
 
+- bash completion
 - keybind configuration
 - multiline input
 - better rendering of agent loading state
