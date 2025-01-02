@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/rag"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
@@ -13,6 +14,7 @@ import (
 )
 
 type LLMNullStatePredictor struct {
+	runner          *interp.Runner
 	llmClient       *openai.Client
 	contextProvider *rag.ContextProvider
 	logger          *zap.Logger
@@ -27,6 +29,7 @@ func NewLLMNullStatePredictor(
 ) *LLMNullStatePredictor {
 	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.FastModel)
 	return &LLMNullStatePredictor{
+		runner:          runner,
 		llmClient:       llmClient,
 		contextProvider: contextProvider,
 		logger:          logger,
@@ -54,7 +57,12 @@ Instructions:
 %s
 
 Now predict what my next command should be.`,
-		p.contextProvider.GetContext(rag.ContextRetrievalOptions{Concise: false}),
+		p.contextProvider.GetContext(
+			rag.ContextRetrievalOptions{
+				Concise:      false,
+				HistoryLimit: environment.GetHistoryContextLimit(p.runner, p.logger),
+			},
+		),
 	)
 
 	p.logger.Debug(

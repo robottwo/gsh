@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/agent"
+	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/history"
 	"github.com/atinylittleshell/gsh/internal/predict"
 	"github.com/atinylittleshell/gsh/internal/rag"
@@ -16,10 +17,6 @@ import (
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
-)
-
-const (
-	DEFAULT_PROMPT = "gsh> "
 )
 
 func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
@@ -39,7 +36,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 	agent := agent.NewAgent(runner, historyManager, logger)
 
 	for {
-		prompt := getPrompt(runner)
+		prompt := environment.GetPrompt(runner, logger)
 		logger.Debug("prompt updated", zap.String("prompt", prompt))
 
 		// Read input
@@ -57,7 +54,12 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 			chatMessage := fmt.Sprintf(
 				"%s\n\nContext:\n%s",
 				line[1:],
-				contextProvider.GetContext(rag.ContextRetrievalOptions{Concise: false}),
+				contextProvider.GetContext(
+					rag.ContextRetrievalOptions{
+						Concise:      false,
+						HistoryLimit: environment.GetHistoryContextLimit(runner, logger),
+					},
+				),
 			)
 			chatChannel, err := agent.Chat(chatMessage)
 			if err != nil {
@@ -107,7 +109,7 @@ func executeCommand(input string, historyManager *history.HistoryManager, runner
 		return false, err
 	}
 
-	historyEntry, _ := historyManager.StartCommand(input, runner.Vars["PWD"].String())
+	historyEntry, _ := historyManager.StartCommand(input, environment.GetPwd(runner))
 
 	err = runner.Run(context.Background(), prog)
 	if err != nil {
@@ -124,18 +126,4 @@ func executeCommand(input string, historyManager *history.HistoryManager, runner
 	}
 
 	return runner.Exited(), nil
-}
-
-func getPrompt(runner *interp.Runner) string {
-	promptUpdater := runner.Funcs["GSH_UPDATE_PROMPT"]
-	if promptUpdater != nil {
-		runner.Run(context.Background(), promptUpdater)
-	}
-
-	prompt := runner.Vars["GSH_PROMPT"].String()
-	if prompt != "" {
-		return prompt
-	}
-
-	return DEFAULT_PROMPT
 }

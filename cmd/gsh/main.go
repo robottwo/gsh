@@ -10,6 +10,7 @@ import (
 
 	"github.com/atinylittleshell/gsh/internal/bash"
 	"github.com/atinylittleshell/gsh/internal/core"
+	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/history"
 	"go.uber.org/zap"
 	"golang.org/x/term"
@@ -112,15 +113,9 @@ func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *
 }
 
 func initializeLogger(runner *interp.Runner) (*zap.Logger, error) {
-	// Determine the log level
-	logLevel, err := zap.ParseAtomicLevel(runner.Vars["GSH_LOG_LEVEL"].String())
-	if err != nil {
-		logLevel = zap.NewAtomicLevel()
-	}
+	logLevel := environment.GetLogLevel(runner)
 
-	// Start with a clean log file if requested
-	cleanLogFile := runner.Vars["GSH_CLEAN_LOG_FILE"].String()
-	if cleanLogFile == "1" || cleanLogFile == "true" {
+	if environment.ShouldCleanLogFile(runner) {
 		os.Remove(core.LogFile())
 	}
 

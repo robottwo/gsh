@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/rag"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
@@ -14,6 +15,7 @@ import (
 )
 
 type LLMPrefixPredictor struct {
+	runner          *interp.Runner
 	llmClient       *openai.Client
 	contextProvider *rag.ContextProvider
 	logger          *zap.Logger
@@ -28,6 +30,7 @@ func NewLLMPrefixPredictor(
 ) *LLMPrefixPredictor {
 	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.FastModel)
 	return &LLMPrefixPredictor{
+		runner:          runner,
 		llmClient:       llmClient,
 		contextProvider: contextProvider,
 		logger:          logger,
@@ -58,7 +61,12 @@ Instructions:
 Additional context to be aware of:
 %s`,
 		input,
-		p.contextProvider.GetContext(rag.ContextRetrievalOptions{Concise: true}),
+		p.contextProvider.GetContext(
+			rag.ContextRetrievalOptions{
+				Concise:      true,
+				HistoryLimit: environment.GetHistoryContextLimit(p.runner, p.logger),
+			},
+		),
 	)
 
 	p.logger.Debug(

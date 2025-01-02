@@ -12,7 +12,8 @@ type ContextProvider struct {
 }
 
 type ContextRetrievalOptions struct {
-	Concise bool
+	Concise      bool
+	HistoryLimit int
 }
 
 func (p *ContextProvider) GetContext(options ContextRetrievalOptions) string {

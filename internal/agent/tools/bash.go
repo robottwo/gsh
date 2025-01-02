@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/history"
 	"github.com/atinylittleshell/gsh/internal/styles"
 	"github.com/atinylittleshell/gsh/internal/utils"
@@ -74,7 +75,7 @@ func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, log
 	interp.StdIO(os.Stdin, multiOut, multiErr)(runner)
 	defer interp.StdIO(os.Stdin, os.Stdout, os.Stderr)(runner)
 
-	historyEntry, _ := historyManager.StartCommand(command, runner.Vars["PWD"].String())
+	historyEntry, _ := historyManager.StartCommand(command, environment.GetPwd(runner))
 
 	err = runner.Run(context.Background(), prog)
 
