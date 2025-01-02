@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/atinylittleshell/gsh/internal/styles"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -36,14 +35,18 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 		return failedToolResponse("The create_file tool failed to parse parameter 'content'")
 	}
 
-	confirmResponse := userConfirmation(logger, "Do I have your permission to create the following file?", path)
+	confirmResponse := userConfirmation(
+		logger,
+		"Do I have your permission to create the following file?",
+		fmt.Sprintf("%s\n\n%s", path, content),
+	)
 	if confirmResponse == "n" {
 		return failedToolResponse("User declined this request")
 	} else if confirmResponse != "y" {
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-	fmt.Println(styles.LIGHT_BLUE(path))
+	fmt.Println(path)
 
 	file, err := os.Create(path)
 	if err != nil {
