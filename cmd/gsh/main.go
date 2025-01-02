@@ -76,7 +76,7 @@ func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *
 
 	// gsh -c "echo hello"
 	if *command != "" {
-		return bash.RunBashScriptFromReader(runner, strings.NewReader(*command), "")
+		return bash.RunBashScriptFromReader(runner, strings.NewReader(*command), "gsh")
 	}
 
 	// gsh -lh 5
@@ -108,7 +108,7 @@ func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *
 			return core.RunInteractiveShell(runner, historyManager, logger)
 		}
 
-		return bash.RunBashScriptFromReader(runner, os.Stdin, "")
+		return bash.RunBashScriptFromReader(runner, os.Stdin, "gsh")
 	}
 
 	// gsh script.sh
@@ -157,7 +157,10 @@ func initializeRunner() (*interp.Runner, error) {
 	if err != nil {
 		panic(err)
 	}
-	env := expand.ListEnviron(append(os.Environ(), fmt.Sprintf("SHELL=%s", shellPath))...)
+	env := expand.ListEnviron(append(
+		os.Environ(),
+		fmt.Sprintf("SHELL=%s", shellPath),
+	)...)
 
 	runner, err := interp.New(
 		interp.Interactive(true),
@@ -172,7 +175,7 @@ func initializeRunner() (*interp.Runner, error) {
 	if err := bash.RunBashScriptFromReader(
 		runner,
 		bytes.NewReader(DEFAULT_VARS),
-		"DEFAULT_VARS",
+		"gsh",
 	); err != nil {
 		panic(err)
 	}
