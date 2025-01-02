@@ -21,7 +21,7 @@ func userConfirmation(logger *zap.Logger, question string, explanation string) s
 	prompt :=
 		styles.LIGHT_YELLOW_BOLD(question + " (y/N/freeform reply) ")
 
-	line, err := gline.Gline(prompt, explanation, nil, nil, logger)
+	line, err := gline.Gline(prompt, explanation, nil, nil, logger, gline.NewOptions())
 	if err != nil {
 		return "no"
 	}

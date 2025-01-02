@@ -16,6 +16,7 @@ type appModel struct {
 	predictor Predictor
 	explainer Explainer
 	logger    *zap.Logger
+	options   Options
 
 	textInput         shellinput.Model
 	dirty             bool
@@ -23,8 +24,8 @@ type appModel struct {
 	explanation       string
 	predictionStateId int
 
-	result     string
-	terminated bool
+	result   string
+	appState appState
 
 	explanationStyle lipgloss.Style
 }
@@ -54,12 +55,20 @@ func terminate() tea.Msg {
 	return terminateMsg{}
 }
 
+type appState int
+
+const (
+	Active appState = iota
+	Terminated
+)
+
 func initialModel(
 	prompt string,
 	explanation string,
 	predictor Predictor,
 	explainer Explainer,
 	logger *zap.Logger,
+	options Options,
 ) appModel {
 	textInput := shellinput.New()
 	textInput.Prompt = prompt
@@ -71,13 +80,14 @@ func initialModel(
 		predictor: predictor,
 		explainer: explainer,
 		logger:    logger,
+		options:   options,
 
 		textInput:   textInput,
 		dirty:       false,
 		prediction:  "",
 		explanation: explanation,
 		result:      "",
-		terminated:  false,
+		appState:    Active,
 
 		predictionStateId: 0,
 
@@ -104,7 +114,7 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case terminateMsg:
-		m.terminated = true
+		m.appState = Terminated
 		return m, nil
 
 	case attemptPredictionMsg:
@@ -135,15 +145,23 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m appModel) View() string {
-	if m.terminated {
+	// Once terminated, render nothing
+	if m.appState == Terminated {
 		return ""
 	}
 
+	// Render normal state
 	s := m.textInput.View()
 	if m.explanation != "" {
 		s += "\n"
 		s += m.explanationStyle.Render(m.explanation)
 	}
+
+	numLines := strings.Count(s, "\n")
+	if numLines < m.options.MinHeight {
+		s += strings.Repeat("\n", m.options.MinHeight-numLines)
+	}
+
 	return s
 }
 
@@ -282,8 +300,17 @@ func (m appModel) setExplanation(msg setExplanationMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func Gline(prompt string, explanation string, predictor Predictor, explainer Explainer, logger *zap.Logger) (string, error) {
-	p := tea.NewProgram(initialModel(prompt, explanation, predictor, explainer, logger))
+func Gline(
+	prompt string,
+	explanation string,
+	predictor Predictor,
+	explainer Explainer,
+	logger *zap.Logger,
+	options Options,
+) (string, error) {
+	p := tea.NewProgram(
+		initialModel(prompt, explanation, predictor, explainer, logger, options),
+	)
 
 	m, err := p.Run()
 	if err != nil {

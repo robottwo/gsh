@@ -41,7 +41,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 		logger.Debug("prompt updated", zap.String("prompt", prompt))
 
 		// Read input
-		line, err := gline.Gline(prompt, "", predictor, explainer, logger)
+		line, err := gline.Gline(prompt, "", predictor, explainer, logger, gline.NewOptions())
 
 		logger.Debug("received command", zap.String("line", line))
 
