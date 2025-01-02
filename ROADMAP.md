@@ -1,22 +1,17 @@
-# Bugs
+# Bash Parity
 
-- nvm bash completion script not working
-- concurrent vars map read write crash
-
-# Core Features
-
-# Enhancements
-
-- history prev/next
-- bash completion
-- keybind configuration
+- allow selecting past commands in shellinput
+- support bash completion
 - multiline input
-- persist agent message history
-- syntax highlighting
-- use readme as agent context
+
+# Ergonomics
+
+- keybind configuration
+- syntax highlighting in shellinput
 - better rendering of agent loading state
 
-# Release Readiness
+# AI
 
-- ci/cd
-- documentation
+- persist agent message history
+- use readme as agent context
+- training a small command prediction model

@@ -44,5 +44,3 @@ require (
 	modernc.org/memory v1.8.0 // indirect
 	modernc.org/sqlite v1.34.4 // indirect
 )
-
-replace github.com/charmbracelet/bubbles v0.20.0 => github.com/atinylittleshell/bubbles v0.20.1

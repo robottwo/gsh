@@ -24,6 +24,7 @@ GSH_MINIMUM_HEIGHT=8
 # - Read the corresponding documentation of the model provider for config values below
 
 # The "fast" model is used for auto suggestion.
+# By default gsh uses qwen2.5 through Ollama as the fast model.
 GSH_FAST_MODEL_API_KEY=ollama
 GSH_FAST_MODEL_BASE_URL=http://localhost:11434/v1/
 GSH_FAST_MODEL_ID=qwen2.5
@@ -31,6 +32,7 @@ GSH_FAST_MODEL_TEMPERATURE=0.1
 GSH_FAST_MODEL_HEADERS='{}'
 
 # The "slow" model is used for chat and agentic operations.
+# By default gsh uses qwen2.5:32b through Ollama as the slow model.
 GSH_SLOW_MODEL_API_KEY=ollama
 GSH_SLOW_MODEL_BASE_URL=http://localhost:11434/v1/
 GSH_SLOW_MODEL_ID=qwen2.5:32b
