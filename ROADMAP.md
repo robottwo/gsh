@@ -13,7 +13,7 @@
 - multiline input
 - persist agent message history
 - syntax highlighting
-- readme rag
+- use readme as agent context
 - better rendering of agent loading state
 
 # Release Readiness

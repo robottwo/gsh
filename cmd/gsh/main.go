@@ -181,14 +181,20 @@ func initializeRunner() (*interp.Runner, error) {
 	}
 
 	configFiles := []string{
-		filepath.Join(core.HomeDir(), ".gshenv"),
 		filepath.Join(core.HomeDir(), ".gshrc"),
+		filepath.Join(core.HomeDir(), ".gshenv"),
 	}
 
 	// Check if this is a login shell
 	if *loginShell {
 		// Prepend .gsh_profile to the list of config files
-		configFiles = append([]string{filepath.Join(core.HomeDir(), ".gsh_profile")}, configFiles...)
+		configFiles = append([]string{
+			filepath.Join(
+				"/etc/profile",
+				core.HomeDir(), ".gsh_profile"),
+		},
+			configFiles...,
+		)
 	}
 
 	for _, configFile := range configFiles {
