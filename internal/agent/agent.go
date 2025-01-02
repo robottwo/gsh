@@ -105,7 +105,7 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 				},
 			)
 			if err != nil {
-				fmt.Println(styles.RED(fmt.Sprintf("Error sending request to LLM: %s", err)))
+				fmt.Println(styles.ERROR(fmt.Sprintf("Error sending request to LLM: %s", err)))
 				agent.logger.Error("Error sending request to LLM", zap.Error(err))
 				return
 			}
@@ -144,7 +144,7 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 	var params map[string]any
 	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &params); err != nil {
 		agent.logger.Error(fmt.Sprintf("Failed to parse function call arguments: %v", err), zap.String("arguments", toolCall.Function.Arguments))
-		fmt.Println(styles.RED("LLM responded with something invalid. This is typically an indication that the model being used is not intelligent enough for the current task. Please try again."))
+		fmt.Println(styles.ERROR("LLM responded with something invalid. This is typically an indication that the model being used is not intelligent enough for the current task. Please try again."))
 		return false
 	}
 

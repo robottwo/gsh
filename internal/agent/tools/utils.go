@@ -14,12 +14,12 @@ func failedToolResponse(errorMessage string) string {
 }
 
 func printToolMessage(message string) {
-	fmt.Println(styles.LIGHT_YELLOW_BOLD(message))
+	fmt.Println(styles.AGENT_QUESTION(message))
 }
 
 func userConfirmation(logger *zap.Logger, question string, explanation string) string {
 	prompt :=
-		styles.LIGHT_YELLOW_BOLD(question + " (y/N/freeform reply) ")
+		styles.AGENT_QUESTION(question + " (y/N/freeform reply) ")
 
 	line, err := gline.Gline(prompt, explanation, nil, nil, logger, gline.NewOptions())
 	if err != nil {
