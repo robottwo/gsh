@@ -14,18 +14,19 @@ import (
 
 type appModel struct {
 	predictor Predictor
+	explainer Explainer
 	logger    *zap.Logger
 
 	textInput         shellinput.Model
 	dirty             bool
 	prediction        string
-	preview           string
+	explanation       string
 	predictionStateId int
 
 	result     string
 	terminated bool
 
-	previewStyle lipgloss.Style
+	explanationStyle lipgloss.Style
 }
 
 type attemptPredictionMsg struct {
@@ -35,7 +36,16 @@ type attemptPredictionMsg struct {
 type setPredictionMsg struct {
 	stateId    int
 	prediction string
-	preview    string
+}
+
+type attemptExplanationMsg struct {
+	stateId    int
+	prediction string
+}
+
+type setExplanationMsg struct {
+	stateId     int
+	explanation string
 }
 
 type terminateMsg struct{}
@@ -44,7 +54,13 @@ func terminate() tea.Msg {
 	return terminateMsg{}
 }
 
-func initialModel(prompt string, preview string, predictor Predictor, logger *zap.Logger) appModel {
+func initialModel(
+	prompt string,
+	explanation string,
+	predictor Predictor,
+	explainer Explainer,
+	logger *zap.Logger,
+) appModel {
 	textInput := shellinput.New()
 	textInput.Prompt = prompt
 	textInput.Cursor.SetMode(cursor.CursorStatic)
@@ -53,18 +69,19 @@ func initialModel(prompt string, preview string, predictor Predictor, logger *za
 
 	return appModel{
 		predictor: predictor,
+		explainer: explainer,
 		logger:    logger,
 
-		textInput:  textInput,
-		dirty:      false,
-		prediction: "",
-		preview:    preview,
-		result:     "",
-		terminated: false,
+		textInput:   textInput,
+		dirty:       false,
+		prediction:  "",
+		explanation: explanation,
+		result:      "",
+		terminated:  false,
 
 		predictionStateId: 0,
 
-		previewStyle: lipgloss.NewStyle().
+		explanationStyle: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("12")),
 	}
@@ -83,7 +100,7 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		m.textInput.Width = msg.Width
-		m.previewStyle = m.previewStyle.Width(max(1, msg.Width-2))
+		m.explanationStyle = m.explanationStyle.Width(max(1, msg.Width-2))
 		return m, nil
 
 	case terminateMsg:
@@ -94,8 +111,13 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.attemptPrediction(msg)
 
 	case setPredictionMsg:
-		m.setPrediction(msg.stateId, msg.prediction, msg.preview)
-		return m, nil
+		return m.setPrediction(msg.stateId, msg.prediction)
+
+	case attemptExplanationMsg:
+		return m.attemptExplanation(msg)
+
+	case setExplanationMsg:
+		return m.setExplanation(msg)
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -118,9 +140,9 @@ func (m appModel) View() string {
 	}
 
 	s := m.textInput.View()
-	if m.preview != "" {
+	if m.explanation != "" {
 		s += "\n"
-		s += m.previewStyle.Render(m.preview)
+		s += m.explanationStyle.Render(m.explanation)
 	}
 	return s
 }
@@ -176,22 +198,26 @@ func (m appModel) updateTextInput(msg tea.Msg) (appModel, tea.Cmd) {
 
 func (m *appModel) clearPrediction() {
 	m.prediction = ""
-	m.preview = ""
+	m.explanation = ""
 	m.textInput.SetSuggestions([]string{})
 }
 
-func (m *appModel) setPrediction(stateId int, prediction string, preview string) {
+func (m appModel) setPrediction(stateId int, prediction string) (appModel, tea.Cmd) {
 	if stateId != m.predictionStateId {
 		m.logger.Debug(
 			"gline discarding prediction",
 			zap.Int("startStateId", stateId),
 			zap.Int("newStateId", m.predictionStateId),
 		)
-		return
+		return m, nil
 	}
+
 	m.prediction = prediction
-	m.preview = preview
 	m.textInput.SetSuggestions([]string{prediction})
+	m.explanation = ""
+	return m, tea.Cmd(func() tea.Msg {
+		return attemptExplanationMsg{stateId: m.predictionStateId, prediction: prediction}
+	})
 }
 
 func (m appModel) attemptPrediction(msg attemptPredictionMsg) (tea.Model, tea.Cmd) {
@@ -203,7 +229,7 @@ func (m appModel) attemptPrediction(msg attemptPredictionMsg) (tea.Model, tea.Cm
 	}
 
 	return m, tea.Cmd(func() tea.Msg {
-		prediction, preview, err := m.predictor.Predict(m.textInput.Value())
+		prediction, err := m.predictor.Predict(m.textInput.Value())
 		if err != nil {
 			m.logger.Error("gline prediction failed", zap.Error(err))
 			return nil
@@ -213,14 +239,51 @@ func (m appModel) attemptPrediction(msg attemptPredictionMsg) (tea.Model, tea.Cm
 			"gline predicted input",
 			zap.Int("stateId", msg.stateId),
 			zap.String("prediction", prediction),
-			zap.String("preview", preview),
 		)
-		return setPredictionMsg{stateId: msg.stateId, prediction: prediction, preview: preview}
+		return setPredictionMsg{stateId: msg.stateId, prediction: prediction}
 	})
 }
 
-func Gline(prompt string, preview string, predictor Predictor, logger *zap.Logger) (string, error) {
-	p := tea.NewProgram(initialModel(prompt, preview, predictor, logger))
+func (m appModel) attemptExplanation(msg attemptExplanationMsg) (tea.Model, tea.Cmd) {
+	if m.explainer == nil {
+		return m, nil
+	}
+	if msg.stateId != m.predictionStateId {
+		return m, nil
+	}
+
+	return m, tea.Cmd(func() tea.Msg {
+		explanation, err := m.explainer.Explain(msg.prediction)
+		if err != nil {
+			m.logger.Error("gline explanation failed", zap.Error(err))
+			return nil
+		}
+
+		m.logger.Debug(
+			"gline explained prediction",
+			zap.Int("stateId", msg.stateId),
+			zap.String("explanation", explanation),
+		)
+		return setExplanationMsg{stateId: msg.stateId, explanation: explanation}
+	})
+}
+
+func (m appModel) setExplanation(msg setExplanationMsg) (tea.Model, tea.Cmd) {
+	if msg.stateId != m.predictionStateId {
+		m.logger.Debug(
+			"gline discarding explanation",
+			zap.Int("startStateId", msg.stateId),
+			zap.Int("newStateId", m.predictionStateId),
+		)
+		return m, nil
+	}
+
+	m.explanation = msg.explanation
+	return m, nil
+}
+
+func Gline(prompt string, explanation string, predictor Predictor, explainer Explainer, logger *zap.Logger) (string, error) {
+	p := tea.NewProgram(initialModel(prompt, explanation, predictor, explainer, logger))
 
 	m, err := p.Run()
 	if err != nil {

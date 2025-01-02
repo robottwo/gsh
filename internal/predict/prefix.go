@@ -39,10 +39,10 @@ func NewLLMPrefixPredictor(
 	}
 }
 
-func (p *LLMPrefixPredictor) Predict(input string) (string, string, error) {
+func (p *LLMPrefixPredictor) Predict(input string) (string, error) {
 	if strings.HasPrefix(input, "#") {
 		// Don't do prediction for agent chat messages
-		return "", "", nil
+		return "", nil
 	}
 
 	systemMessage := `You are gsh, an intelligent shell program.
@@ -92,7 +92,7 @@ Additional context to be aware of:
 	})
 
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	prediction := predictedCommand{}
@@ -103,5 +103,5 @@ Additional context to be aware of:
 		zap.Any("response", prediction),
 	)
 
-	return prediction.PredictedCommand, prediction.Explanation, nil
+	return prediction.PredictedCommand, nil
 }

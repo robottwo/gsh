@@ -33,6 +33,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 		PrefixPredictor:    predict.NewLLMPrefixPredictor(runner, contextProvider, logger),
 		NullStatePredictor: predict.NewLLMNullStatePredictor(runner, contextProvider, logger),
 	}
+	explainer := predict.NewLLMExplainer(runner, contextProvider, logger)
 	agent := agent.NewAgent(runner, historyManager, logger)
 
 	for {
@@ -40,7 +41,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 		logger.Debug("prompt updated", zap.String("prompt", prompt))
 
 		// Read input
-		line, err := gline.Gline(prompt, "", predictor, logger)
+		line, err := gline.Gline(prompt, "", predictor, explainer, logger)
 
 		logger.Debug("received command", zap.String("line", line))
 

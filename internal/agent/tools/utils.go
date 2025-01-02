@@ -17,11 +17,11 @@ func printToolMessage(message string) {
 	fmt.Println(styles.LIGHT_YELLOW_BOLD(message))
 }
 
-func userConfirmation(logger *zap.Logger, question string, preview string) string {
+func userConfirmation(logger *zap.Logger, question string, explanation string) string {
 	prompt :=
 		styles.LIGHT_YELLOW_BOLD(question + " (y/N/freeform reply) ")
 
-	line, err := gline.Gline(prompt, preview, nil, logger)
+	line, err := gline.Gline(prompt, explanation, nil, nil, logger)
 	if err != nil {
 		return "no"
 	}

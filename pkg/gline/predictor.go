@@ -1,11 +1,11 @@
 package gline
 
 type Predictor interface {
-	Predict(input string) (string, string, error)
+	Predict(input string) (string, error)
 }
 
 type NoopPredictor struct{}
 
-func (p *NoopPredictor) Predict(input string) (string, string, error) {
-	return "", "", nil
+func (p *NoopPredictor) Predict(input string) (string, error) {
+	return "", nil
 }

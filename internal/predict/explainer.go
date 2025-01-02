@@ -13,7 +13,7 @@ import (
 	"mvdan.cc/sh/v3/interp"
 )
 
-type LLMNullStatePredictor struct {
+type LLMExplainer struct {
 	runner          *interp.Runner
 	llmClient       *openai.Client
 	contextProvider *rag.ContextProvider
@@ -22,13 +22,13 @@ type LLMNullStatePredictor struct {
 	temperature     float32
 }
 
-func NewLLMNullStatePredictor(
+func NewLLMExplainer(
 	runner *interp.Runner,
 	contextProvider *rag.ContextProvider,
 	logger *zap.Logger,
-) *LLMNullStatePredictor {
+) *LLMExplainer {
 	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.FastModel)
-	return &LLMNullStatePredictor{
+	return &LLMExplainer{
 		runner:          runner,
 		llmClient:       llmClient,
 		contextProvider: contextProvider,
@@ -38,42 +38,43 @@ func NewLLMNullStatePredictor(
 	}
 }
 
-func (p *LLMNullStatePredictor) Predict(input string) (string, error) {
-	if input != "" {
-		// this predictor is only for null state
+func (e *LLMExplainer) Explain(input string) (string, error) {
+	if input == "" {
 		return "", nil
 	}
 
 	systemMessage := `You are gsh, an intelligent shell program.
-You are asked to predict the next command I'm likely to want to run.
+You will be given a bash command entered by me, enclosed in <command> tags.
 
 Instructions:
-* Based on the context, analyze the my potential intent
-* Your prediction must be a valid, single-line, complete bash command
-` + BEST_PRACTICES
+* Give a concise explanation of what the command will do for me
+* If any uncommon arguments are present in the command, 
+  format your explanation in markdown and explain arguments in a bullet point list
+`
 
 	userMessage := fmt.Sprintf(
-		`Context:
-%s
+		`<command>%s</command>
 
-Now predict what my next command should be.`,
-		p.contextProvider.GetContext(
+Context:
+%s`,
+		input,
+		e.contextProvider.GetContext(
 			rag.ContextRetrievalOptions{
 				Concise:      false,
-				HistoryLimit: environment.GetHistoryContextLimit(p.runner, p.logger),
+				HistoryLimit: environment.GetHistoryContextLimit(e.runner, e.logger),
 			},
 		),
 	)
 
-	p.logger.Debug(
-		"predicting using LLM",
+	e.logger.Debug(
+		"explaining prediction using LLM",
 		zap.String("system", systemMessage),
 		zap.String("user", userMessage),
 	)
 
-	chatCompletion, err := p.llmClient.CreateChatCompletion(context.TODO(), openai.ChatCompletionRequest{
-		Model:       p.modelId,
-		Temperature: p.temperature,
+	chatCompletion, err := e.llmClient.CreateChatCompletion(context.TODO(), openai.ChatCompletionRequest{
+		Model:       e.modelId,
+		Temperature: e.temperature,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    "system",
@@ -84,20 +85,20 @@ Now predict what my next command should be.`,
 				Content: userMessage,
 			},
 		},
-		ResponseFormat: &PREDICTED_COMMAND_SCHEMA_PARAM,
+		ResponseFormat: &EXPLAINED_COMMAND_SCHEMA_PARAM,
 	})
 
 	if err != nil {
 		return "", err
 	}
 
-	prediction := predictedCommand{}
-	_ = json.Unmarshal([]byte(chatCompletion.Choices[0].Message.Content), &prediction)
+	explanation := explainedCommand{}
+	_ = json.Unmarshal([]byte(chatCompletion.Choices[0].Message.Content), &explanation)
 
-	p.logger.Debug(
-		"LLM prediction response",
-		zap.Any("response", prediction),
+	e.logger.Debug(
+		"LLM explanation response",
+		zap.Any("response", explanation),
 	)
 
-	return prediction.PredictedCommand, nil
+	return explanation.Explanation, nil
 }
