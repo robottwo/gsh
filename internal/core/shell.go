@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
 	"time"
 
@@ -37,6 +38,16 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 	}
 	explainer := predict.NewLLMExplainer(runner, contextProvider, logger)
 	agent := agent.NewAgent(runner, historyManager, logger)
+
+	chanSIGINT := make(chan os.Signal, 1)
+	signal.Notify(chanSIGINT, os.Interrupt)
+
+	go func() {
+		for {
+			// ignore SIGINT
+			<-chanSIGINT
+		}
+	}()
 
 	for {
 		prompt := environment.GetPrompt(runner, logger)
