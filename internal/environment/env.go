@@ -55,3 +55,13 @@ func GetPrompt(runner *interp.Runner, logger *zap.Logger) string {
 	}
 	return DEFAULT_PROMPT
 }
+
+func GetAgentContextWindowTokens(runner *interp.Runner, logger *zap.Logger) int {
+	agentContextWindow, err := strconv.ParseInt(
+		runner.Vars["GSH_AGENT_CONTEXT_WINDOW_TOKENS"].String(), 10, 32)
+	if err != nil {
+		logger.Error("error parsing GSH_AGENT_CONTEXT_WINDOW_TOKENS", zap.Error(err))
+		agentContextWindow = 32768
+	}
+	return int(agentContextWindow)
+}

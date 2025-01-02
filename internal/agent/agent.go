@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/agent/tools"
+	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/history"
 	"github.com/atinylittleshell/gsh/internal/styles"
 	"github.com/atinylittleshell/gsh/internal/utils"
@@ -175,4 +176,36 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 		Content:    toolResponse,
 	})
 	return true
+}
+
+func (agent *Agent) pruneMessages() {
+	keptMessages := []openai.ChatCompletionMessage{}
+
+	// This is a naive algorithm that assumes each llm token takes 4 bytes on average
+	maxBytes := 4 * environment.GetAgentContextWindowTokens(agent.runner, agent.logger)
+
+	usedBytes := 0
+	for i := len(agent.messages) - 1; i >= 0; i-- {
+		bytes, err := agent.messages[i].MarshalJSON()
+		if err != nil {
+			agent.logger.Error("Failed to marshal message for pruning", zap.Error(err))
+			break
+		}
+
+		length := len(bytes)
+		if usedBytes+length > maxBytes {
+			break
+		}
+
+		usedBytes += length
+		keptMessages = append(
+			[]openai.ChatCompletionMessage{agent.messages[i]},
+			keptMessages...,
+		)
+	}
+
+	agent.messages = append(
+		[]openai.ChatCompletionMessage{agent.messages[0]},
+		keptMessages...,
+	)
 }

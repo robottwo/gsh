@@ -5,11 +5,11 @@
 
 # Core Features
 
-- auto prune agent messages
-- history prev/next
+- explain command in a separate call
 
 # Enhancements
 
+- history prev/next
 - bash completion
 - keybind configuration
 - multiline input
