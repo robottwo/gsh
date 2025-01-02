@@ -68,6 +68,8 @@ Whenever you are trying to create a git commit:
 }
 
 func (agent *Agent) Chat(prompt string) (<-chan string, error) {
+	agent.pruneMessages()
+
 	appendMessage := openai.ChatCompletionMessage{
 		Role:    "user",
 		Content: prompt,
@@ -115,7 +117,6 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 			if msg.FinishReason == "stop" || msg.FinishReason == "tool_calls" || msg.FinishReason == "function_call" {
 				if msg.Message.Content != "" {
 					responseChannel <- strings.TrimSpace(msg.Message.Content)
-					responseChannel <- "\n"
 				}
 
 				if len(msg.Message.ToolCalls) > 0 {

@@ -69,7 +69,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 			}
 
 			for message := range chatChannel {
-				fmt.Print(styles.LIGHT_BLUE(message))
+				fmt.Println(styles.LIGHT_BLUE(message))
 			}
 
 			continue

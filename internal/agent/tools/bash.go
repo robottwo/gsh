@@ -11,7 +11,6 @@ import (
 
 	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/history"
-	"github.com/atinylittleshell/gsh/internal/styles"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -56,16 +55,19 @@ func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, log
 		return failedToolResponse(fmt.Sprintf("`%s` is not a valid bash command: %s", command, err))
 	}
 
-	fmt.Println(styles.LIGHT_BLUE(reason))
-
-	confirmResponse := userConfirmation(logger, "Do I have your permission to run the following command?", command)
+	confirmResponse := userConfirmation(
+		logger,
+		"Do I have your permission to run the following command?",
+		fmt.Sprintf("%s\n\n%s", command, reason),
+	)
 	if confirmResponse == "n" {
 		return failedToolResponse("User declined this request")
 	} else if confirmResponse != "y" {
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-	fmt.Println(styles.LIGHT_BLUE(command))
+	fmt.Print(environment.GetPrompt(runner, logger))
+	fmt.Println(command)
 
 	outBuf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
