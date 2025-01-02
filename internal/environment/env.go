@@ -15,9 +15,9 @@ const (
 
 func GetHistoryContextLimit(runner *interp.Runner, logger *zap.Logger) int {
 	historyContextLimit, err := strconv.ParseInt(
-		runner.Vars["GSH_PREDICTION_HISTORY_CONTEXT_LIMIT"].String(), 10, 32)
+		runner.Vars["GSH_PAST_COMMANDS_CONTEXT_LIMIT"].String(), 10, 32)
 	if err != nil {
-		logger.Error("error parsing GSH_PREDICTION_HISTORY_CONTEXT_LIMIT", zap.Error(err))
+		logger.Error("error parsing GSH_PAST_COMMANDS_CONTEXT_LIMIT", zap.Error(err))
 		historyContextLimit = 30
 	}
 	return int(historyContextLimit)

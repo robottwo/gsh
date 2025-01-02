@@ -38,7 +38,7 @@ GSH_SLOW_MODEL_TEMPERATURE=0.1
 GSH_SLOW_MODEL_HEADERS='{}'
 
 # How many past commands to use as context for prediction and agent chat
-GSH_PREDICTION_HISTORY_CONTEXT_LIMIT=30
+GSH_PAST_COMMANDS_CONTEXT_LIMIT=30
 
 # Size of the agent chat context window in LLM tokens.
 # When the chat session exceeds this limit, only the most recent messages that 
