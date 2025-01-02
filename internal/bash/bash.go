@@ -54,3 +54,28 @@ func RunBashCommandInSubShell(runner *interp.Runner, command string) (string, st
 
 	return outBuf.String(), errBuf.String(), nil
 }
+
+func RunBashCommand(runner *interp.Runner, command string) (string, string, error) {
+	outBuf := &bytes.Buffer{}
+	outWriter := io.Writer(outBuf)
+	errBuf := &bytes.Buffer{}
+	errWriter := io.Writer(errBuf)
+	interp.StdIO(nil, outWriter, errWriter)(runner)
+	defer interp.StdIO(os.Stdin, os.Stdout, os.Stderr)(runner)
+
+	var prog *syntax.Stmt
+	err := syntax.NewParser().Stmts(strings.NewReader(command), func(stmt *syntax.Stmt) bool {
+		prog = stmt
+		return false
+	})
+	if err != nil {
+		return "", "", err
+	}
+
+	err = runner.Run(context.Background(), prog)
+	if err != nil {
+		return "", "", err
+	}
+
+	return outBuf.String(), errBuf.String(), nil
+}

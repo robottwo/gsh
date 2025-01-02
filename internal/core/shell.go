@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/atinylittleshell/gsh/internal/agent"
+	"github.com/atinylittleshell/gsh/internal/bash"
 	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/history"
 	"github.com/atinylittleshell/gsh/internal/predict"
@@ -115,19 +117,28 @@ func executeCommand(input string, historyManager *history.HistoryManager, runner
 
 	historyEntry, _ := historyManager.StartCommand(input, environment.GetPwd(runner))
 
+	startTime := time.Now()
 	err = runner.Run(context.Background(), prog)
+	exited := runner.Exited()
+	endTime := time.Now()
+
+	durationMs := endTime.Sub(startTime).Milliseconds()
+	bash.RunBashCommand(runner, fmt.Sprintf("GSH_LAST_COMMAND_DURATION_MS=%d", durationMs))
+
+	var exitCode int
 	if err != nil {
-		var exitCode int
 		status, ok := interp.IsExitStatus(err)
 		if !ok {
 			exitCode = -1
 		} else {
 			exitCode = int(status)
 		}
-		historyManager.FinishCommand(historyEntry, exitCode)
 	} else {
-		historyManager.FinishCommand(historyEntry, 0)
+		exitCode = 0
 	}
 
-	return runner.Exited(), nil
+	historyManager.FinishCommand(historyEntry, exitCode)
+	bash.RunBashCommand(runner, fmt.Sprintf("GSH_LAST_COMMAND_EXIT_CODE=%d", exitCode))
+
+	return exited, nil
 }

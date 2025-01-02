@@ -5,10 +5,6 @@
 
 # Core Features
 
-- better rendering of agent loading state
-- better rendering of agent user confirmation
-- richer starship integration
-
 # Enhancements
 
 - history prev/next
@@ -18,6 +14,7 @@
 - persist agent message history
 - syntax highlighting
 - readme rag
+- better rendering of agent loading state
 
 # Release Readiness
 
