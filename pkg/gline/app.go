@@ -132,6 +132,16 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 
+		// TODO: replace with custom keybindings
+		case "backspace":
+			// if the input is already empty, we should clear prediction
+			if m.textInput.Value() == "" {
+				m.dirty = true
+				m.predictionStateId++
+				m.clearPrediction()
+				return m, nil
+			}
+
 		case "enter":
 			m.result = m.textInput.Value()
 			return m, tea.Sequence(terminate, tea.Quit)
