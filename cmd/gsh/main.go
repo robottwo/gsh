@@ -14,13 +14,14 @@ import (
 	"github.com/atinylittleshell/gsh/internal/history"
 	"go.uber.org/zap"
 	"golang.org/x/term"
+	"mvdan.cc/sh/v3/expand"
 	"mvdan.cc/sh/v3/interp"
 )
 
 // go:embed ../../.gshrc.default
 var DEFAULT_VARS []byte
 
-var command = flag.String("c", "", "command to run")
+var command = flag.String("c", "", "run a command")
 var listHistory = flag.Int("lh", 0, "list the most N history entries")
 var resetHistory = flag.Bool("rh", false, "reset history")
 var loginShell = flag.Bool("l", false, "run as a login shell")
@@ -152,13 +153,27 @@ func initializeHistoryManager(logger *zap.Logger) (*history.HistoryManager, erro
 
 // initializeRunner loads the shell configuration files and sets up the interpreter.
 func initializeRunner() (*interp.Runner, error) {
-	runner, err := interp.New(interp.Interactive(true), interp.StdIO(os.Stdin, os.Stdout, os.Stderr))
+	shellPath, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	env := expand.ListEnviron(append(os.Environ(), fmt.Sprintf("SHELL=%s", shellPath))...)
+
+	runner, err := interp.New(
+		interp.Interactive(true),
+		interp.Env(env),
+		interp.StdIO(os.Stdin, os.Stdout, os.Stderr),
+	)
 	if err != nil {
 		panic(err)
 	}
 
 	// load default vars
-	if err := bash.RunBashScriptFromReader(runner, bytes.NewReader(DEFAULT_VARS), "DEFAULT_VARS"); err != nil {
+	if err := bash.RunBashScriptFromReader(
+		runner,
+		bytes.NewReader(DEFAULT_VARS),
+		"DEFAULT_VARS",
+	); err != nil {
 		panic(err)
 	}
 
