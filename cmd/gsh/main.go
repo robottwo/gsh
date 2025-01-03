@@ -29,9 +29,15 @@ var resetHistory = flag.Bool("rh", false, "reset history")
 var loginShell = flag.Bool("l", false, "run as a login shell")
 
 var helpFlag = flag.Bool("h", false, "display help information")
+var versionFlag = flag.Bool("ver", false, "display build version")
 
 func main() {
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Println(BuildVersion)
+		return
+	}
 
 	if *helpFlag {
 		fmt.Println("Usage of gsh:")
