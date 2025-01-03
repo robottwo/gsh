@@ -45,7 +45,7 @@ gsh can even code for you!
 
 ### Supports both local and remote LLMs
 
-gsh can use run with either
+gsh can run with either
 
 - Local LLMs through [Ollama](https://ollama.com/)
 - Or remote LLMs through an OpenAI API-compatible endpoint, such as [OpenRouter](https://openrouter.ai/)
@@ -56,7 +56,8 @@ To install gsh:
 
 ```bash
 # Linux and macOS
-brew install gsh
+brew tap atinylittleshell/gsh https://github.com/atinylittleshell/gsh
+brew install atinylittleshell/gsh/gsh
 ```
 
 Windows is not supported (yet).
@@ -72,7 +73,7 @@ This file can be used to set environment variables that the gsh session will use
 When launched as a login shell (`gsh -l`),
 gsh will also load `/etc/profile` and `~/.gsh_profile` at start (before `~/.gshrc`).
 
-### Custom command line prompt
+### Custom command prompt
 
 You can use [Starship.rs](https://starship.rs/) to render a custom command line prompt.
 See [.gshrc.starship](./.gshrc.starship) for an example configuration.
