@@ -34,9 +34,12 @@ gsh will provide an explanation of the command you are about to run.
 
 ### Agent
 
-gsh can act as an agent that work, and even code, for you.
+gsh can act as an agent that invoke commands on your behalf.
+Commands starting with "#" are sent to the agent as a chat message.
 
 ![Agent](assets/agent.gif)
+
+gsh can even code for you!
 
 ![Agent Coding](assets/agent_coding.gif)
 
