@@ -64,7 +64,9 @@ Windows is not supported (yet).
 
 ### Upgrading
 
-To upgrade gsh to the latest version:
+gsh can automatically detect newer versions and self update.
+
+To manually upgrade gsh to the latest version, you can also:
 
 ```bash
 brew update

@@ -49,6 +49,8 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 	fmt.Println(path)
 
 	file, err := os.Create(path)
+	defer file.Close()
+
 	if err != nil {
 		logger.Error("create_file tool failed to create file", zap.Error(err))
 		return failedToolResponse(fmt.Sprintf("Error creating file: %s", err))
