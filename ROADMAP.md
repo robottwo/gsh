@@ -12,6 +12,7 @@
 
 # AI
 
+- agent message pruning should preserve user messages
 - support custom instructions
 - persist agent message history
 - use readme as agent context
