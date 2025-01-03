@@ -34,3 +34,16 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
+brews:
+  - name: gsh
+    homepage: https://github.com/atinylittleshell/gsh
+    description: The Generative Shell
+    license: GPL-3.0
+    repository:
+      owner: atinylittleshell
+      name: gsh
+      token: "{{ .Env.GITHUB_TOKEN }}"
+      pull_request:
+        enabled: true
+        draft: false
