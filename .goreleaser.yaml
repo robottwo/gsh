@@ -12,6 +12,8 @@ builds:
       - linux
       - windows
       - darwin
+    ldflags:
+      - -X main.BuildVersion={{.Version}}
 
 archives:
   - format: tar.gz
@@ -40,10 +42,14 @@ brews:
     homepage: https://github.com/atinylittleshell/gsh
     description: The Generative Shell
     license: GPL-3.0
+    directory: Formula
     repository:
       owner: atinylittleshell
       name: gsh
       token: "{{ .Env.GITHUB_TOKEN }}"
+      branch: goreleaser/{{ .Version }}
       pull_request:
         enabled: true
         draft: false
+        base:
+          branch: main

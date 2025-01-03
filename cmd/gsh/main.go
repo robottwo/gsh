@@ -18,6 +18,8 @@ import (
 	"mvdan.cc/sh/v3/interp"
 )
 
+var BuildVersion = "dev"
+
 // go:embed ../../.gshrc.default
 var DEFAULT_VARS []byte
 
