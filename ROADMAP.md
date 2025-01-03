@@ -12,6 +12,7 @@
 
 # AI
 
+- support custom instructions
 - persist agent message history
 - use readme as agent context
 - training a small command prediction model
