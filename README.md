@@ -62,6 +62,15 @@ brew install atinylittleshell/gsh/gsh
 
 Windows is not supported (yet).
 
+### Upgrading
+
+To upgrade gsh to the latest version:
+
+```bash
+brew update
+brew upgrade atinylittleshell/gsh/gsh
+```
+
 ## Configuration
 
 gsh can be configured through a configuration file located at `~/.gshrc`.
