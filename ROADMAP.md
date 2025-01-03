@@ -13,8 +13,8 @@
 
 # AI
 
-- agent message pruning should preserve user messages
 - support custom instructions
+- agent message pruning using LLM
 - persist agent message history
 - use readme as agent context
 - training a small command prediction model

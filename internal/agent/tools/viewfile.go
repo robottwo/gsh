@@ -62,7 +62,7 @@ func ViewFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 	}
 	defer file.Close()
 
-	printToolMessage("I'm reading the following file:")
+	printToolMessage("gsh: I'm reading the following file:")
 	fmt.Println(path)
 
 	var buf bytes.Buffer

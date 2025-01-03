@@ -37,7 +37,7 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 
 	confirmResponse := userConfirmation(
 		logger,
-		"Do I have your permission to create the following file?",
+		"gsh: Do I have your permission to create the following file?",
 		fmt.Sprintf("%s\n\n%s", path, content),
 	)
 	if confirmResponse == "n" {

@@ -87,7 +87,7 @@ func EditFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 		return failedToolResponse(fmt.Sprintf("Error generating diff: %s", err))
 	}
 
-	confirmResponse := userConfirmation(logger, "Do I have your permission to edit the following file?", diff)
+	confirmResponse := userConfirmation(logger, "gsh: Do I have your permission to edit the following file?", diff)
 	if confirmResponse == "n" {
 		return failedToolResponse("User declined this request")
 	} else if confirmResponse != "y" {

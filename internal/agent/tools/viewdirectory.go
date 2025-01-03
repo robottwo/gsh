@@ -38,7 +38,7 @@ func ViewDirectoryTool(runner *interp.Runner, logger *zap.Logger, params map[str
 	var buf bytes.Buffer
 	writer := io.StringWriter(&buf)
 
-	printToolMessage("I'm viewing the following directory:")
+	printToolMessage("gsh: I'm viewing the following directory:")
 	fmt.Println(path)
 
 	walkDir(logger, writer, path, 1)

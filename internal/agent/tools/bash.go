@@ -57,7 +57,7 @@ func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, log
 
 	confirmResponse := userConfirmation(
 		logger,
-		"Do I have your permission to run the following command?",
+		"gsh: Do I have your permission to run the following command?",
 		fmt.Sprintf("%s\n\n%s", command, reason),
 	)
 	if confirmResponse == "n" {
