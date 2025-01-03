@@ -201,7 +201,7 @@ func initializeRunner() (*interp.Runner, error) {
 	}
 
 	// Check if this is a login shell
-	if *loginShell {
+	if *loginShell || strings.HasPrefix(os.Args[0], "-") {
 		// Prepend .gsh_profile to the list of config files
 		configFiles = append([]string{
 			filepath.Join(

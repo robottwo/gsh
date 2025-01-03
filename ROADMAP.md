@@ -10,6 +10,7 @@
 - keybind configuration
 - syntax highlighting in shellinput
 - better rendering of agent loading state
+- limit total history size
 
 # AI
 
