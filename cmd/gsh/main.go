@@ -2,21 +2,17 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/atinylittleshell/gsh/internal/appupdate"
 	"github.com/atinylittleshell/gsh/internal/bash"
 	"github.com/atinylittleshell/gsh/internal/core"
 	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/history"
-	"github.com/atinylittleshell/gsh/internal/styles"
-	"github.com/atinylittleshell/gsh/pkg/gline"
-	"github.com/creativeprojects/go-selfupdate"
 	"go.uber.org/zap"
 	"golang.org/x/term"
 	"mvdan.cc/sh/v3/expand"
@@ -63,7 +59,7 @@ func main() {
 	}
 	defer logger.Sync() // Flush any buffered log entries
 
-	handleSelfUpdate(logger)
+	appupdate.HandleSelfUpdate(BUILD_VERSION, logger)
 
 	// Initialize the history manager
 	historyManager, err := initializeHistoryManager(logger)
@@ -221,116 +217,4 @@ func initializeRunner() (*interp.Runner, error) {
 	}
 
 	return runner, nil
-}
-
-func handleSelfUpdate(logger *zap.Logger) {
-	// No need to do anything if we are running a dev build
-	if BUILD_VERSION == "dev" {
-		logger.Debug("running a dev build, skipping self-update check")
-		return
-	}
-
-	// Check if we have previously detected a newer version
-	checkPreviouslyDetectedVersion(logger)
-
-	// Check for newer versions from remote repository
-	go detectUpdate(logger)
-}
-
-func checkPreviouslyDetectedVersion(logger *zap.Logger) {
-	file, err := os.Open(core.DetectedVersionFile())
-	if err != nil {
-		logger.Debug("detected version file not found", zap.Error(err))
-		return
-	}
-	defer file.Close()
-
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, file)
-	if err != nil {
-		logger.Error("failed to read detected version", zap.Error(err))
-		return
-	}
-
-	detectedVersion := strings.TrimSpace(buf.String())
-	if detectedVersion == "" || detectedVersion == BUILD_VERSION {
-		return
-	}
-
-	confirm, err := gline.Gline(
-		styles.AGENT_QUESTION("New version of gsh available. Update now? (Y/n)"),
-		detectedVersion,
-		nil,
-		nil,
-		logger,
-		gline.NewOptions(),
-	)
-
-	if strings.ToLower(confirm) == "n" {
-		return
-	}
-
-	latest, found, err := selfupdate.DetectLatest(
-		context.Background(),
-		selfupdate.ParseSlug("atinylittleshell/gsh"),
-	)
-	if err != nil {
-		logger.Warn("error occurred while detecting latest version", zap.Error(err))
-		return
-	}
-	if !found {
-		logger.Warn("latest version could not be detected")
-		return
-	}
-
-	exe, err := selfupdate.ExecutablePath()
-	if err != nil {
-		logger.Error("failed to get executable path to update", zap.Error(err))
-		return
-	}
-	if err := selfupdate.UpdateTo(context.Background(), latest.AssetURL, latest.AssetName, exe); err != nil {
-		logger.Error("failed to update to latest version", zap.Error(err))
-		return
-	}
-
-	logger.Info("successfully updated to latest version", zap.String("version", latest.Version()))
-}
-
-func detectUpdate(logger *zap.Logger) {
-	latest, found, err := selfupdate.DetectLatest(
-		context.Background(),
-		selfupdate.ParseSlug("atinylittleshell/gsh"),
-	)
-	if err != nil {
-		logger.Warn("error occurred while detecting latest version", zap.Error(err))
-		return
-	}
-	if !found {
-		logger.Warn("latest version could not be detected")
-		return
-	}
-
-	currentVersion := BUILD_VERSION
-	if currentVersion == "dev" {
-		currentVersion = "0.0.0"
-	}
-
-	if latest.GreaterThan(currentVersion) {
-		logger.Info("new version of gsh available", zap.String("version", latest.Version()))
-
-		recordFilePath := core.DetectedVersionFile()
-		file, err := os.Create(recordFilePath)
-		defer file.Close()
-
-		if err != nil {
-			logger.Error("failed to save detected version", zap.Error(err))
-			return
-		}
-
-		_, err = file.WriteString(latest.Version())
-		if err != nil {
-			logger.Error("failed to save detected version", zap.Error(err))
-			return
-		}
-	}
 }

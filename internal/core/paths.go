@@ -6,11 +6,11 @@ import (
 )
 
 type Paths struct {
-	HomeDir             string
-	DataDir             string
-	LogFile             string
-	HistoryFile         string
-	DetectedVersionFile string
+	HomeDir           string
+	DataDir           string
+	LogFile           string
+	HistoryFile       string
+	LatestVersionFile string
 }
 
 var defaultPaths *Paths
@@ -23,11 +23,11 @@ func ensureDefaultPaths() {
 		}
 
 		defaultPaths = &Paths{
-			HomeDir:             homeDir,
-			DataDir:             filepath.Join(homeDir, ".local", "share", "gsh"),
-			LogFile:             filepath.Join(homeDir, ".local", "share", "gsh", "gsh.log"),
-			HistoryFile:         filepath.Join(homeDir, ".local", "share", "gsh", "history.db"),
-			DetectedVersionFile: filepath.Join(homeDir, ".local", "share", "gsh", "detected_version.txt"),
+			HomeDir:           homeDir,
+			DataDir:           filepath.Join(homeDir, ".local", "share", "gsh"),
+			LogFile:           filepath.Join(homeDir, ".local", "share", "gsh", "gsh.log"),
+			HistoryFile:       filepath.Join(homeDir, ".local", "share", "gsh", "history.db"),
+			LatestVersionFile: filepath.Join(homeDir, ".local", "share", "gsh", "latest_version.txt"),
 		}
 
 		err = os.MkdirAll(defaultPaths.DataDir, 0755)
@@ -57,7 +57,7 @@ func HistoryFile() string {
 	return defaultPaths.HistoryFile
 }
 
-func DetectedVersionFile() string {
+func LatestVersionFile() string {
 	ensureDefaultPaths()
-	return defaultPaths.DetectedVersionFile
+	return defaultPaths.LatestVersionFile
 }
