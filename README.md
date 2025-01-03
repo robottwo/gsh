@@ -24,13 +24,21 @@ with the following features:
 
 gsh will automatically predict the next command you are likely want to run.
 
+![Generative Prediction](assets/prediction.gif)
+
 ### Command explanation
 
 gsh will provide an explanation of the command you are about to run.
 
+![Command Explanation](assets/explanation.gif)
+
 ### Agent
 
 gsh can act as an agent that work, and even code, for you.
+
+![Agent](assets/agent.gif)
+
+![Agent Coding](assets/agent_coding.gif)
 
 ### Supports both local and remote LLMs
 
