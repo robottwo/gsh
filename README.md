@@ -85,18 +85,6 @@ See [.gshrc.starship](./.gshrc.starship) for an example configuration.
 You can manually start gsh from an existing shell:
 
 ```bash
-/path/to/gsh
-```
-
-You can make that easier by putting gsh into your PATH:
-
-```bash
-ln -s /path/to/gsh /usr/local/bin/gsh
-```
-
-Then you can start gsh without specifying the full path:
-
-```bash
 gsh
 ```
 
@@ -106,12 +94,12 @@ You can also automatically launch gsh from another shell's configuration file:
 
 ```bash
 # For bash
-echo "/path/to/gsh" | tee -a ~/.bashrc
+echo "gsh" | tee -a ~/.bashrc
 ```
 
 ```bash
 # For zsh
-echo "/path/to/gsh" | tee -a ~/.zshrc
+echo "gsh" | tee -a ~/.zshrc
 ```
 
 ### Automatically, as your default shell
@@ -121,7 +109,13 @@ This is not recommended at the moment as gsh is still in early development.
 But if you know what you are doing, you can do so by:
 
 ```bash
+# Get the absolute path to gsh by running `which gsh`
+which gsh
+
+# Add gsh to the list of approved shells
 echo "/path/to/gsh" | sudo tee -a /etc/shells
+
+# Change your default shell to gsh
 chsh -s "/path/to/gsh"
 ```
 
