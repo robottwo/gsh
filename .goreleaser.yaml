@@ -43,6 +43,9 @@ brews:
     description: The Generative Shell
     license: GPL-3.0
     directory: Formula
+    commit_author:
+      name: atinylittleshell
+      email: shell@atinylittleshell.me
     repository:
       owner: atinylittleshell
       name: gsh
@@ -53,3 +56,22 @@ brews:
         draft: false
         base:
           branch: main
+
+aurs:
+  - name: gsh-bin
+    homepage: https://github.com/atinylittleshell/gsh
+    description: The Generative Shell
+    license: GPL-3.0
+    maintainers:
+      - "atinylittleshell <shell@atinylittleshell.me>"
+    private_key: "{{ .Env.AUR_PRIVATE_KEY }}"
+    git_url: "ssh://aur@aur.archlinux.org/gsh-bin.git"
+    commit_author:
+      name: atinylittleshell
+      email: shell@atinylittleshell.me
+    package: |-
+      # bin
+      install -Dm755 "./gsh" "${pkgdir}/usr/bin/gsh"
+
+      # license
+      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/gsh/LICENSE"
