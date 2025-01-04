@@ -15,6 +15,7 @@
 # AI
 
 - support custom instructions
+- allow agent to browse web urls
 - agent message pruning using LLM
 - persist agent message history
 - use readme as agent context
