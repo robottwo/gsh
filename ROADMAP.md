@@ -23,5 +23,6 @@
 
 # Distribution
 
+- OpenRouter headers
 - Official Homebrew
 - Windows
