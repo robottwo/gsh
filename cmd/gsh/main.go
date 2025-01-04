@@ -83,7 +83,7 @@ func main() {
 }
 
 func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
-	logger.Info("-------- new gsh session --------")
+	logger.Info("-------- new gsh session --------", zap.Any("args", os.Args))
 
 	// gsh -c "echo hello"
 	if *command != "" {
