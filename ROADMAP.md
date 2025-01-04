@@ -9,17 +9,22 @@
 - keybind configuration
 - syntax highlighting in shellinput
 - better rendering of agent loading state
-- limit total history size
 
 # AI
 
 - make current directory more clear in concise history context
 - support custom instructions
+- built-in eval
 - allow agent to browse web urls
 - agent message pruning using LLM
 - persist agent message history
 - use readme as agent context
 - training a small command prediction model
+
+# Engineering
+
+- pre-fetch context when rendering prompt to avoid competing with user commands
+- limit total history size
 
 # Distribution
 
