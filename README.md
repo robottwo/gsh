@@ -10,7 +10,7 @@ This project is in early development stage. Use at your own risk!
 Please expect bugs, incomplete features and breaking changes.
 
 That said, if you can try it out and provide feedback,
-that would be very helpful in making gsh more useful.
+that would help make gsh more useful!
 
 ## Main Features
 
