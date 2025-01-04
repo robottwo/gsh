@@ -23,6 +23,5 @@
 
 # Distribution
 
-- AUR
 - Official Homebrew
 - Windows
