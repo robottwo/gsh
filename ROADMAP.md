@@ -6,7 +6,6 @@
 
 # Ergonomics
 
-- document default keybind
 - keybind configuration
 - syntax highlighting in shellinput
 - better rendering of agent loading state

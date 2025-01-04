@@ -130,6 +130,26 @@ echo "/path/to/gsh" | sudo tee -a /etc/shells
 chsh -s "/path/to/gsh"
 ```
 
+## Default Key Bindings
+
+gsh provides a set of default key bindings for navigating and editing text input.
+These key bindings are designed to be familiar to users of traditional shells and text editors.
+It's on the roadmap to allow users to customize these key bindings.
+
+- **Character Forward**: `Right Arrow`, `Ctrl+F`
+- **Character Backward**: `Left Arrow`, `Ctrl+B`
+- **Word Forward**: `Alt+Right Arrow`, `Ctrl+Right Arrow`, `Alt+F`
+- **Word Backward**: `Alt+Left Arrow`, `Ctrl+Left Arrow`, `Alt+B`
+- **Delete Word Backward**: `Alt+Backspace`, `Ctrl+W`
+- **Delete Word Forward**: `Alt+Delete`, `Alt+D`
+- **Delete After Cursor**: `Ctrl+K`
+- **Delete Before Cursor**: `Ctrl+U`
+- **Delete Character Backward**: `Backspace`, `Ctrl+H`
+- **Delete Character Forward**: `Delete`, `Ctrl+D`
+- **Line Start**: `Home`, `Ctrl+A`
+- **Line End**: `End`, `Ctrl+E`
+- **Paste**: `Ctrl+V`
+
 ## Roadmap
 
 See [ROADMAP.md](./ROADMAP.md) for what's already planned.
