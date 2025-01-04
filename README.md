@@ -55,9 +55,12 @@ gsh can run with either
 To install gsh:
 
 ```bash
-# Linux and macOS
+# Linux and macOS through Homebrew
 brew tap atinylittleshell/gsh https://github.com/atinylittleshell/gsh
 brew install atinylittleshell/gsh/gsh
+
+# You can use gsh on arch, btw
+yay -S gsh-bin
 ```
 
 Windows is not supported (yet).
@@ -65,13 +68,6 @@ Windows is not supported (yet).
 ### Upgrading
 
 gsh can automatically detect newer versions and self update.
-
-To manually upgrade gsh to the latest version, you can also:
-
-```bash
-brew update
-brew upgrade atinylittleshell/gsh/gsh
-```
 
 ## Configuration
 
