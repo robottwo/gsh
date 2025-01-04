@@ -85,7 +85,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 			}
 
 			for message := range chatChannel {
-				fmt.Println(styles.AGENT_MESSAGE("gsh: " + message))
+				fmt.Print(styles.AGENT_MESSAGE("gsh: " + message + "\n"))
 			}
 
 			continue

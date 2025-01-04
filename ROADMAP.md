@@ -13,9 +13,16 @@
 
 # AI
 
+- make current directory more clear in concise history context
 - support custom instructions
 - allow agent to browse web urls
 - agent message pruning using LLM
 - persist agent message history
 - use readme as agent context
 - training a small command prediction model
+
+# Distribution
+
+- AUR
+- Official Homebrew
+- Windows
