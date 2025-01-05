@@ -1,5 +1,7 @@
 # gsh
 
+[![License](https://img.shields.io/github/license/atinylittleshell/gsh.svg)](https://github.com/atinylittleshell/gsh/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/release/atinylittleshell/gsh.svg)](https://github.com/atinylittleshell/gsh/releases)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/atinylittleshell/gsh/ci.yml?branch=main)](https://github.com/atinylittleshell/gsh/actions)
 
 <p align="center">
