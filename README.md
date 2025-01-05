@@ -16,11 +16,11 @@ that would help make gsh more useful!
 
 ## Goals
 
-- POSIX-compatibility: you shouldn't need to learn a new shell language to adopt gsh
-- Embrace AI: gsh is designed from the ground up for the generative AI era to provide you with intelligent assistance at the right place, right time
-- Privacy: gsh should allow you to use AI without compromising privacy
-- Customizability: gsh is _your_ shell. You should be able to configure it to your liking
-- Extensibility: gsh should allow the community to build and share extensions to make it more useful
+- **POSIX-compatibility**: you shouldn't need to learn a new shell language to adopt gsh
+- **Embrace AI**: gsh is designed from the ground up for the generative AI era to provide you with intelligent assistance at the right place, right time
+- **Privacy**: gsh should allow you to use local LLMs for guaranteed privacy
+- **Customizability**: gsh is _your_ shell. You should be able to configure it to your liking
+- **Extensibility**: gsh should allow the community to build and share extensions to make it more useful
 
 ## But what does being "generative" mean?
 
