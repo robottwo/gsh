@@ -3,7 +3,7 @@
 [![Build Status](https://img.shields.io/github/actions/workflow/status/atinylittleshell/gsh/ci.yml?branch=main)](https://github.com/atinylittleshell/gsh/actions)
 
 <p align="center">
-A Modern, POSIX-compatible, Generative Shell.
+A Modern, POSIX-compatible, <u>G</u>enerative <u>Sh</u>ell.
 </p>
 
 ## Status
