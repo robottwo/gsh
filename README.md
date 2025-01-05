@@ -2,7 +2,7 @@
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/atinylittleshell/gsh/ci.yml?branch=main)](https://github.com/atinylittleshell/gsh/actions)
 
-The Generative Shell.
+A Modern, POSIX-compatible, Generative Shell.
 
 ## Status
 
