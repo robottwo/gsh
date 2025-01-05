@@ -12,10 +12,12 @@
 
 # AI
 
+- put context into system message
 - RAG with aliases
 - make current directory more clear in concise history context
 - support custom instructions
 - built-in eval
+- allow agent to search the web
 - allow agent to browse web urls
 - agent message pruning using LLM
 - persist agent message history
@@ -29,6 +31,5 @@
 
 # Distribution
 
-- OpenRouter headers
 - Official Homebrew
 - Windows

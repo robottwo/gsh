@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"strconv"
+	"strings"
 
 	openai "github.com/sashabaranov/go-openai"
 	"mvdan.cc/sh/v3/interp"
@@ -37,6 +38,12 @@ func GetLLMClient(runner *interp.Runner, modelType LLMModelType) (*openai.Client
 
 	var headers map[string]string
 	json.Unmarshal([]byte(runner.Vars[varPrefix+"HEADERS"].String()), &headers)
+
+	// Special headers for the openrouter.ai API
+	if strings.HasPrefix(strings.ToLower(baseURL), "https://openrouter.ai/") {
+		headers["HTTP-Referer"] = "https://github.com/atinylittleshell/gsh"
+		headers["X-Title"] = "gsh - The Generative Shell"
+	}
 
 	llmClientConfig := openai.DefaultConfig(apiKey)
 	llmClientConfig.BaseURL = baseURL
