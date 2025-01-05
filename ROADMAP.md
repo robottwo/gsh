@@ -12,6 +12,7 @@
 
 # AI
 
+- RAG with aliases
 - make current directory more clear in concise history context
 - support custom instructions
 - built-in eval

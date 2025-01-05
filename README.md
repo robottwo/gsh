@@ -12,13 +12,15 @@ Please expect bugs, incomplete features and breaking changes.
 That said, if you can try it out and provide feedback,
 that would help make gsh more useful!
 
-## Main Features
+## Goals
 
-gsh is a POSIX-compatible shell that leverages generative AI to provide
-intelligent assistance to the user.
+- POSIX-compatibility: you shouldn't need to learn a new shell language to adopt gsh
+- Embrace AI: gsh is designed from the ground up for the generative AI era to provide you with intelligent assistance at the right place, right time
+- Privacy: gsh should allow you to use AI without compromising privacy
+- Customizability: gsh is _your_ shell. You should be able to configure it to your liking
+- Extensibility: gsh should allow the community to build and share extensions to make it more useful
 
-It is designed to be a drop-in replacement for bash or zsh,
-with the following features:
+## But what does being "generative" mean?
 
 ### Generative suggestion of shell commands
 
