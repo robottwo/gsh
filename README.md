@@ -14,17 +14,17 @@ that would help make gsh more useful!
 
 ## Main Features
 
-gsh is a bash-compatible shell that leverages generative AI to provide
+gsh is a POSIX-compatible shell that leverages generative AI to provide
 intelligent assistance to the user.
 
 It is designed to be a drop-in replacement for bash or zsh,
 with the following features:
 
-### Generative prediction of shell commands
+### Generative suggestion of shell commands
 
-gsh will automatically predict the next command you are likely want to run.
+gsh will automatically suggest the next command you are likely want to run.
 
-![Generative Prediction](assets/prediction.gif)
+![Generative Suggestion](assets/prediction.gif)
 
 ### Command explanation
 
