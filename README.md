@@ -114,6 +114,10 @@ echo "gsh" | tee -a ~/.bashrc
 ```bash
 # For zsh
 echo "gsh" | tee -a ~/.zshrc
+
+# Your zsh config may have set "gsh" as an alias for `git show`.
+# In that case, you would need to use the full path to gsh.
+echo "/full/path/to/gsh" | tee -a ~/.zshrc
 ```
 
 ### Automatically, as your default shell
