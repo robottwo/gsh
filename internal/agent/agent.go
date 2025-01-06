@@ -59,7 +59,8 @@ Whenever you are trying to make code changes:
 
 Whenever you are trying to create a git commit:
 * Follow conventional commit message format
-* Use "git diff" or "git diff --staged" through the bash tool to understand the changes you are committing
+* Always use "git diff" or "git diff --staged" through the bash tool to 
+  understand the changes you are committing before coming up with the commit message
 * Make sure commit messages are concise and descriptive of the changes made
 `,
 			},

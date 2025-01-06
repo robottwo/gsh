@@ -6,7 +6,7 @@
 
 # Ergonomics
 
-- keybind configuration
+- keybind configuration (inputrc)
 - syntax highlighting in shellinput
 - better rendering of agent loading state
 
@@ -27,6 +27,7 @@
 
 # Engineering
 
+- support concurrent writes to output/error buffers
 - pre-fetch context when rendering prompt to avoid competing with user commands
 - limit total history size
 
