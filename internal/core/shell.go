@@ -37,7 +37,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 		NullStatePredictor: predict.NewLLMNullStatePredictor(runner, contextProvider, logger),
 	}
 	explainer := predict.NewLLMExplainer(runner, contextProvider, logger)
-	agent := agent.NewAgent(runner, historyManager, logger)
+	agent := agent.NewAgent(runner, historyManager, contextProvider, logger)
 
 	chanSIGINT := make(chan os.Signal, 1)
 	signal.Notify(chanSIGINT, os.Interrupt)
@@ -68,16 +68,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 
 		// Handle agent chat
 		if strings.HasPrefix(line, "#") {
-			chatMessage := fmt.Sprintf(
-				"%s\n\nContext:\n%s",
-				line[1:],
-				contextProvider.GetContext(
-					rag.ContextRetrievalOptions{
-						Concise:      false,
-						HistoryLimit: environment.GetHistoryContextLimit(runner, logger),
-					},
-				),
-			)
+			chatMessage := line[1:]
 			chatChannel, err := agent.Chat(chatMessage)
 			if err != nil {
 				logger.Error("error chatting with agent", zap.Error(err))

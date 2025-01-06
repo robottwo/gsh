@@ -13,7 +13,6 @@
 # AI
 
 - set ollama context window
-- put context into system message
 - RAG with aliases
 - make current directory more clear in concise history context
 - support custom instructions
