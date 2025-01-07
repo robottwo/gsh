@@ -43,27 +43,36 @@ func (e *LLMExplainer) Explain(input string) (string, error) {
 		return "", nil
 	}
 
-	systemMessage := `You are gsh, an intelligent shell program.
+	schema, err := EXPLAINED_COMMAND_SCHEMA.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+
+	systemMessage := fmt.Sprintf(`You are gsh, an intelligent shell program.
 You will be given a bash command entered by me, enclosed in <command> tags.
 
-Instructions:
+# Instructions
 * Give a concise explanation of what the command will do for me
 * If any uncommon arguments are present in the command, 
   format your explanation in markdown and explain arguments in a bullet point list
-`
 
-	userMessage := fmt.Sprintf(
-		`<command>%s</command>
+# Latest Context
+%s
 
-Context:
+# Response JSON Schema
 %s`,
-		input,
 		e.contextProvider.GetContext(
 			rag.ContextRetrievalOptions{
-				Concise:      false,
+				Concise:      true,
 				HistoryLimit: environment.GetHistoryContextLimit(e.runner, e.logger),
 			},
 		),
+		string(schema),
+	)
+
+	userMessage := fmt.Sprintf(
+		`<command>%s</command>`,
+		input,
 	)
 
 	e.logger.Debug(
@@ -85,7 +94,9 @@ Context:
 				Content: userMessage,
 			},
 		},
-		ResponseFormat: &EXPLAINED_COMMAND_SCHEMA_PARAM,
+		ResponseFormat: &openai.ChatCompletionResponseFormat{
+			Type: openai.ChatCompletionResponseFormatTypeJSONObject,
+		},
 	})
 
 	if err != nil {

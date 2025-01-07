@@ -45,28 +45,41 @@ func (p *LLMPrefixPredictor) Predict(input string) (string, error) {
 		return "", nil
 	}
 
-	systemMessage := `You are gsh, an intelligent shell program.
+	schema, err := PREDICTED_COMMAND_SCHEMA.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+
+	systemMessage := fmt.Sprintf(`You are gsh, an intelligent shell program.
 You will be given a partial bash command prefix entered by me, enclosed in <prefix> tags.
 You are asked to predict what the complete bash command is.
 
-Instructions:
+# Instructions
 * Based on the prefix and other context, analyze the my potential intent
 * Your prediction must start with the partial command as a prefix
 * Your prediction must be a valid, single-line, complete bash command
-` + BEST_PRACTICES
 
-	userMessage := fmt.Sprintf(
-		`<prefix>%s</prefix>
+# Best Practices
+%s
 
-Additional context to be aware of:
+# Latest Context
+%s
+
+# Response JSON Schema
 %s`,
-		input,
+		BEST_PRACTICES,
 		p.contextProvider.GetContext(
 			rag.ContextRetrievalOptions{
 				Concise:      true,
 				HistoryLimit: environment.GetHistoryContextLimit(p.runner, p.logger),
 			},
 		),
+		string(schema),
+	)
+
+	userMessage := fmt.Sprintf(
+		`<prefix>%s</prefix>`,
+		input,
 	)
 
 	p.logger.Debug(
@@ -88,7 +101,9 @@ Additional context to be aware of:
 				Content: userMessage,
 			},
 		},
-		ResponseFormat: &PREDICTED_COMMAND_SCHEMA_PARAM,
+		ResponseFormat: &openai.ChatCompletionResponseFormat{
+			Type: openai.ChatCompletionResponseFormatTypeJSONObject,
+		},
 	})
 
 	if err != nil {

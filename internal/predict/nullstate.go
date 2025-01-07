@@ -44,26 +44,37 @@ func (p *LLMNullStatePredictor) Predict(input string) (string, error) {
 		return "", nil
 	}
 
-	systemMessage := `You are gsh, an intelligent shell program.
+	schema, err := PREDICTED_COMMAND_SCHEMA.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+
+	systemMessage := fmt.Sprintf(`You are gsh, an intelligent shell program.
 You are asked to predict the next command I'm likely to want to run.
 
-Instructions:
+# Instructions
 * Based on the context, analyze the my potential intent
 * Your prediction must be a valid, single-line, complete bash command
-` + BEST_PRACTICES
 
-	userMessage := fmt.Sprintf(
-		`Context:
+# Best Practices
 %s
 
-Now predict what my next command should be.`,
+# Latest Context
+%s
+
+# Response JSON Schema
+%s`,
+		BEST_PRACTICES,
 		p.contextProvider.GetContext(
 			rag.ContextRetrievalOptions{
 				Concise:      false,
 				HistoryLimit: environment.GetHistoryContextLimit(p.runner, p.logger),
 			},
 		),
+		string(schema),
 	)
+
+	userMessage := `Now predict what my next command should be.`
 
 	p.logger.Debug(
 		"predicting using LLM",
@@ -84,7 +95,9 @@ Now predict what my next command should be.`,
 				Content: userMessage,
 			},
 		},
-		ResponseFormat: &PREDICTED_COMMAND_SCHEMA_PARAM,
+		ResponseFormat: &openai.ChatCompletionResponseFormat{
+			Type: openai.ChatCompletionResponseFormatTypeJSONObject,
+		},
 	})
 
 	if err != nil {
