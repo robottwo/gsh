@@ -28,7 +28,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 		Retrievers: []rag.ContextRetriever{
 			retrievers.SystemInfoContextRetriever{Runner: runner},
 			retrievers.WorkingDirectoryContextRetriever{Runner: runner},
-			retrievers.GitContextRetriever{Runner: runner},
+			retrievers.GitContextRetriever{Runner: runner, Logger: logger},
 			retrievers.HistoryContextRetriever{Runner: runner, HistoryManager: historyManager},
 		},
 	}
