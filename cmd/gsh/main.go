@@ -134,6 +134,9 @@ func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *
 
 func initializeLogger(runner *interp.Runner) (*zap.Logger, error) {
 	logLevel := environment.GetLogLevel(runner)
+	if BUILD_VERSION == "dev" {
+		logLevel = zap.NewAtomicLevelAt(zap.DebugLevel)
+	}
 
 	if environment.ShouldCleanLogFile(runner) {
 		os.Remove(core.LogFile())
