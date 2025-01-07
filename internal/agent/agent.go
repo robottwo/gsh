@@ -73,6 +73,7 @@ You are gsh, an intelligent shell program. You answer my questions or help me co
 * I'm able to see the output of any bash tool you run so there's no need to repeat that in your response. 
 * If you believe the output from the bash commands is sufficient for fulfilling my request, end the conversation by calling the "done" tool.
 * If you see a tool call response enclosed in <gsh_tool_call_error> tags, that means the tool call failed; otherwise, the tool call succeeded and whatever you see in the response is the actual result from the tool.
+* Never call multiple tools in parallel. Always call at most one tool at a time.
 
 # Best practices
 
@@ -127,6 +128,7 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 						tools.CreateFileToolDefinition,
 						tools.EditFileToolDefinition,
 					},
+					ParallelToolCalls: false,
 				},
 			)
 			if err != nil {

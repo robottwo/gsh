@@ -9,6 +9,7 @@
 - keybind configuration (inputrc)
 - syntax highlighting in shellinput
 - better rendering of agent loading state
+- allow sigint to cancel agent chat
 
 # AI
 
