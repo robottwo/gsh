@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -31,6 +33,10 @@ func ViewFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 	if !ok {
 		logger.Error("The view_file tool failed to parse parameter 'path'")
 		return failedToolResponse("The view_file tool failed to parse parameter 'path'")
+	}
+
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(environment.GetPwd(runner), path)
 	}
 
 	startLine := -1

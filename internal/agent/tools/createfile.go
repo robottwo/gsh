@@ -3,7 +3,9 @@ package tools
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
+	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -27,6 +29,10 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 	if !ok {
 		logger.Error("The create_file tool failed to parse parameter 'path'")
 		return failedToolResponse("The create_file tool failed to parse parameter 'path'")
+	}
+
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(environment.GetPwd(runner), path)
 	}
 
 	content, ok := params["content"].(string)

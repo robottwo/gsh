@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -33,6 +34,10 @@ func ViewDirectoryTool(runner *interp.Runner, logger *zap.Logger, params map[str
 	if !ok {
 		logger.Error("The view_directory tool failed to parse parameter 'path'")
 		return failedToolResponse("The view_directory tool failed to parse parameter 'path'")
+	}
+
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(environment.GetPwd(runner), path)
 	}
 
 	var buf bytes.Buffer
