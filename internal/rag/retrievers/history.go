@@ -14,6 +14,10 @@ type HistoryContextRetriever struct {
 	HistoryManager *history.HistoryManager
 }
 
+func (r HistoryContextRetriever) Name() string {
+	return "history"
+}
+
 func (r HistoryContextRetriever) GetContext(options rag.ContextRetrievalOptions) (string, error) {
 	historyEntries, err := r.HistoryManager.GetRecentEntries("", options.HistoryLimit)
 	if err != nil {

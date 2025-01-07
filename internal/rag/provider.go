@@ -21,7 +21,7 @@ func (p *ContextProvider) GetContext(options ContextRetrievalOptions) string {
 	for _, retriever := range p.Retrievers {
 		output, err := retriever.GetContext(options)
 		if err != nil {
-			p.Logger.Error("error getting context", zap.Error(err))
+			p.Logger.Warn("error getting context from retriever", zap.String("retriever", retriever.Name()), zap.Error(err))
 			continue
 		}
 

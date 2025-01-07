@@ -12,6 +12,10 @@ type WorkingDirectoryContextRetriever struct {
 	Runner *interp.Runner
 }
 
+func (r WorkingDirectoryContextRetriever) Name() string {
+	return "working_directory"
+}
+
 func (r WorkingDirectoryContextRetriever) GetContext(options rag.ContextRetrievalOptions) (string, error) {
 	return fmt.Sprintf("<working_dir>%s</working_dir>", environment.GetPwd(r.Runner)), nil
 }
