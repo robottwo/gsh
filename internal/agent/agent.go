@@ -137,6 +137,12 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 				return
 			}
 
+			if len(response.Choices) == 0 {
+				fmt.Println(styles.ERROR("LLM responded with an empty response. This is typically a problem with the model being used. Please try again."))
+				agent.logger.Error("Error parsing LLM response", zap.String("response", fmt.Sprintf("%+v", response)))
+				return
+			}
+
 			msg := response.Choices[0]
 			agent.messages = append(agent.messages, msg.Message)
 			agent.logger.Debug("LLM chat response", zap.Any("messages", agent.messages), zap.Any("response", msg))

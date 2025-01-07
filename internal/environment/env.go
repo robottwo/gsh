@@ -17,7 +17,7 @@ func GetHistoryContextLimit(runner *interp.Runner, logger *zap.Logger) int {
 	historyContextLimit, err := strconv.ParseInt(
 		runner.Vars["GSH_PAST_COMMANDS_CONTEXT_LIMIT"].String(), 10, 32)
 	if err != nil {
-		logger.Warn("error parsing GSH_PAST_COMMANDS_CONTEXT_LIMIT", zap.Error(err))
+		logger.Debug("error parsing GSH_PAST_COMMANDS_CONTEXT_LIMIT", zap.Error(err))
 		historyContextLimit = 30
 	}
 	return int(historyContextLimit)
@@ -60,7 +60,7 @@ func GetAgentContextWindowTokens(runner *interp.Runner, logger *zap.Logger) int 
 	agentContextWindow, err := strconv.ParseInt(
 		runner.Vars["GSH_AGENT_CONTEXT_WINDOW_TOKENS"].String(), 10, 32)
 	if err != nil {
-		logger.Warn("error parsing GSH_AGENT_CONTEXT_WINDOW_TOKENS", zap.Error(err))
+		logger.Debug("error parsing GSH_AGENT_CONTEXT_WINDOW_TOKENS", zap.Error(err))
 		agentContextWindow = 32768
 	}
 	return int(agentContextWindow)
@@ -70,7 +70,7 @@ func GetMinimumLines(runner *interp.Runner, logger *zap.Logger) int {
 	minimumLines, err := strconv.ParseInt(
 		runner.Vars["GSH_MINIMUM_HEIGHT"].String(), 10, 32)
 	if err != nil {
-		logger.Warn("error parsing GSH_MINIMUM_HEIGHT", zap.Error(err))
+		logger.Debug("error parsing GSH_MINIMUM_HEIGHT", zap.Error(err))
 		minimumLines = 8
 	}
 	return int(minimumLines)
