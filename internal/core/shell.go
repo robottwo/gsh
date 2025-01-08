@@ -53,11 +53,22 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 		prompt := environment.GetPrompt(runner, logger)
 		logger.Debug("prompt updated", zap.String("prompt", prompt))
 
+		historyEntries, err := historyManager.GetRecentEntries(environment.GetPwd(runner), 1024)
+		if err != nil {
+			logger.Warn("error getting recent history entries", zap.Error(err))
+			historyEntries = []history.HistoryEntry{}
+		}
+
+		historyCommands := make([]string, len(historyEntries))
+		for i := len(historyEntries) - 1; i >= 0; i-- {
+			historyCommands[len(historyEntries)-1-i] = historyEntries[i].Command
+		}
+
 		// Read input
 		options := gline.NewOptions()
 		options.MinHeight = environment.GetMinimumLines(runner, logger)
 
-		line, err := gline.Gline(prompt, "", predictor, explainer, logger, options)
+		line, err := gline.Gline(prompt, historyCommands, "", predictor, explainer, logger, options)
 
 		logger.Debug("received command", zap.String("line", line))
 

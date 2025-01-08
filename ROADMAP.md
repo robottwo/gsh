@@ -1,6 +1,5 @@
 # Bash Parity
 
-- allow selecting past commands in shellinput
 - support bash completion
 - multiline input
 
@@ -13,8 +12,8 @@
 
 # AI
 
+- make rag retrievers configurable
 - set ollama context window
-- RAG with aliases
 - make current directory more clear in concise history context
 - support custom instructions
 - built-in eval

@@ -82,8 +82,8 @@ type KeyMap struct {
 	LineStart               key.Binding
 	LineEnd                 key.Binding
 	Paste                   key.Binding
-	NextSuggestion          key.Binding
-	PrevSuggestion          key.Binding
+	NextValue               key.Binding
+	PrevValue               key.Binding
 }
 
 // DefaultKeyMap is the default set of key bindings for navigating and acting
@@ -102,8 +102,8 @@ var DefaultKeyMap = KeyMap{
 	LineStart:               key.NewBinding(key.WithKeys("home", "ctrl+a")),
 	LineEnd:                 key.NewBinding(key.WithKeys("end", "ctrl+e")),
 	Paste:                   key.NewBinding(key.WithKeys("ctrl+v")),
-	NextSuggestion:          key.NewBinding(key.WithKeys("down", "ctrl+n")),
-	PrevSuggestion:          key.NewBinding(key.WithKeys("up", "ctrl+p")),
+	NextValue:               key.NewBinding(key.WithKeys("down", "ctrl+n")),
+	PrevValue:               key.NewBinding(key.WithKeys("up", "ctrl+p")),
 }
 
 // Model is the Bubble Tea model for this text input element.
@@ -142,9 +142,6 @@ type Model struct {
 	// KeyMap encodes the keybindings recognized by the widget.
 	KeyMap KeyMap
 
-	// Underlying text value.
-	value []rune
-
 	// focus indicates whether user input focus should be on this input
 	// component. When false, ignore keyboard input and hide the cursor.
 	focus bool
@@ -169,6 +166,11 @@ type Model struct {
 	suggestions            [][]rune
 	matchedSuggestions     [][]rune
 	currentSuggestionIndex int
+
+	// values[0] is the current value. other indices represent history values
+	// that can be navigated with the up and down arrow keys.
+	values             [][]rune
+	selectedValueIndex int
 }
 
 // New creates a new model with default settings.
@@ -183,16 +185,13 @@ func New() Model {
 		KeyMap:          DefaultKeyMap,
 
 		suggestions: [][]rune{},
-		value:       nil,
 		focus:       false,
 		pos:         0,
+
+		values:             [][]rune{{}},
+		selectedValueIndex: 0,
 	}
 }
-
-// NewModel creates a new model with default settings.
-//
-// Deprecated: Use [New] instead.
-var NewModel = New
 
 // SetValue sets the value of the text input.
 func (m *Model) SetValue(s string) {
@@ -206,21 +205,22 @@ func (m *Model) SetValue(s string) {
 func (m *Model) setValueInternal(runes []rune, err error) {
 	m.Err = err
 
-	empty := len(m.value) == 0
+	empty := len(m.values[m.selectedValueIndex]) == 0
 
 	if m.CharLimit > 0 && len(runes) > m.CharLimit {
-		m.value = runes[:m.CharLimit]
+		m.values[0] = runes[:m.CharLimit]
 	} else {
-		m.value = runes
+		m.values[0] = runes
 	}
-	if (m.pos == 0 && empty) || m.pos > len(m.value) {
-		m.SetCursor(len(m.value))
+	m.selectedValueIndex = 0
+	if (m.pos == 0 && empty) || m.pos > len(m.values[0]) {
+		m.SetCursor(len(m.values[0]))
 	}
 }
 
 // Value returns the value of the text input.
 func (m Model) Value() string {
-	return string(m.value)
+	return string(m.values[m.selectedValueIndex])
 }
 
 // Position returns the cursor position.
@@ -231,7 +231,7 @@ func (m Model) Position() int {
 // SetCursor moves the cursor to the given position. If the position is
 // out of bounds the cursor will be moved to the start or end accordingly.
 func (m *Model) SetCursor(pos int) {
-	m.pos = clamp(pos, 0, len(m.value))
+	m.pos = clamp(pos, 0, len(m.values[m.selectedValueIndex]))
 }
 
 // CursorStart moves the cursor to the start of the input field.
@@ -241,7 +241,7 @@ func (m *Model) CursorStart() {
 
 // CursorEnd moves the cursor to the end of the input field.
 func (m *Model) CursorEnd() {
-	m.SetCursor(len(m.value))
+	m.SetCursor(len(m.values[m.selectedValueIndex]))
 }
 
 // Focused returns the focus state on the model.
@@ -265,7 +265,8 @@ func (m *Model) Blur() {
 
 // Reset sets the input to its default state with no input.
 func (m *Model) Reset() {
-	m.value = nil
+	m.values = [][]rune{{}}
+	m.selectedValueIndex = 0
 	m.SetCursor(0)
 }
 
@@ -277,6 +278,20 @@ func (m *Model) SetSuggestions(suggestions []string) {
 	}
 
 	m.updateSuggestions()
+}
+
+// SetHistoryValues sets the suggestions for the input.
+func (m *Model) SetHistoryValues(historyValues []string) {
+	m.values = append([][]rune{m.values[0]}, make([][]rune, len(historyValues))...)
+
+	for i, s := range historyValues {
+		m.values[i+1] = m.san().Sanitize([]rune(s))
+	}
+
+	// reset value index if the selected index is out of bounds
+	if m.selectedValueIndex >= len(m.values) {
+		m.selectedValueIndex = 0
+	}
 }
 
 // rsan initializes or retrieves the rune sanitizer.
@@ -298,7 +313,7 @@ func (m *Model) insertRunesFromUserInput(v []rune) {
 
 	var availSpace int
 	if m.CharLimit > 0 {
-		availSpace = m.CharLimit - len(m.value)
+		availSpace = m.CharLimit - len(m.values[m.selectedValueIndex])
 
 		// If the char limit's been reached, cancel.
 		if availSpace <= 0 {
@@ -312,34 +327,23 @@ func (m *Model) insertRunesFromUserInput(v []rune) {
 		}
 	}
 
-	// Stuff before and after the cursor
-	head := m.value[:m.pos]
-	tailSrc := m.value[m.pos:]
-	tail := make([]rune, len(tailSrc))
-	copy(tail, tailSrc)
+	result := make([]rune, len(m.values[m.selectedValueIndex])+len(paste))
 
-	// Insert pasted runes
-	for _, r := range paste {
-		head = append(head, r)
-		m.pos++
-		if m.CharLimit > 0 {
-			availSpace--
-			if availSpace <= 0 {
-				break
-			}
-		}
-	}
+	copy(result, m.values[m.selectedValueIndex][:m.pos])
+	copy(result[m.pos:], paste)
+	copy(result[m.pos+len(paste):], m.values[m.selectedValueIndex][m.pos:])
+	m.pos += len(paste)
 
-	// Put it all back together
-	value := append(head, tail...)
-	inputErr := m.validate(value)
-	m.setValueInternal(value, inputErr)
+	inputErr := m.validate(result)
+	m.setValueInternal(result, inputErr)
 }
 
 // deleteBeforeCursor deletes all text before the cursor.
 func (m *Model) deleteBeforeCursor() {
-	m.value = m.value[m.pos:]
-	m.Err = m.validate(m.value)
+	newValue := cloneRunes(m.values[m.selectedValueIndex][m.pos:])
+	m.Err = m.validate(newValue)
+	m.values[0] = newValue
+	m.selectedValueIndex = 0
 	m.SetCursor(0)
 }
 
@@ -347,14 +351,16 @@ func (m *Model) deleteBeforeCursor() {
 // delete everything after the cursor so as not to reveal word breaks in the
 // masked input.
 func (m *Model) deleteAfterCursor() {
-	m.value = m.value[:m.pos]
-	m.Err = m.validate(m.value)
-	m.SetCursor(len(m.value))
+	newValue := cloneRunes(m.values[m.selectedValueIndex][:m.pos])
+	m.Err = m.validate(newValue)
+	m.values[0] = newValue
+	m.selectedValueIndex = 0
+	m.SetCursor(len(m.values[0]))
 }
 
 // deleteWordBackward deletes the word left to the cursor.
 func (m *Model) deleteWordBackward() {
-	if m.pos == 0 || len(m.value) == 0 {
+	if m.pos == 0 || len(m.values[m.selectedValueIndex]) == 0 {
 		return
 	}
 
@@ -369,7 +375,7 @@ func (m *Model) deleteWordBackward() {
 	oldPos := m.pos //nolint:ifshort
 
 	m.SetCursor(m.pos - 1)
-	for unicode.IsSpace(m.value[m.pos]) {
+	for unicode.IsSpace(m.values[m.selectedValueIndex][m.pos]) {
 		if m.pos <= 0 {
 			break
 		}
@@ -378,7 +384,7 @@ func (m *Model) deleteWordBackward() {
 	}
 
 	for m.pos > 0 {
-		if !unicode.IsSpace(m.value[m.pos]) {
+		if !unicode.IsSpace(m.values[m.selectedValueIndex][m.pos]) {
 			m.SetCursor(m.pos - 1)
 		} else {
 			if m.pos > 0 {
@@ -389,19 +395,22 @@ func (m *Model) deleteWordBackward() {
 		}
 	}
 
-	if oldPos > len(m.value) {
-		m.value = m.value[:m.pos]
+	var newValue []rune
+	if oldPos > len(m.values[m.selectedValueIndex]) {
+		newValue = cloneRunes(m.values[m.selectedValueIndex][:m.pos])
 	} else {
-		m.value = append(m.value[:m.pos], m.value[oldPos:]...)
+		newValue = cloneConcatRunes(m.values[m.selectedValueIndex][:m.pos], m.values[m.selectedValueIndex][oldPos:])
 	}
-	m.Err = m.validate(m.value)
+	m.Err = m.validate(newValue)
+	m.values[0] = newValue
+	m.selectedValueIndex = 0
 }
 
 // deleteWordForward deletes the word right to the cursor. If input is masked
 // delete everything after the cursor so as not to reveal word breaks in the
 // masked input.
 func (m *Model) deleteWordForward() {
-	if m.pos >= len(m.value) || len(m.value) == 0 {
+	if m.pos >= len(m.values[m.selectedValueIndex]) || len(m.values[m.selectedValueIndex]) == 0 {
 		return
 	}
 
@@ -412,37 +421,39 @@ func (m *Model) deleteWordForward() {
 
 	oldPos := m.pos
 	m.SetCursor(m.pos + 1)
-	for unicode.IsSpace(m.value[m.pos]) {
+	for unicode.IsSpace(m.values[m.selectedValueIndex][m.pos]) {
 		// ignore series of whitespace after cursor
 		m.SetCursor(m.pos + 1)
 
-		if m.pos >= len(m.value) {
+		if m.pos >= len(m.values[m.selectedValueIndex]) {
 			break
 		}
 	}
 
-	for m.pos < len(m.value) {
-		if !unicode.IsSpace(m.value[m.pos]) {
+	for m.pos < len(m.values[m.selectedValueIndex]) {
+		if !unicode.IsSpace(m.values[m.selectedValueIndex][m.pos]) {
 			m.SetCursor(m.pos + 1)
 		} else {
 			break
 		}
 	}
 
-	if m.pos > len(m.value) {
-		m.value = m.value[:oldPos]
+	var newValue []rune
+	if m.pos > len(m.values[m.selectedValueIndex]) {
+		newValue = cloneRunes(m.values[m.selectedValueIndex][:oldPos])
 	} else {
-		m.value = append(m.value[:oldPos], m.value[m.pos:]...)
+		newValue = cloneConcatRunes(m.values[m.selectedValueIndex][:oldPos], m.values[m.selectedValueIndex][m.pos:])
 	}
-	m.Err = m.validate(m.value)
-
+	m.Err = m.validate(newValue)
+	m.values[0] = newValue
+	m.selectedValueIndex = 0
 	m.SetCursor(oldPos)
 }
 
 // wordBackward moves the cursor one word to the left. If input is masked, move
 // input to the start so as not to reveal word breaks in the masked input.
 func (m *Model) wordBackward() {
-	if m.pos == 0 || len(m.value) == 0 {
+	if m.pos == 0 || len(m.values[m.selectedValueIndex]) == 0 {
 		return
 	}
 
@@ -453,7 +464,7 @@ func (m *Model) wordBackward() {
 
 	i := m.pos - 1
 	for i >= 0 {
-		if unicode.IsSpace(m.value[i]) {
+		if unicode.IsSpace(m.values[m.selectedValueIndex][i]) {
 			m.SetCursor(m.pos - 1)
 			i--
 		} else {
@@ -462,7 +473,7 @@ func (m *Model) wordBackward() {
 	}
 
 	for i >= 0 {
-		if !unicode.IsSpace(m.value[i]) {
+		if !unicode.IsSpace(m.values[m.selectedValueIndex][i]) {
 			m.SetCursor(m.pos - 1)
 			i--
 		} else {
@@ -474,7 +485,7 @@ func (m *Model) wordBackward() {
 // wordForward moves the cursor one word to the right. If the input is masked,
 // move input to the end so as not to reveal word breaks in the masked input.
 func (m *Model) wordForward() {
-	if m.pos >= len(m.value) || len(m.value) == 0 {
+	if m.pos >= len(m.values[m.selectedValueIndex]) || len(m.values[m.selectedValueIndex]) == 0 {
 		return
 	}
 
@@ -484,8 +495,8 @@ func (m *Model) wordForward() {
 	}
 
 	i := m.pos
-	for i < len(m.value) {
-		if unicode.IsSpace(m.value[i]) {
+	for i < len(m.values[m.selectedValueIndex]) {
+		if unicode.IsSpace(m.values[m.selectedValueIndex][i]) {
 			m.SetCursor(m.pos + 1)
 			i++
 		} else {
@@ -493,8 +504,8 @@ func (m *Model) wordForward() {
 		}
 	}
 
-	for i < len(m.value) {
-		if !unicode.IsSpace(m.value[i]) {
+	for i < len(m.values[m.selectedValueIndex]) {
+		if !unicode.IsSpace(m.values[m.selectedValueIndex][i]) {
 			m.SetCursor(m.pos + 1)
 			i++
 		} else {
@@ -533,9 +544,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			m.deleteWordBackward()
 		case key.Matches(msg, m.KeyMap.DeleteCharacterBackward):
 			m.Err = nil
-			if len(m.value) > 0 {
-				m.value = append(m.value[:max(0, m.pos-1)], m.value[m.pos:]...)
-				m.Err = m.validate(m.value)
+			if len(m.values[m.selectedValueIndex]) > 0 {
+				newValue := cloneConcatRunes(m.values[m.selectedValueIndex][:max(0, m.pos-1)], m.values[m.selectedValueIndex][m.pos:])
+				m.Err = m.validate(newValue)
+				m.values[0] = newValue
+				m.selectedValueIndex = 0
 				if m.pos > 0 {
 					m.SetCursor(m.pos - 1)
 				}
@@ -549,18 +562,26 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case key.Matches(msg, m.KeyMap.WordForward):
 			m.wordForward()
 		case key.Matches(msg, m.KeyMap.CharacterForward):
-			if m.pos < len(m.value) {
+			if m.pos < len(m.values[m.selectedValueIndex]) {
 				m.SetCursor(m.pos + 1)
 			} else if m.canAcceptSuggestion() {
-				m.value = append(m.value, m.matchedSuggestions[m.currentSuggestionIndex][len(m.value):]...)
+				newValue := cloneConcatRunes(
+					m.values[m.selectedValueIndex],
+					m.matchedSuggestions[m.currentSuggestionIndex][len(m.values[m.selectedValueIndex]):],
+				)
+				m.Err = m.validate(newValue)
+				m.values[0] = newValue
+				m.selectedValueIndex = 0
 				m.CursorEnd()
 			}
 		case key.Matches(msg, m.KeyMap.LineStart):
 			m.CursorStart()
 		case key.Matches(msg, m.KeyMap.DeleteCharacterForward):
-			if len(m.value) > 0 && m.pos < len(m.value) {
-				m.value = append(m.value[:m.pos], m.value[m.pos+1:]...)
-				m.Err = m.validate(m.value)
+			if len(m.values[m.selectedValueIndex]) > 0 && m.pos < len(m.values[m.selectedValueIndex]) {
+				newValue := cloneConcatRunes(m.values[m.selectedValueIndex][:m.pos], m.values[m.selectedValueIndex][m.pos+1:])
+				m.Err = m.validate(newValue)
+				m.values[0] = newValue
+				m.selectedValueIndex = 0
 			}
 		case key.Matches(msg, m.KeyMap.LineEnd):
 			m.CursorEnd()
@@ -572,10 +593,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			return m, Paste
 		case key.Matches(msg, m.KeyMap.DeleteWordForward):
 			m.deleteWordForward()
-		case key.Matches(msg, m.KeyMap.NextSuggestion):
-			m.nextSuggestion()
-		case key.Matches(msg, m.KeyMap.PrevSuggestion):
-			m.previousSuggestion()
+		case key.Matches(msg, m.KeyMap.NextValue):
+			m.nextValue()
+		case key.Matches(msg, m.KeyMap.PrevValue):
+			m.previousValue()
 		default:
 			// Input one or more regular characters.
 			m.insertRunesFromUserInput(msg.Runes)
@@ -610,7 +631,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 func (m Model) View() string {
 	styleText := m.TextStyle.Inline(true).Render
 
-	value := m.value
+	value := m.values[m.selectedValueIndex]
 	pos := max(0, m.pos)
 	v := m.PromptStyle.Render(m.Prompt) + styleText(m.echoTransform(string(value[:pos])))
 
@@ -722,7 +743,7 @@ func (m *Model) SetCursorMode(mode CursorMode) tea.Cmd {
 
 func (m Model) completionView(offset int) string {
 	var (
-		value = m.value
+		value = m.values[m.selectedValueIndex]
 		style = m.CompletionStyle.Inline(true).Render
 	)
 
@@ -788,7 +809,7 @@ func (m *Model) updateSuggestions() {
 	for _, s := range m.suggestions {
 		suggestion := string(s)
 
-		if strings.HasPrefix(strings.ToLower(suggestion), strings.ToLower(string(m.value))) {
+		if strings.HasPrefix(strings.ToLower(suggestion), strings.ToLower(string(m.values[m.selectedValueIndex]))) {
 			matches = append(matches, []rune(suggestion))
 		}
 	}
@@ -799,20 +820,28 @@ func (m *Model) updateSuggestions() {
 	m.matchedSuggestions = matches
 }
 
-// nextSuggestion selects the next suggestion.
-func (m *Model) nextSuggestion() {
-	m.currentSuggestionIndex = (m.currentSuggestionIndex + 1)
-	if m.currentSuggestionIndex >= len(m.matchedSuggestions) {
-		m.currentSuggestionIndex = 0
+func (m *Model) nextValue() {
+	if len(m.values) == 1 {
+		return
 	}
+
+	m.selectedValueIndex--
+	if m.selectedValueIndex < 0 {
+		m.selectedValueIndex = 0
+	}
+	m.SetCursor(len(m.values[m.selectedValueIndex]))
 }
 
-// previousSuggestion selects the previous suggestion.
-func (m *Model) previousSuggestion() {
-	m.currentSuggestionIndex = (m.currentSuggestionIndex - 1)
-	if m.currentSuggestionIndex < 0 {
-		m.currentSuggestionIndex = len(m.matchedSuggestions) - 1
+func (m *Model) previousValue() {
+	if len(m.values) == 1 {
+		return
 	}
+
+	m.selectedValueIndex++
+	if m.selectedValueIndex >= len(m.values) {
+		m.selectedValueIndex = len(m.values) - 1
+	}
+	m.SetCursor(len(m.values[m.selectedValueIndex]))
 }
 
 func (m Model) validate(v []rune) error {
@@ -820,4 +849,17 @@ func (m Model) validate(v []rune) error {
 		return m.Validate(string(v))
 	}
 	return nil
+}
+
+func cloneRunes(r []rune) []rune {
+	clone := make([]rune, len(r))
+	copy(clone, r)
+	return clone
+}
+
+func cloneConcatRunes(r1, r2 []rune) []rune {
+	clone := make([]rune, len(r1)+len(r2))
+	copy(clone, r1)
+	copy(clone[len(r1):], r2)
+	return clone
 }

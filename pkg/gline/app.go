@@ -24,8 +24,9 @@ type appModel struct {
 	explanation       string
 	predictionStateId int
 
-	result   string
-	appState appState
+	historyValues []string
+	result        string
+	appState      appState
 
 	explanationStyle lipgloss.Style
 }
@@ -64,6 +65,7 @@ const (
 
 func initialModel(
 	prompt string,
+	historyValues []string,
 	explanation string,
 	predictor Predictor,
 	explainer Explainer,
@@ -72,6 +74,7 @@ func initialModel(
 ) appModel {
 	textInput := shellinput.New()
 	textInput.Prompt = prompt
+	textInput.SetHistoryValues(historyValues)
 	textInput.Cursor.SetMode(cursor.CursorStatic)
 	textInput.ShowSuggestions = true
 	textInput.Focus()
@@ -82,12 +85,13 @@ func initialModel(
 		logger:    logger,
 		options:   options,
 
-		textInput:   textInput,
-		dirty:       false,
-		prediction:  "",
-		explanation: explanation,
-		result:      "",
-		appState:    Active,
+		textInput:     textInput,
+		dirty:         false,
+		prediction:    "",
+		explanation:   explanation,
+		historyValues: historyValues,
+		result:        "",
+		appState:      Active,
 
 		predictionStateId: 0,
 
@@ -186,9 +190,11 @@ func (m appModel) getFinalOutput() string {
 }
 
 func (m appModel) updateTextInput(msg tea.Msg) (appModel, tea.Cmd) {
+	oldVal := m.textInput.Value()
 	updatedTextInput, cmd := m.textInput.Update(msg)
+	newVal := updatedTextInput.Value()
 
-	textUpdated := updatedTextInput.Value() != m.textInput.Value()
+	textUpdated := oldVal != newVal
 	m.textInput = updatedTextInput
 
 	// if the text input has changed, we want to attempt a prediction
@@ -312,6 +318,7 @@ func (m appModel) setExplanation(msg setExplanationMsg) (tea.Model, tea.Cmd) {
 
 func Gline(
 	prompt string,
+	historyValues []string,
 	explanation string,
 	predictor Predictor,
 	explainer Explainer,
@@ -319,7 +326,7 @@ func Gline(
 	options Options,
 ) (string, error) {
 	p := tea.NewProgram(
-		initialModel(prompt, explanation, predictor, explainer, logger, options),
+		initialModel(prompt, historyValues, explanation, predictor, explainer, logger, options),
 	)
 
 	m, err := p.Run()

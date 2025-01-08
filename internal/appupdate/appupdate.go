@@ -62,6 +62,7 @@ func updateToLatestVersion(currentSemVer *semver.Version, logger *zap.Logger) {
 
 	confirm, err := gline.Gline(
 		styles.AGENT_QUESTION("New version of gsh available. Update now? (Y/n)"),
+		[]string{},
 		latestVersion,
 		nil,
 		nil,
