@@ -9,6 +9,7 @@ import (
 
 	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/utils"
+	"github.com/atinylittleshell/gsh/pkg/gline"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -44,7 +45,7 @@ func ViewDirectoryTool(runner *interp.Runner, logger *zap.Logger, params map[str
 	writer := io.StringWriter(&buf)
 
 	printToolMessage("gsh: I'm viewing the following directory:")
-	fmt.Println(path)
+	fmt.Print(gline.RESET_CURSOR_COLUMN + path + "\n")
 
 	walkDir(logger, writer, path, 1)
 

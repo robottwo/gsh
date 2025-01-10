@@ -12,6 +12,7 @@ import (
 	"github.com/atinylittleshell/gsh/internal/rag"
 	"github.com/atinylittleshell/gsh/internal/styles"
 	"github.com/atinylittleshell/gsh/internal/utils"
+	"github.com/atinylittleshell/gsh/pkg/gline"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -132,13 +133,13 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 				},
 			)
 			if err != nil {
-				fmt.Println(styles.ERROR(fmt.Sprintf("Error sending request to LLM: %s", err)))
+				fmt.Print(gline.RESET_CURSOR_COLUMN + styles.ERROR(fmt.Sprintf("Error sending request to LLM: %s", err)) + "\n")
 				agent.logger.Error("Error sending request to LLM", zap.Error(err))
 				return
 			}
 
 			if len(response.Choices) == 0 {
-				fmt.Println(styles.ERROR("LLM responded with an empty response. This is typically a problem with the model being used. Please try again."))
+				fmt.Print(gline.RESET_CURSOR_COLUMN + styles.ERROR("LLM responded with an empty response. This is typically a problem with the model being used. Please try again.") + "\n")
 				agent.logger.Error("Error parsing LLM response", zap.String("response", fmt.Sprintf("%+v", response)))
 				return
 			}
@@ -177,7 +178,11 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 	var params map[string]any
 	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &params); err != nil {
 		agent.logger.Error(fmt.Sprintf("Failed to parse function call arguments: %v", err), zap.String("arguments", toolCall.Function.Arguments))
-		fmt.Println(styles.ERROR("LLM responded with something invalid. This is typically an indication that the model being used is not intelligent enough for the current task. Please try again."))
+		fmt.Print(
+			gline.RESET_CURSOR_COLUMN +
+				styles.ERROR("LLM responded with something invalid. This is typically an indication that the model being used is not intelligent enough for the current task. Please try again.") +
+				"\n",
+		)
 		return false
 	}
 

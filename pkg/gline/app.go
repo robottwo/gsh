@@ -340,7 +340,7 @@ func Gline(
 		panic("Gline resulted in an unexpected app model")
 	}
 
-	fmt.Println(appModel.getFinalOutput())
+	fmt.Print(RESET_CURSOR_COLUMN + appModel.getFinalOutput() + "\n")
 
 	return appModel.result, nil
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/utils"
+	"github.com/atinylittleshell/gsh/pkg/gline"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -61,7 +62,7 @@ func ViewFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 	defer file.Close()
 
 	printToolMessage("gsh: I'm reading the following file:")
-	fmt.Println(path)
+	fmt.Print(gline.RESET_CURSOR_COLUMN + path + "\n")
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, file)

@@ -11,6 +11,7 @@ import (
 
 	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/utils"
+	"github.com/atinylittleshell/gsh/pkg/gline"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -100,7 +101,7 @@ func EditFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-	fmt.Println(path)
+	fmt.Print(gline.RESET_CURSOR_COLUMN + path + "\n")
 
 	file, err = os.Create(path)
 	if err != nil {

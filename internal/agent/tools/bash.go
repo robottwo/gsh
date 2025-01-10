@@ -12,6 +12,7 @@ import (
 	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/history"
 	"github.com/atinylittleshell/gsh/internal/utils"
+	"github.com/atinylittleshell/gsh/pkg/gline"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -66,8 +67,7 @@ func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, log
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-	fmt.Print(environment.GetPrompt(runner, logger))
-	fmt.Println(command)
+	fmt.Print(gline.RESET_CURSOR_COLUMN + environment.GetPrompt(runner, logger) + command + "\n")
 
 	outBuf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}

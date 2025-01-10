@@ -14,7 +14,7 @@ func failedToolResponse(errorMessage string) string {
 }
 
 func printToolMessage(message string) {
-	fmt.Print(styles.AGENT_QUESTION(message) + "\n")
+	fmt.Print(gline.RESET_CURSOR_COLUMN + styles.AGENT_QUESTION(message) + "\n")
 }
 
 func userConfirmation(logger *zap.Logger, question string, explanation string) string {
