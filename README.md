@@ -76,6 +76,16 @@ Windows is not supported (yet).
 
 gsh can automatically detect newer versions and self update.
 
+## Building from Source
+
+To build gsh from source, ensure you have Go installed and run the following command:
+
+```bash
+make build
+```
+
+This will compile the project and place the binary in the `./bin` directory.
+
 ## Configuration
 
 gsh can be configured through a configuration file located at `~/.gshrc`.
