@@ -14,8 +14,6 @@ func GenerateJsonSchema(value any) *jsonschema.Definition {
 }
 
 func ComposeContextText(context *map[string]string, contextTypes []string, logger *zap.Logger) string {
-	logger.Debug("compose context text", zap.Any("context", context), zap.Strings("context_types", contextTypes))
-
 	contextText := ""
 	if context == nil {
 		return contextText

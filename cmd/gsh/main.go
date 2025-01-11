@@ -60,7 +60,7 @@ func main() {
 	}
 	defer logger.Sync() // Flush any buffered log entries
 
-	logger.Debug("default vars", zap.String("vars", string(DEFAULT_VARS)))
+	logger.Info("-------- new gsh session --------", zap.Any("args", os.Args))
 
 	appupdate.HandleSelfUpdate(BUILD_VERSION, logger)
 
@@ -86,8 +86,6 @@ func main() {
 }
 
 func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
-	logger.Info("-------- new gsh session --------", zap.Any("args", os.Args))
-
 	// gsh -c "echo hello"
 	if *command != "" {
 		return bash.RunBashScriptFromReader(runner, strings.NewReader(*command), "gsh")
