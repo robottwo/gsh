@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
 )
@@ -74,4 +75,47 @@ func GetMinimumLines(runner *interp.Runner, logger *zap.Logger) int {
 		minimumLines = 8
 	}
 	return int(minimumLines)
+}
+
+func getContextTypes(runner *interp.Runner, key string) []string {
+	contextTypes := strings.ToLower(runner.Vars[key].String())
+	return lo.Map(strings.Split(contextTypes, ","), func(s string, _ int) string {
+		return strings.TrimSpace(s)
+	})
+}
+
+func GetContextTypesForAgent(runner *interp.Runner, logger *zap.Logger) []string {
+	return getContextTypes(runner, "GSH_CONTEXT_TYPES_FOR_AGENT")
+}
+
+func GetContextTypesForPredictionWithPrefix(runner *interp.Runner, logger *zap.Logger) []string {
+	return getContextTypes(runner, "GSH_CONTEXT_TYPES_FOR_PREDICTION_WITH_PREFIX")
+}
+
+func GetContextTypesForPredictionWithoutPrefix(runner *interp.Runner, logger *zap.Logger) []string {
+	return getContextTypes(runner, "GSH_CONTEXT_TYPES_FOR_PREDICTION_WITHOUT_PREFIX")
+}
+
+func GetContextTypesForExplanation(runner *interp.Runner, logger *zap.Logger) []string {
+	return getContextTypes(runner, "GSH_CONTEXT_TYPES_FOR_EXPLANATION")
+}
+
+func GetContextNumHistoryConcise(runner *interp.Runner, logger *zap.Logger) int {
+	numHistoryConcise, err := strconv.ParseInt(
+		runner.Vars["GSH_CONTEXT_NUM_HISTORY_CONCISE"].String(), 10, 32)
+	if err != nil {
+		logger.Debug("error parsing GSH_CONTEXT_NUM_HISTORY_CONCISE", zap.Error(err))
+		numHistoryConcise = 30
+	}
+	return int(numHistoryConcise)
+}
+
+func GetContextNumHistoryVerbose(runner *interp.Runner, logger *zap.Logger) int {
+	numHistoryVerbose, err := strconv.ParseInt(
+		runner.Vars["GSH_CONTEXT_NUM_HISTORY_VERBOSE"].String(), 10, 32)
+	if err != nil {
+		logger.Debug("error parsing GSH_CONTEXT_NUM_HISTORY_VERBOSE", zap.Error(err))
+		numHistoryVerbose = 30
+	}
+	return int(numHistoryVerbose)
 }

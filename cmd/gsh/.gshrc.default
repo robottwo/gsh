@@ -39,8 +39,35 @@ GSH_SLOW_MODEL_ID=qwen2.5:32b
 GSH_SLOW_MODEL_TEMPERATURE=0.1
 GSH_SLOW_MODEL_HEADERS='{}'
 
-# How many past commands to use as context for prediction and agent chat
-GSH_PAST_COMMANDS_CONTEXT_LIMIT=30
+# -------- RAG Configuration --------
+# gsh uses Retrieval Augmented Generation (RAG) to get context from the environment and help give accurate results.
+#
+# Available context types include: 
+# - system_info: current OS and architecture
+# - working_directory: path of the current working directory
+# - git_status: output from `git status`
+# - history_concise: a concise version of command history
+# - history_verbose: a verbose version of command history
+#
+# Retrieving more context will generally improve output quality at the cost of using more tokens and increased latency.
+
+# A list of context to send to LLM along with agent chat messages.
+GSH_CONTEXT_TYPES_FOR_AGENT=system_info,working_directory,git_status,history_verbose
+
+# A list of context to send to LLM when predicting command with a partial prefix already entered by user
+GSH_CONTEXT_TYPES_FOR_PREDICTION_WITH_PREFIX=system_info,working_directory,git_status,history_concise
+
+# A list of context to send to LLM when predicting command with no prefix entered by user yet
+GSH_CONTEXT_TYPES_FOR_PREDICTION_WITHOUT_PREFIX=system_info,working_directory,git_status,history_verbose
+
+# A list of context to send to LLM when explaining command
+GSH_CONTEXT_TYPES_FOR_EXPLANATION=system_info,working_directory,git_status,history_concise
+
+# How many recent commands to use in concise version of commmand history
+GSH_CONTEXT_NUM_HISTORY_CONCISE=30
+
+# How many recent commands to use in verbose version of commmand history
+GSH_CONTEXT_NUM_HISTORY_VERBOSE=30
 
 # Size of the agent chat context window in LLM tokens.
 # When the chat session exceeds this limit, only the most recent messages that 

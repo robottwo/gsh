@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/atinylittleshell/gsh/internal/environment"
-	"github.com/atinylittleshell/gsh/internal/rag"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -14,28 +13,32 @@ import (
 )
 
 type LLMNullStatePredictor struct {
-	runner          *interp.Runner
-	llmClient       *openai.Client
-	contextProvider *rag.ContextProvider
-	logger          *zap.Logger
-	modelId         string
-	temperature     float32
+	runner      *interp.Runner
+	llmClient   *openai.Client
+	contextText string
+	logger      *zap.Logger
+	modelId     string
+	temperature float32
 }
 
 func NewLLMNullStatePredictor(
 	runner *interp.Runner,
-	contextProvider *rag.ContextProvider,
 	logger *zap.Logger,
 ) *LLMNullStatePredictor {
 	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.FastModel)
 	return &LLMNullStatePredictor{
-		runner:          runner,
-		llmClient:       llmClient,
-		contextProvider: contextProvider,
-		logger:          logger,
-		modelId:         modelId,
-		temperature:     float32(temperature),
+		runner:      runner,
+		llmClient:   llmClient,
+		contextText: "",
+		logger:      logger,
+		modelId:     modelId,
+		temperature: float32(temperature),
 	}
+}
+
+func (p *LLMNullStatePredictor) UpdateContext(context *map[string]string) {
+	contextTypes := environment.GetContextTypesForPredictionWithoutPrefix(p.runner, p.logger)
+	p.contextText = utils.ComposeContextText(context, contextTypes, p.logger)
 }
 
 func (p *LLMNullStatePredictor) Predict(input string) (string, error) {
@@ -65,12 +68,7 @@ You are asked to predict the next command I'm likely to want to run.
 # Response JSON Schema
 %s`,
 		BEST_PRACTICES,
-		p.contextProvider.GetContext(
-			rag.ContextRetrievalOptions{
-				Concise:      false,
-				HistoryLimit: environment.GetHistoryContextLimit(p.runner, p.logger),
-			},
-		),
+		p.contextText,
 		string(schema),
 	)
 

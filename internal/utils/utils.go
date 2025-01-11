@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/sashabaranov/go-openai/jsonschema"
+	"go.uber.org/zap"
 )
 
 func GenerateJsonSchema(value any) *jsonschema.Definition {
@@ -10,4 +11,29 @@ func GenerateJsonSchema(value any) *jsonschema.Definition {
 		panic(err)
 	}
 	return result
+}
+
+func ComposeContextText(context *map[string]string, contextTypes []string, logger *zap.Logger) string {
+	logger.Debug("compose context text", zap.Any("context", context), zap.Strings("context_types", contextTypes))
+
+	contextText := ""
+	if context == nil {
+		return contextText
+	}
+
+	if len(contextTypes) == 0 {
+		return contextText
+	}
+
+	for _, contextType := range contextTypes {
+		text, ok := (*context)[contextType]
+		if !ok {
+			logger.Warn("context type not found", zap.String("context_type", contextType))
+			continue
+		}
+
+		contextText += "\n" + text + "\n"
+	}
+
+	return contextText
 }

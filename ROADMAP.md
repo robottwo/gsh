@@ -13,7 +13,7 @@
 
 # AI
 
-- make rag retrievers configurable
+- explicitly specify directory when runnning subshell commands (e.g. git status retriever)
 - set ollama context window
 - make current directory more clear in concise history context
 - support custom instructions
@@ -28,7 +28,6 @@
 # Engineering
 
 - support concurrent writes to output/error buffers
-- pre-fetch context when rendering prompt to avoid competing with user commands
 - limit total history size
 
 # Distribution

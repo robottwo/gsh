@@ -28,16 +28,17 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 		Retrievers: []rag.ContextRetriever{
 			retrievers.SystemInfoContextRetriever{Runner: runner},
 			retrievers.WorkingDirectoryContextRetriever{Runner: runner},
-			retrievers.GitContextRetriever{Runner: runner, Logger: logger},
-			retrievers.HistoryContextRetriever{Runner: runner, HistoryManager: historyManager},
+			retrievers.GitStatusContextRetriever{Runner: runner, Logger: logger},
+			retrievers.ConciseHistoryContextRetriever{Runner: runner, Logger: logger, HistoryManager: historyManager},
+			retrievers.VerboseHistoryContextRetriever{Runner: runner, Logger: logger, HistoryManager: historyManager},
 		},
 	}
 	predictor := &predict.PredictRouter{
-		PrefixPredictor:    predict.NewLLMPrefixPredictor(runner, contextProvider, logger),
-		NullStatePredictor: predict.NewLLMNullStatePredictor(runner, contextProvider, logger),
+		PrefixPredictor:    predict.NewLLMPrefixPredictor(runner, logger),
+		NullStatePredictor: predict.NewLLMNullStatePredictor(runner, logger),
 	}
-	explainer := predict.NewLLMExplainer(runner, contextProvider, logger)
-	agent := agent.NewAgent(runner, historyManager, contextProvider, logger)
+	explainer := predict.NewLLMExplainer(runner, logger)
+	agent := agent.NewAgent(runner, historyManager, logger)
 
 	chanSIGINT := make(chan os.Signal, 1)
 	signal.Notify(chanSIGINT, os.Interrupt)
@@ -52,6 +53,13 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 	for {
 		prompt := environment.GetPrompt(runner, logger)
 		logger.Debug("prompt updated", zap.String("prompt", prompt))
+
+		ragContext := contextProvider.GetContext()
+		logger.Debug("context updated", zap.Any("context", ragContext))
+
+		predictor.UpdateContext(ragContext)
+		explainer.UpdateContext(ragContext)
+		agent.UpdateContext(ragContext)
 
 		historyEntries, err := historyManager.GetRecentEntries(environment.GetPwd(runner), 1024)
 		if err != nil {

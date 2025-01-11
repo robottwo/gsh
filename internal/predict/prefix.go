@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/environment"
-	"github.com/atinylittleshell/gsh/internal/rag"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -15,28 +14,32 @@ import (
 )
 
 type LLMPrefixPredictor struct {
-	runner          *interp.Runner
-	llmClient       *openai.Client
-	contextProvider *rag.ContextProvider
-	logger          *zap.Logger
-	modelId         string
-	temperature     float32
+	runner      *interp.Runner
+	llmClient   *openai.Client
+	contextText string
+	logger      *zap.Logger
+	modelId     string
+	temperature float32
 }
 
 func NewLLMPrefixPredictor(
 	runner *interp.Runner,
-	contextProvider *rag.ContextProvider,
 	logger *zap.Logger,
 ) *LLMPrefixPredictor {
 	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.FastModel)
 	return &LLMPrefixPredictor{
-		runner:          runner,
-		llmClient:       llmClient,
-		contextProvider: contextProvider,
-		logger:          logger,
-		modelId:         modelId,
-		temperature:     float32(temperature),
+		runner:      runner,
+		llmClient:   llmClient,
+		contextText: "",
+		logger:      logger,
+		modelId:     modelId,
+		temperature: float32(temperature),
 	}
+}
+
+func (p *LLMPrefixPredictor) UpdateContext(context *map[string]string) {
+	contextTypes := environment.GetContextTypesForPredictionWithPrefix(p.runner, p.logger)
+	p.contextText = utils.ComposeContextText(context, contextTypes, p.logger)
 }
 
 func (p *LLMPrefixPredictor) Predict(input string) (string, error) {
@@ -68,12 +71,7 @@ You are asked to predict what the complete bash command is.
 # Response JSON Schema
 %s`,
 		BEST_PRACTICES,
-		p.contextProvider.GetContext(
-			rag.ContextRetrievalOptions{
-				Concise:      true,
-				HistoryLimit: environment.GetHistoryContextLimit(p.runner, p.logger),
-			},
-		),
+		p.contextText,
 		string(schema),
 	)
 

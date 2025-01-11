@@ -5,21 +5,20 @@ import (
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/bash"
-	"github.com/atinylittleshell/gsh/internal/rag"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
 )
 
-type GitContextRetriever struct {
+type GitStatusContextRetriever struct {
 	Runner *interp.Runner
 	Logger *zap.Logger
 }
 
-func (r GitContextRetriever) Name() string {
-	return "git"
+func (r GitStatusContextRetriever) Name() string {
+	return "git_status"
 }
 
-func (r GitContextRetriever) GetContext(options rag.ContextRetrievalOptions) (string, error) {
+func (r GitStatusContextRetriever) GetContext() (string, error) {
 	revParseOut, _, err := bash.RunBashCommandInSubShell(r.Runner, "git rev-parse --show-toplevel")
 	if err != nil {
 		r.Logger.Debug("error running `git rev-parse --show-toplevel`", zap.Error(err))

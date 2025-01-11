@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"flag"
 	"fmt"
 	"os"
@@ -21,7 +22,7 @@ import (
 
 var BUILD_VERSION = "dev"
 
-// go:embed ../../.gshrc.default
+//go:embed .gshrc.default
 var DEFAULT_VARS []byte
 
 var command = flag.String("c", "", "run a command")
@@ -58,6 +59,8 @@ func main() {
 		panic(err)
 	}
 	defer logger.Sync() // Flush any buffered log entries
+
+	logger.Debug("default vars", zap.String("vars", string(DEFAULT_VARS)))
 
 	appupdate.HandleSelfUpdate(BUILD_VERSION, logger)
 

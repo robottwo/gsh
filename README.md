@@ -89,7 +89,7 @@ This will compile the project and place the binary in the `./bin` directory.
 ## Configuration
 
 gsh can be configured through a configuration file located at `~/.gshrc`.
-Configuration options and default values can be found in [.gshrc.default](./.gshrc.default).
+Configuration options and default values can be found in [.gshrc.default](./cmd/gsh/.gshrc.default).
 
 gsh also loads a `~/.gshenv` file, right after loading `~/.gshrc`.
 This file can be used to set environment variables that the gsh session will use.
@@ -100,7 +100,7 @@ gsh will also load `/etc/profile` and `~/.gsh_profile` at start (before `~/.gshr
 ### Custom command prompt
 
 You can use [Starship.rs](https://starship.rs/) to render a custom command line prompt.
-See [.gshrc.starship](./.gshrc.starship) for an example configuration.
+See [.gshrc.starship](./cmd/gsh/.gshrc.starship) for an example configuration.
 
 ## Usage
 

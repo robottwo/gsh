@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/atinylittleshell/gsh/internal/environment"
-	"github.com/atinylittleshell/gsh/internal/rag"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -14,28 +13,32 @@ import (
 )
 
 type LLMExplainer struct {
-	runner          *interp.Runner
-	llmClient       *openai.Client
-	contextProvider *rag.ContextProvider
-	logger          *zap.Logger
-	modelId         string
-	temperature     float32
+	runner      *interp.Runner
+	llmClient   *openai.Client
+	contextText string
+	logger      *zap.Logger
+	modelId     string
+	temperature float32
 }
 
 func NewLLMExplainer(
 	runner *interp.Runner,
-	contextProvider *rag.ContextProvider,
 	logger *zap.Logger,
 ) *LLMExplainer {
 	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.FastModel)
 	return &LLMExplainer{
-		runner:          runner,
-		llmClient:       llmClient,
-		contextProvider: contextProvider,
-		logger:          logger,
-		modelId:         modelId,
-		temperature:     float32(temperature),
+		runner:      runner,
+		llmClient:   llmClient,
+		contextText: "",
+		logger:      logger,
+		modelId:     modelId,
+		temperature: float32(temperature),
 	}
+}
+
+func (p *LLMExplainer) UpdateContext(context *map[string]string) {
+	contextTypes := environment.GetContextTypesForExplanation(p.runner, p.logger)
+	p.contextText = utils.ComposeContextText(context, contextTypes, p.logger)
 }
 
 func (e *LLMExplainer) Explain(input string) (string, error) {
@@ -61,12 +64,7 @@ You will be given a bash command entered by me, enclosed in <command> tags.
 
 # Response JSON Schema
 %s`,
-		e.contextProvider.GetContext(
-			rag.ContextRetrievalOptions{
-				Concise:      true,
-				HistoryLimit: environment.GetHistoryContextLimit(e.runner, e.logger),
-			},
-		),
+		e.contextText,
 		string(schema),
 	)
 

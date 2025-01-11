@@ -11,24 +11,18 @@ type ContextProvider struct {
 	Retrievers []ContextRetriever
 }
 
-type ContextRetrievalOptions struct {
-	Concise      bool
-	HistoryLimit int
-}
+func (p *ContextProvider) GetContext() *map[string]string {
+	var result map[string]string = make(map[string]string)
 
-func (p *ContextProvider) GetContext(options ContextRetrievalOptions) string {
-	var result string
 	for _, retriever := range p.Retrievers {
-		output, err := retriever.GetContext(options)
+		output, err := retriever.GetContext()
 		if err != nil {
 			p.Logger.Warn("error getting context from retriever", zap.String("retriever", retriever.Name()), zap.Error(err))
 			continue
 		}
 
-		result += output
-		if !strings.HasSuffix(result, "\n") {
-			result += "\n"
-		}
+		result[retriever.Name()] = strings.TrimSpace(output)
 	}
-	return result
+
+	return &result
 }

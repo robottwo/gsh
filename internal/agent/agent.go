@@ -9,7 +9,6 @@ import (
 	"github.com/atinylittleshell/gsh/internal/agent/tools"
 	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/history"
-	"github.com/atinylittleshell/gsh/internal/rag"
 	"github.com/atinylittleshell/gsh/internal/styles"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	"github.com/atinylittleshell/gsh/pkg/gline"
@@ -19,11 +18,11 @@ import (
 )
 
 type Agent struct {
-	runner          *interp.Runner
-	historyManager  *history.HistoryManager
-	contextProvider *rag.ContextProvider
-	logger          *zap.Logger
-	llmClient       *openai.Client
+	runner         *interp.Runner
+	historyManager *history.HistoryManager
+	contextText    string
+	logger         *zap.Logger
+	llmClient      *openai.Client
 
 	modelId     string
 	temperature float32
@@ -33,19 +32,18 @@ type Agent struct {
 func NewAgent(
 	runner *interp.Runner,
 	historyManager *history.HistoryManager,
-	contextProvider *rag.ContextProvider,
 	logger *zap.Logger,
 ) *Agent {
 	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.SlowModel)
 
 	return &Agent{
-		runner:          runner,
-		historyManager:  historyManager,
-		contextProvider: contextProvider,
-		logger:          logger,
-		llmClient:       llmClient,
-		modelId:         modelId,
-		temperature:     temperature,
+		runner:         runner,
+		historyManager: historyManager,
+		contextText:    "",
+		logger:         logger,
+		llmClient:      llmClient,
+		modelId:        modelId,
+		temperature:    temperature,
 		messages: []openai.ChatCompletionMessage{
 			{
 				Role:    "system",
@@ -55,15 +53,13 @@ func NewAgent(
 	}
 }
 
+func (agent *Agent) UpdateContext(context *map[string]string) {
+	contextTypes := environment.GetContextTypesForAgent(agent.runner, agent.logger)
+	agent.contextText = utils.ComposeContextText(context, contextTypes, agent.logger)
+}
+
 // updateSystemMessage resets the system message with latest context
 func (agent *Agent) updateSystemMessage() {
-	context := agent.contextProvider.GetContext(
-		rag.ContextRetrievalOptions{
-			Concise:      false,
-			HistoryLimit: environment.GetHistoryContextLimit(agent.runner, agent.logger),
-		},
-	)
-
 	agent.messages[0].Content = `
 You are gsh, an intelligent shell program. You answer my questions or help me complete tasks.
 
@@ -90,7 +86,7 @@ Whenever you are trying to create a git commit:
 
 # Latest Context
 
-` + context
+` + agent.contextText
 }
 
 func (agent *Agent) Chat(prompt string) (<-chan string, error) {
