@@ -61,7 +61,7 @@ GSH_CONTEXT_TYPES_FOR_PREDICTION_WITH_PREFIX=system_info,working_directory,git_s
 GSH_CONTEXT_TYPES_FOR_PREDICTION_WITHOUT_PREFIX=system_info,working_directory,git_status,history_verbose
 
 # A list of context to send to LLM when explaining command
-GSH_CONTEXT_TYPES_FOR_EXPLANATION=system_info,working_directory,git_status,history_concise
+GSH_CONTEXT_TYPES_FOR_EXPLANATION=system_info,working_directory
 
 # How many recent commands to use in concise version of commmand history
 GSH_CONTEXT_NUM_HISTORY_CONCISE=30
