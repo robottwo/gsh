@@ -5,6 +5,7 @@
 
 # Ergonomics
 
+- allow "yes to all" for some agent tools
 - keybind configuration (inputrc)
 - syntax highlighting in shellinput
 - better rendering of agent loading state
