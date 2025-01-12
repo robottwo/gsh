@@ -1,6 +1,7 @@
 package history
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"go.uber.org/zap"
@@ -10,20 +11,14 @@ func Test(t *testing.T) {
 	logger := zap.NewNop()
 
 	historyManager, err := NewHistoryManager(":memory:", logger)
-	if err != nil {
-		t.Errorf("Failed to create history manager: %v", err)
-	}
+	assert.NoError(t, err, "Failed to create history manager")
 
 	entry, err := historyManager.StartCommand("echo hello", "/")
 	if err != nil {
 		t.Errorf("Failed to start command: %v", err)
 	}
-	if entry.CreatedAt.IsZero() {
-		t.Errorf("Expected CreatedAt to be set")
-	}
-	if entry.UpdatedAt.IsZero() {
-		t.Errorf("Expected UpdatedAt to be set")
-	}
+	assert.False(t, entry.CreatedAt.IsZero(), "Expected CreatedAt to be set")
+	assert.False(t, entry.UpdatedAt.IsZero(), "Expected UpdatedAt to be set")
 
 	entry, err = historyManager.FinishCommand(entry, 0)
 	if err != nil {
@@ -45,21 +40,13 @@ func Test(t *testing.T) {
 		t.Errorf("Failed to get recent entries: %v", err)
 	}
 
-	if len(allEntries) != 2 {
-		t.Errorf("Expected 2 entries, got %d", len(allEntries))
-	}
+	assert.Len(t, allEntries, 2, "Expected 2 entries")
 
-	if allEntries[0].Command != "echo hello" {
-		t.Errorf("Expected most recent command to be 'echo hello', got '%s'", allEntries[0].Command)
-	}
+	assert.Equal(t, "echo hello", allEntries[0].Command, "Expected most recent command to be 'echo hello'")
 
 	targetEntries, err := historyManager.GetRecentEntries("/", 3)
-	if len(targetEntries) != 2 {
-		t.Errorf("Expected 2 entries, got %d", len(allEntries))
-	}
+	assert.Len(t, targetEntries, 2, "Expected 2 entries")
 
 	nonTargetEntries, err := historyManager.GetRecentEntries("/tmp", 3)
-	if len(nonTargetEntries) != 0 {
-		t.Errorf("Expected 0 entries, got %d", len(allEntries))
-	}
+	assert.Len(t, nonTargetEntries, 0, "Expected 0 entries")
 }
