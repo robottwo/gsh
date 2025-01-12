@@ -1,6 +1,7 @@
 package debounce
 
 import (
+	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 	"time"
@@ -28,9 +29,7 @@ func TestDebounce(t *testing.T) {
 
 	// At this point, fn should not have been called yet, since the debounce period hasn't elapsed.
 	mu.Lock()
-	if callCount != 0 {
-		t.Errorf("Expected callCount to be 0 before debounce period, got %d", callCount)
-	}
+	assert.Equal(t, 0, callCount, "Expected callCount to be 0 before debounce period")
 	mu.Unlock()
 
 	// Wait for the debounce period to pass
@@ -39,9 +38,7 @@ func TestDebounce(t *testing.T) {
 	// Now fn should have been called exactly once.
 	mu.Lock()
 	defer mu.Unlock()
-	if callCount != 1 {
-		t.Errorf("Expected callCount to be 1 after debounce period, got %d", callCount)
-	}
+	assert.Equal(t, 1, callCount, "Expected callCount to be 1 after debounce period")
 }
 
 // TestConsecutiveDebounce ensures that if calls resume before the previous debounce completes,
@@ -74,7 +71,5 @@ func TestConsecutiveDebounce(t *testing.T) {
 
 	mu.Lock()
 	defer mu.Unlock()
-	if callCount != 1 {
-		t.Errorf("Expected callCount to be 1, got %d", callCount)
-	}
+	assert.Equal(t, 1, callCount, "Expected callCount to be 1")
 }
