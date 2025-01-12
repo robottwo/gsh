@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,9 +18,7 @@ func TestNewLLMHttpClient(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify headers
 		for k, v := range headers {
-			if r.Header.Get(k) != v {
-				t.Errorf("expected header %s to be %s, got %s", k, v, r.Header.Get(k))
-			}
+			assert.Equal(t, v, r.Header.Get(k), "expected header %s to be %s", k, v)
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -27,15 +26,9 @@ func TestNewLLMHttpClient(t *testing.T) {
 
 	// Make a request
 	req, err := http.NewRequest("GET", ts.URL, nil)
-	if err != nil {
-		t.Fatalf("failed to create request: %v", err)
-	}
+	assert.NoError(t, err, "failed to create request")
 
 	resp, err := client.Do(req)
-	if err != nil {
-		t.Fatalf("request failed: %v", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected status code %d, got %d", http.StatusOK, resp.StatusCode)
-	}
+	assert.NoError(t, err, "request failed")
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "expected status code %d", http.StatusOK)
 }
