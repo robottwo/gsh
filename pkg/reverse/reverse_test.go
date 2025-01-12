@@ -1,7 +1,8 @@
 package reverse
 
 import (
-	"reflect"
+	"github.com/stretchr/testify/assert"
+
 	"testing"
 )
 
@@ -31,9 +32,7 @@ func TestReverse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			Reverse(tt.input)
-			if !reflect.DeepEqual(tt.input, tt.expected) {
-				t.Errorf("got %v, want %v", tt.input, tt.expected)
-			}
+			assert.Equal(t, tt.expected, tt.input, "got %v, want %v", tt.input, tt.expected)
 		})
 	}
 }
