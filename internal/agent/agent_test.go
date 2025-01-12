@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	openai "github.com/sashabaranov/go-openai"
@@ -35,20 +36,9 @@ func TestPruneMessages(t *testing.T) {
 
 	agent.pruneMessages()
 
-	if len(agent.messages) == 0 {
-		t.Fatalf("Expected some messages to be retained, but got none")
-	}
-
-	if agent.messages[0].Role != "system" {
-		t.Errorf("Expected the first message to be 'system', got %s", agent.messages[0].Role)
-	}
-
-	if len(agent.messages) != 2 {
-		t.Errorf("Expected pruned messages to be 2, got %d", len(agent.messages))
-	}
-
-	if agent.messages[1].Content != "Assistant message 2" {
-		t.Errorf("Expected the second message to be 'Assistant message 2', got %s", agent.messages[1].Content)
-	}
+	assert.NotEmpty(t, agent.messages, "Expected some messages to be retained, but got none")
+	assert.Equal(t, "system", agent.messages[0].Role, "Expected the first message to be 'system'")
+	assert.Len(t, agent.messages, 2, "Expected pruned messages to be 2")
+	assert.Equal(t, "Assistant message 2", agent.messages[1].Content, "Expected the second message to be 'Assistant message 2'")
 
 }
