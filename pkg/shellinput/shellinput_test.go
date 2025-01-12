@@ -39,18 +39,76 @@ func TestUpdate(t *testing.T) {
 	updatedModel, _ = updatedModel.Update(msg)
 	assert.Equal(t, 4, updatedModel.Position(), "Cursor should move backward")
 
-	// Test deleting word backward
-	updatedModel.SetCursor(11)
+	// Test PrevValue, changing current value to "first"
+	updatedModel.SetHistoryValues([]string{"first", "second", "third"})
+	msg = tea.KeyMsg{Type: tea.KeyUp}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "first", updatedModel.Value(), "PrevValue should move to the previous value in history")
+	assert.Equal(t, 5, updatedModel.Position(), "Cursor should move to the end")
+
+	// PrevValue again, now "second"
+	msg = tea.KeyMsg{Type: tea.KeyUp}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "second", updatedModel.Value(), "PrevValue should move to the previous value in history")
+	assert.Equal(t, 6, updatedModel.Position(), "Cursor should move to the end")
+
+	// PrevValue again, now "third"
+	msg = tea.KeyMsg{Type: tea.KeyUp}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "third", updatedModel.Value(), "PrevValue should move to the previous value in history")
+	assert.Equal(t, 5, updatedModel.Position(), "Cursor should move to the end")
+
+	// PrevValue again, still "third"
+	msg = tea.KeyMsg{Type: tea.KeyUp}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "third", updatedModel.Value(), "PrevValue should move to the previous value in history")
+
+	// NextValue, back to "second"
+	msg = tea.KeyMsg{Type: tea.KeyDown}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "second", updatedModel.Value(), "NextValue should move to the next value in history")
+
+	// NextValue again, back to "first"
+	msg = tea.KeyMsg{Type: tea.KeyDown}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "first", updatedModel.Value(), "NextValue should move to the next value in history")
+
+	// NextValue again, back to user input
+	msg = tea.KeyMsg{Type: tea.KeyDown}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "hell world", updatedModel.Value(), "NextValue should now return the user input value")
+
+	// PrevValue again, now "first"
+	msg = tea.KeyMsg{Type: tea.KeyUp}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "first", updatedModel.Value(), "PrevValue should move to the previous value in history")
+
+	// Enter a key 'd' should append character to the end of the line
+	msg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d")}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "firstd", updatedModel.Value(), "Rune input should insert the character at the cursor position")
+
+	// Test deleting word backward, which should only affect current input not history
 	msg = tea.KeyMsg{Type: tea.KeyCtrlW}
 	updatedModel, _ = updatedModel.Update(msg)
-	assert.Equal(t, "hell ", updatedModel.Value(), "Ctrl+W should delete the word before the cursor")
+	assert.Equal(t, "", updatedModel.Value(), "Ctrl+W should delete the word 'first' before the cursor")
+
+	// PrevValue again, should still get "first"
+	msg = tea.KeyMsg{Type: tea.KeyUp}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "first", updatedModel.Value(), "PrevValue should move to the previous value in history")
+
+	// NextValue, back to ""
+	msg = tea.KeyMsg{Type: tea.KeyDown}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "", updatedModel.Value(), "NextValue should move back to the user input value")
 
 	// Test deleting word forward
 	updatedModel.SetValue("hello world")
-	model.SetCursor(6)
+	updatedModel.SetCursor(6)
 	msg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}, Alt: true}
 	updatedModel, _ = updatedModel.Update(msg)
-	assert.Equal(t, "hello", updatedModel.Value(), "Alt+D should delete the word after the cursor")
+	assert.Equal(t, "hello ", updatedModel.Value(), "Alt+D should delete the word after the cursor")
 
 	// Test moving to the start of the line
 	msg = tea.KeyMsg{Type: tea.KeyCtrlA}
@@ -62,4 +120,3 @@ func TestUpdate(t *testing.T) {
 	updatedModel, _ = updatedModel.Update(msg)
 	assert.Equal(t, len(updatedModel.Value()), updatedModel.Position(), "End key should move the cursor to the end of the line")
 }
-
