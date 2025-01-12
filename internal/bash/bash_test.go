@@ -1,6 +1,7 @@
 package bash
 
 import (
+	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 
@@ -14,20 +15,10 @@ func TestParsingTypeset(t *testing.T) {
 	reader := strings.NewReader(command)
 
 	prog, err := parser.Parse(reader, "")
-	if err != nil {
-		t.Errorf("error parsing: %v", err)
-	}
-
-	if len(prog.Stmts) != 1 {
-		t.Errorf("expected 1 statement, got %d", len(prog.Stmts))
-	}
+	assert.NoError(t, err, "error parsing")
+	assert.Len(t, prog.Stmts, 1, "expected 1 statement")
 
 	decl, ok := prog.Stmts[0].Cmd.(*syntax.DeclClause)
-	if !ok {
-		t.Errorf("expected DeclClause, got %T", prog.Stmts[0].Cmd)
-	}
-
-	if decl.Variant.Value != "typeset" {
-		t.Errorf("expected typeset, got %s", decl.Variant.Value)
-	}
+	assert.True(t, ok, "expected DeclClause, got %T", prog.Stmts[0].Cmd)
+	assert.Equal(t, "typeset", decl.Variant.Value, "expected typeset")
 }
