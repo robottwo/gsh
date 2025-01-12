@@ -13,6 +13,7 @@ import (
 	"github.com/atinylittleshell/gsh/internal/bash"
 	"github.com/atinylittleshell/gsh/internal/core"
 	"github.com/atinylittleshell/gsh/internal/environment"
+	"github.com/atinylittleshell/gsh/internal/filesystem"
 	"github.com/atinylittleshell/gsh/internal/history"
 	"go.uber.org/zap"
 	"golang.org/x/term"
@@ -62,7 +63,13 @@ func main() {
 
 	logger.Info("-------- new gsh session --------", zap.Any("args", os.Args))
 
-	appupdate.HandleSelfUpdate(BUILD_VERSION, logger)
+	appupdate.HandleSelfUpdate(
+		BUILD_VERSION,
+		logger,
+		filesystem.DefaultFileSystem{},
+		core.DefaultUserPrompter{},
+		appupdate.DefaultUpdater{},
+	)
 
 	// Initialize the history manager
 	historyManager, err := initializeHistoryManager(logger)
