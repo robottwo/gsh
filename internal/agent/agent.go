@@ -68,7 +68,6 @@ You are gsh, an intelligent shell program. You answer my questions or help me co
 * Whenever possible, prefer using the bash tool to complete tasks for me rather than telling them how to do it themselves.
 * You do not need to complete the task with a single command. You are able to run multiple commands in sequence.
 * I'm able to see the output of any bash tool you run so there's no need to repeat that in your response. 
-* If you believe the output from the bash commands is sufficient for fulfilling my request, end the conversation by calling the "done" tool.
 * If you see a tool call response enclosed in <gsh_tool_call_error> tags, that means the tool call failed; otherwise, the tool call succeeded and whatever you see in the response is the actual result from the tool.
 * Never call multiple tools in parallel. Always call at most one tool at a time.
 
@@ -118,7 +117,6 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 					Messages:    agent.messages,
 					Temperature: agent.temperature,
 					Tools: []openai.Tool{
-						tools.DoneToolDefinition,
 						tools.BashToolDefinition,
 						tools.ViewFileToolDefinition,
 						tools.ViewDirectoryToolDefinition,
@@ -144,7 +142,7 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 			agent.messages = append(agent.messages, msg.Message)
 			agent.logger.Debug("LLM chat response", zap.Any("messages", agent.messages), zap.Any("response", msg))
 
-			if msg.FinishReason == "stop" || msg.FinishReason == "tool_calls" || msg.FinishReason == "function_call" {
+			if msg.FinishReason == "stop" || msg.FinishReason == "end_turn" || msg.FinishReason == "tool_calls" || msg.FinishReason == "function_call" {
 				if msg.Message.Content != "" {
 					responseChannel <- strings.TrimSpace(msg.Message.Content)
 				}
