@@ -42,7 +42,7 @@ func ViewFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 		path = filepath.Join(environment.GetPwd(runner), path)
 	}
 
-	startLine := 0
+	startLine := 1
 	startLineVal, startLineExists := params["start_line"]
 	if startLineExists {
 		startLineFloat, ok := startLineVal.(float64)
@@ -73,17 +73,18 @@ func ViewFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 	}
 
 	lines := strings.Split(buf.String(), "\n")
-	if startLine < 0 {
-		return failedToolResponse("start_line must be greater than or equal to 0")
+	if startLine < 1 {
+		return failedToolResponse("start_line must be greater than or equal to 1")
 	}
 	if startLine > len(lines) {
 		return failedToolResponse("start_line is greater than the number of lines in the file")
 	}
-	if endLine > len(lines) {
-		endLine = len(lines)
+	if endLine > len(lines)+1 {
+		endLine = len(lines) + 1
 	}
 
-	result := strings.Join(lines[startLine:endLine], "\n")
+	// convert 1-based line numbers to 0-based indexes
+	result := strings.Join(lines[startLine-1:endLine-1], "\n")
 	if len(result) > MAX_VIEW_SIZE {
 		return result[:MAX_VIEW_SIZE] + "\n<gsh:truncated />"
 	}
