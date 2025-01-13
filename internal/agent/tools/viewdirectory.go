@@ -47,20 +47,23 @@ func ViewDirectoryTool(runner *interp.Runner, logger *zap.Logger, params map[str
 	printToolMessage("gsh: I'm viewing the following directory:")
 	fmt.Print(gline.RESET_CURSOR_COLUMN + utils.HideHomeDirPath(runner, path) + "\n")
 
-	walkDir(logger, writer, path, 1)
+	err := walkDir(logger, writer, path, 1)
+	if err != nil {
+		return failedToolResponse(fmt.Sprintf("Error reading directory: %s", err))
+	}
 
 	return buf.String()
 }
 
-func walkDir(logger *zap.Logger, writer io.StringWriter, dir string, depth int) {
+func walkDir(logger *zap.Logger, writer io.StringWriter, dir string, depth int) error {
 	if depth > MAX_DEPTH {
-		return
+		return nil
 	}
 
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		logger.Error("Error reading directory", zap.String("dir", dir), zap.Error(err))
-		return
+		return err
 	}
 
 	// Print each entry, and if it's a directory, recurse into it (unless at max depth).
@@ -77,4 +80,5 @@ func walkDir(logger *zap.Logger, writer io.StringWriter, dir string, depth int) 
 			writer.WriteString(fullPath + "\n")
 		}
 	}
+	return nil
 }

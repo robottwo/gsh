@@ -1,11 +1,15 @@
 package tools
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	openai "github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+	"mvdan.cc/sh/v3/interp"
 )
 
 func TestViewDirectoryToolDefinition(t *testing.T) {
@@ -22,4 +26,54 @@ func TestViewDirectoryToolDefinition(t *testing.T) {
 	assert.Equal(t, "Absolute path to the directory", parameters.Properties["path"].Description)
 	assert.Equal(t, jsonschema.DataType("string"), parameters.Properties["path"].Type)
 	assert.Equal(t, []string{"path"}, parameters.Required)
+}
+
+func TestViewDirectoryTool(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "testdir*")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// Create nested directories and files
+	nestedDir := filepath.Join(tempDir, "nested")
+	err = os.Mkdir(nestedDir, 0755)
+	assert.NoError(t, err)
+
+	file1 := filepath.Join(tempDir, "file1.txt")
+	file2 := filepath.Join(nestedDir, "file2.txt")
+	_, err = os.Create(file1)
+	assert.NoError(t, err)
+	_, err = os.Create(file2)
+	assert.NoError(t, err)
+
+	runner, _ := interp.New()
+	logger := zap.NewNop()
+
+	t.Run("Valid directory path", func(t *testing.T) {
+		params := map[string]any{"path": tempDir}
+		result := ViewDirectoryTool(runner, logger, params)
+		assert.Contains(t, result, "file1.txt")
+		assert.Contains(t, result, "nested/")
+	})
+
+	t.Run("Directory path with nested directories", func(t *testing.T) {
+		params := map[string]any{"path": tempDir}
+		result := ViewDirectoryTool(runner, logger, params)
+		assert.Contains(t, result, "file2.txt")
+	})
+
+	t.Run("Invalid directory path", func(t *testing.T) {
+		params := map[string]any{"path": "nonexistent_dir"}
+		result := ViewDirectoryTool(runner, logger, params)
+		assert.Contains(t, result, "Error reading directory")
+	})
+
+	t.Run("Directory with no content", func(t *testing.T) {
+		emptyDir, err := os.MkdirTemp("", "emptydir*")
+		assert.NoError(t, err)
+		defer os.RemoveAll(emptyDir)
+
+		params := map[string]any{"path": emptyDir}
+		result := ViewDirectoryTool(runner, logger, params)
+		assert.NotContains(t, result, "file")
+	})
 }
