@@ -73,18 +73,22 @@ You are gsh, an intelligent shell program. You answer my questions or help me co
 
 # Best practices
 
-Whenever you are trying to make code changes:
+Whenever you are working in a git repository:
 * You can use the "view_directory" tool to understand the structure of the repository
-* You can use "git grep" command through the bash tool to help locate relevant files
+* You can use "git grep" command through the bash tool to help locate relevant code snippets
+# You can use "git ls-files | grep <filename>" to find files by name
+
+Whenever you are writing test cases:
+* Always read the function or code snippet you are trying to test before writing the test case
+* After writing the test case, try to run it and ensure it passes
 
 Whenever you are trying to create a git commit:
-* Follow conventional commit message format
+* Unless explicitly instructed otherwise, follow conventional commit message format
 * Always use "git diff" or "git diff --staged" through the bash tool to 
   understand the changes you are committing before coming up with the commit message
 * Make sure commit messages are concise and descriptive of the changes made
 
 # Latest Context
-
 ` + agent.contextText
 }
 

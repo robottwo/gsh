@@ -22,7 +22,7 @@ func (r GitStatusContextRetriever) GetContext() (string, error) {
 	revParseOut, _, err := bash.RunBashCommandInSubShell(r.Runner, "git rev-parse --show-toplevel")
 	if err != nil {
 		r.Logger.Debug("error running `git rev-parse --show-toplevel`", zap.Error(err))
-		return "", nil
+		return "<git_status>not in a git repository</git_status>", nil
 	}
 	statusOut, _, err := bash.RunBashCommandInSubShell(r.Runner, "git status")
 	if err != nil {
