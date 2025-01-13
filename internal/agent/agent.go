@@ -182,6 +182,8 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 		return false
 	}
 
+	agent.logger.Debug("Handling tool call", zap.String("tool", toolCall.Function.Name), zap.Any("params", params))
+
 	toolResponse := fmt.Sprintf("Unknown tool: %s", toolCall.Function.Name)
 
 	switch toolCall.Function.Name {
@@ -220,7 +222,7 @@ func (agent *Agent) pruneMessages() {
 	maxBytes := 4 * environment.GetAgentContextWindowTokens(agent.runner, agent.logger)
 
 	usedBytes := 0
-	for i := len(agent.messages) - 1; i >= 0; i-- {
+	for i := len(agent.messages) - 1; i > 0; i-- {
 		bytes, err := agent.messages[i].MarshalJSON()
 		if err != nil {
 			agent.logger.Error("Failed to marshal message for pruning", zap.Error(err))

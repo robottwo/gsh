@@ -25,8 +25,8 @@ var ViewFileToolDefinition = openai.Tool{
 		Name:        "view_file",
 		Description: fmt.Sprintf(`View the content of a text file, at most %d lines at a time. If the content is too large, tail will be truncated and replaced with <gsh:truncated />.`, LINES_TO_READ),
 		Parameters: utils.GenerateJsonSchema(struct {
-			Path      string `json:"path" jsonschema_description:"Absolute path to the file" jsonschema_required:"true"`
-			StartLine int    `json:"start_line" jsonschema_description:"Optional. The line number to start viewing. This is zero indexed, inclusive. If not provided, we will read from the beginning of the file." jsonschema_required:"false"`
+			Path      string `json:"path" description:"Absolute path to the file" required:"true"`
+			StartLine int    `json:"start_line" description:"Optional. Line number to start viewing. The first line in the file has line number 1. If not provided, we will read from the beginning of the file." required:"false"`
 		}{}),
 	},
 }
@@ -63,7 +63,7 @@ func ViewFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 	defer file.Close()
 
 	printToolMessage("gsh: I'm reading the following file:")
-	fmt.Print(gline.RESET_CURSOR_COLUMN + path + "\n")
+	fmt.Print(gline.RESET_CURSOR_COLUMN + utils.HideHomeDirPath(runner, path) + "\n")
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, file)

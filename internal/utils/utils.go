@@ -1,8 +1,13 @@
 package utils
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/sashabaranov/go-openai/jsonschema"
 	"go.uber.org/zap"
+	"mvdan.cc/sh/v3/interp"
 )
 
 func GenerateJsonSchema(value any) *jsonschema.Definition {
@@ -34,4 +39,17 @@ func ComposeContextText(context *map[string]string, contextTypes []string, logge
 	}
 
 	return contextText
+}
+
+func HideHomeDirPath(runner *interp.Runner, path string) string {
+	homeDir := environment.GetHomeDir(runner)
+	if homeDir == "" {
+		return path
+	}
+
+	if strings.HasPrefix(path, homeDir) {
+		return fmt.Sprintf("~%s", path[len(homeDir):])
+	}
+
+	return path
 }

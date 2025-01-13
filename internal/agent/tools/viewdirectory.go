@@ -25,7 +25,7 @@ var ViewDirectoryToolDefinition = openai.Tool{
 		Name:        "view_directory",
 		Description: `View the content in a directory up to 2 levels deep.`,
 		Parameters: utils.GenerateJsonSchema(struct {
-			Path string `json:"path" jsonschema_description:"Absolute path to the directory" jsonschema_required:"true"`
+			Path string `json:"path" description:"Absolute path to the directory" required:"true"`
 		}{}),
 	},
 }
@@ -45,7 +45,7 @@ func ViewDirectoryTool(runner *interp.Runner, logger *zap.Logger, params map[str
 	writer := io.StringWriter(&buf)
 
 	printToolMessage("gsh: I'm viewing the following directory:")
-	fmt.Print(gline.RESET_CURSOR_COLUMN + path + "\n")
+	fmt.Print(gline.RESET_CURSOR_COLUMN + utils.HideHomeDirPath(runner, path) + "\n")
 
 	walkDir(logger, writer, path, 1)
 

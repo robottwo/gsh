@@ -119,3 +119,7 @@ func GetContextNumHistoryVerbose(runner *interp.Runner, logger *zap.Logger) int 
 	}
 	return int(numHistoryVerbose)
 }
+
+func GetHomeDir(runner *interp.Runner) string {
+	return runner.Vars["HOME"].String()
+}

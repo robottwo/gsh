@@ -19,8 +19,8 @@ var CreateFileToolDefinition = openai.Tool{
 		Name:        "create_file",
 		Description: `Create a file with the specified content.`,
 		Parameters: utils.GenerateJsonSchema(struct {
-			Path    string `json:"path" jsonschema_description:"Absolute path to the file" jsonschema_required:"true"`
-			Content string `json:"content" jsonschema_description:"The content to write to the file" jsonschema_required:"true"`
+			Path    string `json:"path" description:"Absolute path to the file" required:"true"`
+			Content string `json:"content" description:"The content to write to the file" required:"true"`
 		}{}),
 	},
 }
@@ -53,7 +53,7 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-	fmt.Print(gline.RESET_CURSOR_COLUMN + path + "\n")
+	fmt.Print(gline.RESET_CURSOR_COLUMN + utils.HideHomeDirPath(runner, path) + "\n")
 
 	file, err := os.Create(path)
 	defer file.Close()

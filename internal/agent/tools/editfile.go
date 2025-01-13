@@ -24,9 +24,9 @@ var EditFileToolDefinition = openai.Tool{
 		Name:        "edit_file",
 		Description: `Edit the content of a file.`,
 		Parameters: utils.GenerateJsonSchema(struct {
-			Path   string `json:"path" jsonschema_description:"Absolute path to the file" jsonschema_required:"true"`
-			OldStr string `json:"old_str" jsonschema_description:"The old string in the file to be replaced. This must be a unique chunk in the file, ideally complete lines." jsonschema_required:"true"`
-			NewStr string `json:"new_str" jsonschema_description:"The new string that will replace the old one" jsonschema_required:"true"`
+			Path   string `json:"path" description:"Absolute path to the file" required:"true"`
+			OldStr string `json:"old_str" description:"The old string in the file to be replaced. This must be a unique chunk in the file, ideally complete lines." required:"true"`
+			NewStr string `json:"new_str" description:"The new string that will replace the old one" required:"true"`
 		}{}),
 	},
 }
@@ -101,7 +101,7 @@ func EditFileTool(runner *interp.Runner, logger *zap.Logger, params map[string]a
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-	fmt.Print(gline.RESET_CURSOR_COLUMN + path + "\n")
+	fmt.Print(gline.RESET_CURSOR_COLUMN + utils.HideHomeDirPath(runner, path) + "\n")
 
 	file, err = os.Create(path)
 	if err != nil {
