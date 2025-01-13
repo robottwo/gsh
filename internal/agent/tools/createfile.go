@@ -42,10 +42,12 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 		return failedToolResponse("The create_file tool failed to parse parameter 'content'")
 	}
 
+	privacySafePath := utils.HideHomeDirPath(runner, path)
+
 	confirmResponse := userConfirmation(
 		logger,
 		"gsh: Do I have your permission to create the following file?",
-		fmt.Sprintf("%s\n\n%s", path, content),
+		fmt.Sprintf("%s\n\n%s", privacySafePath, content),
 	)
 	if confirmResponse == "n" {
 		return failedToolResponse("User declined this request")
@@ -53,7 +55,7 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-	fmt.Print(gline.RESET_CURSOR_COLUMN + utils.HideHomeDirPath(runner, path) + "\n")
+	fmt.Print(gline.RESET_CURSOR_COLUMN + privacySafePath + "\n")
 
 	file, err := os.Create(path)
 	defer file.Close()
