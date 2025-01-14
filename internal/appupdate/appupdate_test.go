@@ -28,6 +28,15 @@ func (m *MockFileSystem) Create(name string) (*os.File, error) {
 	return args.Get(0).(*os.File), args.Error(1)
 }
 
+func (m *MockFileSystem) ReadFile(name string) (string, error) {
+	args := m.Called(name)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockFileSystem) WriteFile(name, content string) error {
+	return m.Called(name, content).Error(0)
+}
+
 type MockFile struct {
 	mock.Mock
 	bytes.Buffer
