@@ -15,6 +15,8 @@
 
 # AI
 
+- stop using go-openai - use raw http requests
+- leverage openrouter's middle-out transform
 - support custom instructions
 - use readme as agent context
 - explicitly specify directory when runnning subshell commands (e.g. git status retriever)
