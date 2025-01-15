@@ -6,7 +6,6 @@
 
 # Ergonomics
 
-- allow sigint to cancel agent chat
 - allow "yes to all" for some agent tools
 - keybind configuration (inputrc)
 - syntax highlighting in shellinput

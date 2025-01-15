@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/signal"
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/agent/tools"
@@ -104,8 +106,27 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 
 	responseChannel := make(chan string)
 
+	// Create a cancellable context
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Set up signal handling
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+
+	go func() {
+		select {
+		case <-signalChan:
+			cancel()
+			signal.Stop(signalChan)
+		case <-ctx.Done():
+			signal.Stop(signalChan)
+		}
+	}()
+
 	go func() {
 		defer close(responseChannel)
+		defer cancel()
+		defer signal.Stop(signalChan)
 
 		continueSession := true
 
@@ -115,7 +136,7 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 			continueSession = false
 
 			response, err := agent.llmClient.CreateChatCompletion(
-				context.Background(),
+				ctx,
 				openai.ChatCompletionRequest{
 					Model:       agent.modelId,
 					Messages:    agent.messages,
@@ -131,6 +152,11 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 				},
 			)
 			if err != nil {
+				if ctx.Err() == context.Canceled {
+					fmt.Print(gline.RESET_CURSOR_COLUMN + styles.ERROR("Chat interrupted by user") + "\n")
+					agent.logger.Info("Chat interrupted by user")
+					return
+				}
 				fmt.Print(gline.RESET_CURSOR_COLUMN + styles.ERROR(fmt.Sprintf("Error sending request to LLM: %s", err)) + "\n")
 				agent.logger.Error("Error sending request to LLM", zap.Error(err))
 				return
