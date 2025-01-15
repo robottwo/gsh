@@ -69,6 +69,9 @@ GSH_CONTEXT_NUM_HISTORY_CONCISE=30
 # How many recent commands to use in verbose version of commmand history
 GSH_CONTEXT_NUM_HISTORY_VERBOSE=30
 
+# -------- Agent Configuration --------
+# Options below control behaviors of the chat agent.
+
 # Size of the agent chat context window in LLM tokens.
 # When the chat session exceeds this limit, only the most recent messages that 
 # can fit in the window are kept.
@@ -76,4 +79,10 @@ GSH_AGENT_CONTEXT_WINDOW_TOKENS=32768
 
 # A JSON array of regex patterns for bash commands that should be considered pre-approved
 # Pre-approved commands will be executed without asking for confirmation
-GSH_AGENT_APPROVED_BASH_COMMAND_REGEX='["^ls\\s.*$", "^git\\s+status.*$", "^pwd$", "^echo\\s.*$", "^cat\\s.*$"]'
+GSH_AGENT_APPROVED_BASH_COMMAND_REGEX='[
+  "^ls\\s.*$",
+  "^git\\s+status.*$",
+  "^pwd$",
+  "^echo\\s.*$",
+  "^cat\\s.*$"
+]'
