@@ -2,6 +2,7 @@ package environment
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
 	"strings"
 
@@ -98,6 +99,21 @@ func GetContextTypesForPredictionWithoutPrefix(runner *interp.Runner, logger *za
 
 func GetContextTypesForExplanation(runner *interp.Runner, logger *zap.Logger) []string {
 	return getContextTypes(runner, "GSH_CONTEXT_TYPES_FOR_EXPLANATION")
+}
+
+func GetApprovedBashCommandRegex(runner *interp.Runner, logger *zap.Logger) []string {
+	regexStr := runner.Vars["GSH_AGENT_APPROVED_BASH_COMMAND_REGEX"].String()
+	if regexStr == "" {
+		return []string{}
+	}
+
+	var patterns []string
+	err := json.Unmarshal([]byte(regexStr), &patterns)
+	if err != nil {
+		logger.Debug("error parsing GSH_AGENT_APPROVED_BASH_COMMAND_REGEX", zap.Error(err))
+		return []string{}
+	}
+	return patterns
 }
 
 func GetContextNumHistoryConcise(runner *interp.Runner, logger *zap.Logger) int {

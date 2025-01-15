@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/environment"
@@ -56,11 +57,27 @@ func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, log
 		return failedToolResponse(fmt.Sprintf("`%s` is not a valid bash command: %s", command, err))
 	}
 
-	confirmResponse := userConfirmation(
-		logger,
-		"gsh: Do I have your permission to run the following command?",
-		fmt.Sprintf("%s\n\n%s", command, reason),
-	)
+	// Check if the command matches any pre-approved patterns
+	approvedPatterns := environment.GetApprovedBashCommandRegex(runner, logger)
+	isPreApproved := false
+	for _, pattern := range approvedPatterns {
+		matched, err := regexp.MatchString(pattern, command)
+		if err == nil && matched {
+			isPreApproved = true
+			break
+		}
+	}
+
+	var confirmResponse string
+	if isPreApproved {
+		confirmResponse = "y"
+	} else {
+		confirmResponse = userConfirmation(
+			logger,
+			"gsh: Do I have your permission to run the following command?",
+			fmt.Sprintf("%s\n\n%s", command, reason),
+		)
+	}
 	if confirmResponse == "n" {
 		return failedToolResponse("User declined this request")
 	} else if confirmResponse != "y" {
