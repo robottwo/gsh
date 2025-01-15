@@ -6,7 +6,6 @@
 
 # Ergonomics
 
-- print agent confirmation content in stdout not gline preview
 - allow sigint to cancel agent chat
 - allow "yes to all" for some agent tools
 - keybind configuration (inputrc)
@@ -15,8 +14,9 @@
 
 # AI
 
+- allowlist of agent commands
 - stop using go-openai - use raw http requests
-- leverage openrouter's middle-out transform
+- leverage openrouter's middle-out transform and replace our own pruning
 - support custom instructions
 - use readme as agent context
 - explicitly specify directory when runnning subshell commands (e.g. git status retriever)
@@ -25,7 +25,6 @@
 - built-in eval
 - allow agent to search the web
 - allow agent to browse web urls
-- agent message pruning using LLM
 - persist agent message history
 - training a small command prediction model
 

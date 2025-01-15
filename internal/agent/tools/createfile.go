@@ -57,8 +57,6 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-
-
 	file, err := os.Create(path)
 	defer file.Close()
 
