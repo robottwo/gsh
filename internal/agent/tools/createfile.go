@@ -44,10 +44,12 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 
 	privacySafePath := utils.HideHomeDirPath(runner, path)
 
+	fmt.Print(gline.RESET_CURSOR_COLUMN + fmt.Sprintf("%s\n\n%s\n", privacySafePath, content) + gline.RESET_CURSOR_COLUMN)
+
 	confirmResponse := userConfirmation(
 		logger,
-		"gsh: Do I have your permission to create the following file?",
-		fmt.Sprintf("%s\n\n%s", privacySafePath, content),
+		"gsh: Do I have your permission to create the file with the content shown above?",
+		"",
 	)
 	if confirmResponse == "n" {
 		return failedToolResponse("User declined this request")
@@ -55,7 +57,7 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
 
-	fmt.Print(gline.RESET_CURSOR_COLUMN + privacySafePath + "\n")
+
 
 	file, err := os.Create(path)
 	defer file.Close()
