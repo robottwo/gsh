@@ -197,5 +197,7 @@ func getDiff(runner *interp.Runner, logger *zap.Logger, file1, file2 string) (st
 	}
 
 	result := strings.ReplaceAll(outBuf.String(), "b"+file2, "")
+	result = strings.ReplaceAll(result, " a"+file1, " "+utils.HideHomeDirPath(runner, file1))
+
 	return result, nil
 }
