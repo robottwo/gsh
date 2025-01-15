@@ -106,7 +106,9 @@ func previewAndConfirm(runner *interp.Runner, logger *zap.Logger, path string, n
 		return fmt.Sprintf("Error generating diff: %s", err)
 	}
 
-	confirmResponse := userConfirmation(logger, "gsh: Do I have your permission to edit the following file?", diff)
+	fmt.Print(gline.RESET_CURSOR_COLUMN + diff + "\n" + gline.RESET_CURSOR_COLUMN)
+
+	confirmResponse := userConfirmation(logger, "gsh: Do I have your permission to make the edit proposed above?", "")
 	if confirmResponse == "n" {
 		return "User declined this request"
 	} else if confirmResponse != "y" {
