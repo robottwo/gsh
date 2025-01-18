@@ -38,7 +38,7 @@ import (
 	"github.com/charmbracelet/bubbles/runeutil"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/x/ansi"
+	"github.com/muesli/reflow/wrap"
 	"github.com/rivo/uniseg"
 )
 
@@ -671,7 +671,7 @@ func (m Model) View() string {
 			}
 			v += styleText(strings.Repeat(" ", padding))
 		} else {
-			v = ansi.Wrap(v, m.Width, "-")
+			v = wrap.String(v, m.Width)
 		}
 	}
 
