@@ -5,7 +5,6 @@ import (
 )
 
 type predictedCommand struct {
-	Thought          string `json:"thought" description:"Your step by step thinking for what my intent might be" required:"true"`
 	PredictedCommand string `json:"predicted_command" description:"The full bash command predicted by the model" required:"true"`
 }
 
