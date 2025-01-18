@@ -181,3 +181,7 @@ gsh is built on top of many great open source projects. Most notably:
 - [zap](https://github.com/uber-go/zap) - Blazing fast, structured, leveled logging in Go
 - [gorm](https://github.com/go-gorm/gorm) - The fantastic ORM library for Golang
 - [go-openai](https://github.com/sashabaranov/go-openai) - A Go client for the OpenAI API
+
+## Support This Project
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/onelittleshell)
