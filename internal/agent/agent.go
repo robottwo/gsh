@@ -169,8 +169,8 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 			}
 
 			msg := response.Choices[0]
-			agent.messages = append(agent.messages, msg.Message)
 			agent.logger.Debug("LLM chat response", zap.Any("messages", agent.messages), zap.Any("response", msg))
+			agent.messages = append(agent.messages, msg.Message)
 
 			if msg.FinishReason == "stop" || msg.FinishReason == "end_turn" || msg.FinishReason == "tool_calls" || msg.FinishReason == "function_call" {
 				if msg.Message.Content != "" {
