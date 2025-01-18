@@ -51,7 +51,14 @@ func GetPrompt(runner *interp.Runner, logger *zap.Logger) string {
 		}
 	}
 
-	prompt := runner.Vars["GSH_PROMPT"].String()
+	buildVersion := runner.Vars["GSH_BUILD_VERSION"].String()
+	if buildVersion == "dev" {
+		buildVersion = "[dev] "
+	} else {
+		buildVersion = ""
+	}
+
+	prompt := buildVersion + runner.Vars["GSH_PROMPT"].String()
 	if prompt != "" {
 		return prompt
 	}

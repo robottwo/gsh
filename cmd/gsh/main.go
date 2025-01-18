@@ -182,6 +182,7 @@ func initializeRunner() (*interp.Runner, error) {
 	env := expand.ListEnviron(append(
 		os.Environ(),
 		fmt.Sprintf("SHELL=%s", shellPath),
+		fmt.Sprintf("GSH_BUILD_VERSION=%s", BUILD_VERSION),
 	)...)
 
 	runner, err := interp.New(
