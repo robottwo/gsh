@@ -13,7 +13,6 @@
 
 # AI
 
-- allowlist of agent commands
 - stop using go-openai - use raw http requests
 - leverage openrouter's middle-out transform and replace our own pruning
 - support custom instructions
