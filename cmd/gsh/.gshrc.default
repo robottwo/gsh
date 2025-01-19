@@ -82,7 +82,17 @@ GSH_AGENT_CONTEXT_WINDOW_TOKENS=32768
 GSH_AGENT_APPROVED_BASH_COMMAND_REGEX='[
   "^ls\\s.*$",
   "^git\\s+status.*$",
+  "^git\\s+log.*$",
+  "^git\\s+diff.*$",
   "^pwd$",
   "^echo\\s.*$",
-  "^cat\\s.*$"
+  "^cat\\s.*$",
+  "^grep\\s.*$",
+  "^find\\s.*$",
+  "^head\\s.*$",
+  "^tail\\s.*$",
+  "^wc\\s.*$",
+  "^which\\s.*$",
+  "^type\\s.*$",
+  "^file\\s.*$"
 ]'
