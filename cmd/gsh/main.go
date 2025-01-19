@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"flag"
 	"fmt"
@@ -27,8 +28,6 @@ var BUILD_VERSION = "dev"
 var DEFAULT_VARS []byte
 
 var command = flag.String("c", "", "run a command")
-var listHistory = flag.Int("lh", 0, "list the most N history entries")
-var resetHistory = flag.Bool("rh", false, "reset history")
 var loginShell = flag.Bool("l", false, "run as a login shell")
 
 var helpFlag = flag.Bool("h", false, "display help information")
@@ -48,8 +47,14 @@ func main() {
 		return
 	}
 
+	// Initialize the history manager
+	historyManager, err := initializeHistoryManager()
+	if err != nil {
+		panic("failed to initialize history manager")
+	}
+
 	// Initialize the shell interpreter
-	runner, err := initializeRunner()
+	runner, err := initializeRunner(historyManager)
 	if err != nil {
 		panic(err)
 	}
@@ -71,13 +76,6 @@ func main() {
 		appupdate.DefaultUpdater{},
 	)
 
-	// Initialize the history manager
-	historyManager, err := initializeHistoryManager(logger)
-	if err != nil {
-		logger.Error("failed to initialize history manager", zap.Error(err))
-		os.Exit(1)
-	}
-
 	// Start running
 	err = run(runner, historyManager, logger)
 
@@ -93,46 +91,25 @@ func main() {
 }
 
 func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
+	ctx := context.Background()
+
 	// gsh -c "echo hello"
 	if *command != "" {
-		return bash.RunBashScriptFromReader(runner, strings.NewReader(*command), "gsh")
-	}
-
-	// gsh -lh 5
-	if *listHistory > 0 {
-		entries, err := historyManager.GetRecentEntries("", *listHistory)
-		if err != nil {
-			return err
-		}
-
-		for _, entry := range entries {
-			fmt.Println(entry.Command)
-		}
-
-		return nil
-	}
-
-	// gsh -rh
-	if *resetHistory {
-		if err := historyManager.ResetHistory(); err != nil {
-			return err
-		}
-
-		return nil
+		return bash.RunBashScriptFromReader(ctx, runner, strings.NewReader(*command), "gsh")
 	}
 
 	// gsh
 	if flag.NArg() == 0 {
 		if term.IsTerminal(int(os.Stdin.Fd())) {
-			return core.RunInteractiveShell(runner, historyManager, logger)
+			return core.RunInteractiveShell(ctx, runner, historyManager, logger)
 		}
 
-		return bash.RunBashScriptFromReader(runner, os.Stdin, "gsh")
+		return bash.RunBashScriptFromReader(ctx, runner, os.Stdin, "gsh")
 	}
 
 	// gsh script.sh
 	for _, filePath := range flag.Args() {
-		if err := bash.RunBashScriptFromFile(runner, filePath); err != nil {
+		if err := bash.RunBashScriptFromFile(ctx, runner, filePath); err != nil {
 			return err
 		}
 	}
@@ -164,8 +141,8 @@ func initializeLogger(runner *interp.Runner) (*zap.Logger, error) {
 	return logger, nil
 }
 
-func initializeHistoryManager(logger *zap.Logger) (*history.HistoryManager, error) {
-	historyManager, err := history.NewHistoryManager(core.HistoryFile(), logger)
+func initializeHistoryManager() (*history.HistoryManager, error) {
+	historyManager, err := history.NewHistoryManager(core.HistoryFile())
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +151,7 @@ func initializeHistoryManager(logger *zap.Logger) (*history.HistoryManager, erro
 }
 
 // initializeRunner loads the shell configuration files and sets up the interpreter.
-func initializeRunner() (*interp.Runner, error) {
+func initializeRunner(historyManager *history.HistoryManager) (*interp.Runner, error) {
 	shellPath, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -190,6 +167,7 @@ func initializeRunner() (*interp.Runner, error) {
 		interp.Env(env),
 		interp.StdIO(os.Stdin, os.Stdout, os.Stderr),
 		interp.Params(os.Args...),
+		interp.ExecHandlers(history.NewHistoryCommandHandler(historyManager)),
 	)
 	if err != nil {
 		panic(err)
@@ -197,6 +175,7 @@ func initializeRunner() (*interp.Runner, error) {
 
 	// load default vars
 	if err := bash.RunBashScriptFromReader(
+		context.Background(),
 		runner,
 		bytes.NewReader(DEFAULT_VARS),
 		"gsh",
@@ -223,7 +202,7 @@ func initializeRunner() (*interp.Runner, error) {
 
 	for _, configFile := range configFiles {
 		if stat, err := os.Stat(configFile); err == nil && stat.Size() > 0 {
-			if err := bash.RunBashScriptFromFile(runner, configFile); err != nil {
+			if err := bash.RunBashScriptFromFile(context.Background(), runner, configFile); err != nil {
 				fmt.Fprintf(os.Stderr, "failed to load %s: %v\n", configFile, err)
 			}
 		}

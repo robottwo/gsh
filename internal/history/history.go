@@ -2,17 +2,17 @@ package history
 
 import (
 	"database/sql"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/atinylittleshell/gsh/pkg/reverse"
 	"github.com/glebarez/sqlite"
-	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 type HistoryManager struct {
-	db     *gorm.DB
-	logger *zap.Logger
+	db *gorm.DB
 }
 
 type HistoryEntry struct {
@@ -25,18 +25,17 @@ type HistoryEntry struct {
 	ExitCode  sql.NullInt32
 }
 
-func NewHistoryManager(dbFilePath string, logger *zap.Logger) (*HistoryManager, error) {
+func NewHistoryManager(dbFilePath string) (*HistoryManager, error) {
 	db, err := gorm.Open(sqlite.Open(dbFilePath), &gorm.Config{})
 	if err != nil {
-		logger.Error("error opening database", zap.Error(err))
+		fmt.Fprintf(os.Stderr, "error opening database")
 		return nil, err
 	}
 
 	db.AutoMigrate(&HistoryEntry{})
 
 	return &HistoryManager{
-		db:     db,
-		logger: logger,
+		db: db,
 	}, nil
 }
 
@@ -48,11 +47,8 @@ func (historyManager *HistoryManager) StartCommand(command string, directory str
 
 	result := historyManager.db.Create(&entry)
 	if result.Error != nil {
-		historyManager.logger.Error("error creating history entry", zap.Error(result.Error))
 		return nil, result.Error
 	}
-
-	historyManager.logger.Debug("history entry started", zap.String("command", entry.Command))
 
 	return &entry, nil
 }
@@ -62,11 +58,8 @@ func (historyManager *HistoryManager) FinishCommand(entry *HistoryEntry, exitCod
 
 	result := historyManager.db.Save(entry)
 	if result.Error != nil {
-		historyManager.logger.Error("error saving history entry", zap.Error(result.Error))
 		return nil, result.Error
 	}
-
-	historyManager.logger.Debug("history entry finished", zap.String("command", entry.Command), zap.Int("exit_code", exitCode))
 
 	return entry, nil
 }
@@ -79,7 +72,6 @@ func (historyManager *HistoryManager) GetRecentEntries(directory string, limit i
 	}
 	result := db.Order("created_at desc").Limit(limit).Find(&entries)
 	if result.Error != nil {
-		historyManager.logger.Error("error fetching recent history entries", zap.Error(result.Error))
 		return nil, result.Error
 	}
 
@@ -87,10 +79,21 @@ func (historyManager *HistoryManager) GetRecentEntries(directory string, limit i
 	return entries, nil
 }
 
+func (historyManager *HistoryManager) DeleteEntry(id uint) error {
+	result := historyManager.db.Delete(&HistoryEntry{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no history entry found with id %d", id)
+	}
+
+	return nil
+}
+
 func (historyManager *HistoryManager) ResetHistory() error {
 	result := historyManager.db.Exec("DELETE FROM history_entries")
 	if result.Error != nil {
-		historyManager.logger.Error("error resetting history", zap.Error(result.Error))
 		return result.Error
 	}
 

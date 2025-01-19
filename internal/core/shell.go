@@ -22,7 +22,7 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 )
 
-func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
+func RunInteractiveShell(ctx context.Context, runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
 	contextProvider := &rag.ContextProvider{
 		Logger: logger,
 		Retrievers: []rag.ContextRetriever{
@@ -107,7 +107,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 		}
 
 		// Execute the command
-		shouldExit, err := executeCommand(line, historyManager, runner, logger)
+		shouldExit, err := executeCommand(ctx, line, historyManager, runner, logger)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error executing command: %v\n", err)
 		}
@@ -121,7 +121,7 @@ func RunInteractiveShell(runner *interp.Runner, historyManager *history.HistoryM
 	return nil
 }
 
-func executeCommand(input string, historyManager *history.HistoryManager, runner *interp.Runner, logger *zap.Logger) (bool, error) {
+func executeCommand(ctx context.Context, input string, historyManager *history.HistoryManager, runner *interp.Runner, logger *zap.Logger) (bool, error) {
 	var prog *syntax.Stmt
 	err := syntax.NewParser().Stmts(strings.NewReader(input), func(stmt *syntax.Stmt) bool {
 		prog = stmt
@@ -144,7 +144,7 @@ func executeCommand(input string, historyManager *history.HistoryManager, runner
 	endTime := time.Now()
 
 	durationMs := endTime.Sub(startTime).Milliseconds()
-	bash.RunBashCommand(runner, fmt.Sprintf("GSH_LAST_COMMAND_DURATION_MS=%d", durationMs))
+	bash.RunBashCommand(ctx, runner, fmt.Sprintf("GSH_LAST_COMMAND_DURATION_MS=%d", durationMs))
 
 	var exitCode int
 	if err != nil {
@@ -159,7 +159,7 @@ func executeCommand(input string, historyManager *history.HistoryManager, runner
 	}
 
 	historyManager.FinishCommand(historyEntry, exitCode)
-	bash.RunBashCommand(runner, fmt.Sprintf("GSH_LAST_COMMAND_EXIT_CODE=%d", exitCode))
+	bash.RunBashCommand(ctx, runner, fmt.Sprintf("GSH_LAST_COMMAND_EXIT_CODE=%d", exitCode))
 
 	return exited, nil
 }

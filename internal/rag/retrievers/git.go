@@ -1,6 +1,7 @@
 package retrievers
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -19,12 +20,12 @@ func (r GitStatusContextRetriever) Name() string {
 }
 
 func (r GitStatusContextRetriever) GetContext() (string, error) {
-	revParseOut, _, err := bash.RunBashCommandInSubShell(r.Runner, "git rev-parse --show-toplevel")
+	revParseOut, _, err := bash.RunBashCommandInSubShell(context.Background(), r.Runner, "git rev-parse --show-toplevel")
 	if err != nil {
 		r.Logger.Debug("error running `git rev-parse --show-toplevel`", zap.Error(err))
 		return "<git_status>not in a git repository</git_status>", nil
 	}
-	statusOut, _, err := bash.RunBashCommandInSubShell(r.Runner, "git status")
+	statusOut, _, err := bash.RunBashCommandInSubShell(context.Background(), r.Runner, "git status")
 	if err != nil {
 		r.Logger.Debug("error running `git status`", zap.Error(err))
 		return "", nil

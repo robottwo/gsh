@@ -11,25 +11,24 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 )
 
-func RunBashScriptFromReader(runner *interp.Runner, reader io.Reader, name string) error {
+func RunBashScriptFromReader(ctx context.Context, runner *interp.Runner, reader io.Reader, name string) error {
 	prog, err := syntax.NewParser().Parse(reader, name)
 	if err != nil {
 		return err
 	}
-	ctx := context.Background()
 	return runner.Run(ctx, prog)
 }
 
-func RunBashScriptFromFile(runner *interp.Runner, filePath string) error {
+func RunBashScriptFromFile(ctx context.Context, runner *interp.Runner, filePath string) error {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return RunBashScriptFromReader(runner, f, filePath)
+	return RunBashScriptFromReader(ctx, runner, f, filePath)
 }
 
-func RunBashCommandInSubShell(runner *interp.Runner, command string) (string, string, error) {
+func RunBashCommandInSubShell(ctx context.Context, runner *interp.Runner, command string) (string, string, error) {
 	subShell := runner.Subshell()
 
 	outBuf := &bytes.Buffer{}
@@ -47,7 +46,7 @@ func RunBashCommandInSubShell(runner *interp.Runner, command string) (string, st
 		return "", "", err
 	}
 
-	err = subShell.Run(context.Background(), prog)
+	err = subShell.Run(ctx, prog)
 	if err != nil {
 		return "", "", err
 	}
@@ -55,7 +54,7 @@ func RunBashCommandInSubShell(runner *interp.Runner, command string) (string, st
 	return outBuf.String(), errBuf.String(), nil
 }
 
-func RunBashCommand(runner *interp.Runner, command string) (string, string, error) {
+func RunBashCommand(ctx context.Context, runner *interp.Runner, command string) (string, string, error) {
 	outBuf := &bytes.Buffer{}
 	outWriter := io.Writer(outBuf)
 	errBuf := &bytes.Buffer{}
@@ -72,7 +71,7 @@ func RunBashCommand(runner *interp.Runner, command string) (string, string, erro
 		return "", "", err
 	}
 
-	err = runner.Run(context.Background(), prog)
+	err = runner.Run(ctx, prog)
 	if err != nil {
 		return "", "", err
 	}
