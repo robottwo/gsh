@@ -189,6 +189,7 @@ func initializeRunner() (*interp.Runner, error) {
 		interp.Interactive(true),
 		interp.Env(env),
 		interp.StdIO(os.Stdin, os.Stdout, os.Stderr),
+		interp.Params(os.Args...),
 	)
 	if err != nil {
 		panic(err)
