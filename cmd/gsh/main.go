@@ -166,7 +166,6 @@ func initializeRunner(historyManager *history.HistoryManager) (*interp.Runner, e
 		interp.Interactive(true),
 		interp.Env(env),
 		interp.StdIO(os.Stdin, os.Stdout, os.Stderr),
-		interp.Params(os.Args...),
 		interp.ExecHandlers(history.NewHistoryCommandHandler(historyManager)),
 	)
 	if err != nil {
