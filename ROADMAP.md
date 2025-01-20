@@ -20,8 +20,9 @@
 - set ollama context window
 - make current directory more clear in concise history context
 - built-in eval
-- allow agent to search the web
-- allow agent to browse web urls
+- MCP support
+  - allow agent to search the web
+  - allow agent to browse web urls
 - persist agent message history
 - training a small command prediction model
 
