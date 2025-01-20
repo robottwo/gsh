@@ -1,12 +1,11 @@
 # Bash Parity
 
-- history command
+- history expansion
 - support bash completion
 - multiline input
 
 # Ergonomics
 
-- allow "yes to all" for some agent tools
 - keybind configuration (inputrc)
 - syntax highlighting in shellinput
 - better rendering of agent loading state
@@ -14,9 +13,9 @@
 # AI
 
 - stop using go-openai - use raw http requests
-- leverage openrouter's middle-out transform and replace our own pruning
+  - leverage openrouter's middle-out transform and replace our own pruning
 - support custom instructions
-- use readme as agent context
+  - use readme as agent context
 - explicitly specify directory when runnning subshell commands (e.g. git status retriever)
 - set ollama context window
 - make current directory more clear in concise history context

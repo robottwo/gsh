@@ -139,7 +139,7 @@ func executeCommand(ctx context.Context, input string, historyManager *history.H
 	historyEntry, _ := historyManager.StartCommand(input, environment.GetPwd(runner))
 
 	startTime := time.Now()
-	err = runner.Run(context.Background(), prog)
+	err = runner.Run(ctx, prog)
 	exited := runner.Exited()
 	endTime := time.Now()
 
