@@ -1,7 +1,6 @@
 package bash
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"os"
@@ -31,9 +30,9 @@ func RunBashScriptFromFile(ctx context.Context, runner *interp.Runner, filePath 
 func RunBashCommandInSubShell(ctx context.Context, runner *interp.Runner, command string) (string, string, error) {
 	subShell := runner.Subshell()
 
-	outBuf := &bytes.Buffer{}
+	outBuf := &threadSafeBuffer{}
 	outWriter := io.Writer(outBuf)
-	errBuf := &bytes.Buffer{}
+	errBuf := &threadSafeBuffer{}
 	errWriter := io.Writer(errBuf)
 	interp.StdIO(nil, outWriter, errWriter)(subShell)
 
@@ -55,9 +54,9 @@ func RunBashCommandInSubShell(ctx context.Context, runner *interp.Runner, comman
 }
 
 func RunBashCommand(ctx context.Context, runner *interp.Runner, command string) (string, string, error) {
-	outBuf := &bytes.Buffer{}
+	outBuf := &threadSafeBuffer{}
 	outWriter := io.Writer(outBuf)
-	errBuf := &bytes.Buffer{}
+	errBuf := &threadSafeBuffer{}
 	errWriter := io.Writer(errBuf)
 	interp.StdIO(nil, outWriter, errWriter)(runner)
 	defer interp.StdIO(os.Stdin, os.Stdout, os.Stderr)(runner)
