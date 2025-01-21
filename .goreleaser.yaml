@@ -53,7 +53,6 @@ brews:
       owner: atinylittleshell
       name: gsh
       token: "{{ .Env.GITHUB_TOKEN }}"
-      branch: goreleaser/{{ .Version }}
 
 aurs:
   - name: gsh-bin
