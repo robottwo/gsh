@@ -91,8 +91,20 @@ aur_sources:
     commit_author:
       name: atinylittleshell
       email: shell@atinylittleshell.me
+    prepare: |-
+      cd "${srcdir}/${_pkgsrc}"
+      go mod download
+    build: |-
+      cd "${srcdir}/${_pkgsrc}"
+      export CGO_ENABLED=0
+      export GOFLAGS="-buildmode=pie \
+      -trimpath \
+      -ldflags=\"-linkmode=external -X main.BUILD_VERSION=${pkgver}\" \
+      -mod=readonly \
+      -modcacherw"
+      make build
     package: |-
-      cd "${pkgname}_${pkgver}"
+      cd "${srcdir}/${_pkgsrc}"
 
       # bin
       install -Dsm755 "./gsh" "${pkgdir}/usr/bin/gsh"
