@@ -97,8 +97,8 @@ aur_sources:
     build: |-
       cd "${srcdir}/${_pkgsrc}"
       export CGO_ENABLED=0
-      export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
-      go build -ldflags="-linkmode=external -X main.BUILD_VERSION=${pkgver}" -o "./bin/${pkgname}" "./cmd/${pkgname}"
+      export GOFLAGS="-trimpath -mod=readonly -modcacherw"
+      go build -ldflags="-X main.BUILD_VERSION=${pkgver}" -o "./bin/${pkgname}" "./cmd/${pkgname}"
     package: |-
       cd "${srcdir}/${_pkgsrc}"
 
