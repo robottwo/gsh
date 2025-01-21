@@ -50,6 +50,27 @@ gsh can even code for you!
 
 ![Agent Coding](assets/agent_coding.gif)
 
+#### Chat Macros
+
+You can use chat macros to quickly send frequently used messages to the agent.
+
+A chat macro starts with "#/" followed by the macro name. The default configuration comes with a few chat macros:
+
+```bash
+# Summarize git changes
+gsh> #/gitdiff
+
+# Commit and push changes
+gsh> #/gitpush
+
+# Review changes and get suggestions
+gsh> #/gitreview
+```
+
+You can customize your own macros by modifying the `GSH_AGENT_MACROS` configuration in your `.gshrc` file.
+The value should be a JSON object mapping macro names to their corresponding chat messages.
+See [Configuration](#configuration) for more details.
+
 ### Supports both local and remote LLMs
 
 gsh can run with either

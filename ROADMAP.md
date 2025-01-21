@@ -13,7 +13,6 @@
 # AI
 
 - agent chat macros
-  - basic support
   - ui auto suggestions
 - stop using go-openai - use raw http requests
   - leverage openrouter's middle-out transform and replace our own pruning
