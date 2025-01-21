@@ -85,9 +85,23 @@ func RunInteractiveShell(ctx context.Context, runner *interp.Runner, historyMana
 			return err
 		}
 
-		// Handle agent chat
+		// Handle agent chat and macros
 		if strings.HasPrefix(line, "#") {
-			chatMessage := line[1:]
+			chatMessage := strings.TrimSpace(line[1:])
+			
+			// Handle macros
+			if strings.HasPrefix(chatMessage, "/") {
+				macroName := strings.TrimSpace(strings.TrimPrefix(chatMessage, "/"))
+				macros := environment.GetAgentMacros(runner, logger)
+				if message, ok := macros[macroName]; ok {
+					chatMessage = message
+				} else {
+					logger.Warn("macro not found", zap.String("macro", macroName))
+					fmt.Print(gline.RESET_CURSOR_COLUMN + styles.AGENT_MESSAGE("gsh: Macro not found: "+macroName+"\n") + gline.RESET_CURSOR_COLUMN)
+					continue
+				}
+			}
+
 			chatChannel, err := agent.Chat(chatMessage)
 			if err != nil {
 				logger.Error("error chatting with agent", zap.Error(err))

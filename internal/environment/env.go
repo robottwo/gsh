@@ -146,3 +146,18 @@ func GetContextNumHistoryVerbose(runner *interp.Runner, logger *zap.Logger) int 
 func GetHomeDir(runner *interp.Runner) string {
 	return runner.Vars["HOME"].String()
 }
+
+func GetAgentMacros(runner *interp.Runner, logger *zap.Logger) map[string]string {
+	macrosStr := runner.Vars["GSH_AGENT_MACROS"].String()
+	if macrosStr == "" {
+		return map[string]string{}
+	}
+
+	var macros map[string]string
+	err := json.Unmarshal([]byte(macrosStr), &macros)
+	if err != nil {
+		logger.Debug("error parsing GSH_AGENT_MACROS", zap.Error(err))
+		return map[string]string{}
+	}
+	return macros
+}

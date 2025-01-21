@@ -99,3 +99,10 @@ GSH_AGENT_APPROVED_BASH_COMMAND_REGEX='[
   "^type\\s+.*$",
   "^file\\s+.*$"
 ]'
+
+# A JSON object mapping macro names to their corresponding chat messages
+GSH_AGENT_MACROS='{
+  "gitdiff": "when inside of a git repository, review all staged and unstaged changes and write a concise summary",
+  "gitpush": "when inside of a git repository, commit all staged and unstaged changes, and push them to remote; otherwise do nothing",
+  "gitreview": "when inside of a git repository, review all staged and unstaged changes, and let me know if there are problems worth fixing; otherwise do nothing"
+}'
