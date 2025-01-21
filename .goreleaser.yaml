@@ -17,11 +17,6 @@ builds:
 
 source:
   enabled: true
-  files:
-    - LICENSE
-    - README.md
-    - ROADMAP.md
-    - CHANGELOG.md
 
 archives:
   - format: tar.gz
