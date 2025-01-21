@@ -5,21 +5,21 @@
 class Gsh < Formula
   desc "A modern, POSIX-compatible, generative shell"
   homepage "https://github.com/atinylittleshell/gsh"
-  version "0.15.3"
+  version "0.15.4"
   license "GPL-3.0-or-later"
 
   on_macos do
     if Hardware::CPU.intel?
-      url "https://github.com/atinylittleshell/gsh/releases/download/v0.15.3/gsh_Darwin_x86_64.tar.gz"
-      sha256 "d855af31cfea6a6c4284545e77acf0185df4134d9d9561e1ece12c4a6c92fa84"
+      url "https://github.com/atinylittleshell/gsh/releases/download/v0.15.4/gsh_Darwin_x86_64.tar.gz"
+      sha256 "69034409510cfd29823681fbf0fc482e7cbba45c57b88584b0956baa6084d4d3"
 
       def install
         bin.install "gsh"
       end
     end
     if Hardware::CPU.arm?
-      url "https://github.com/atinylittleshell/gsh/releases/download/v0.15.3/gsh_Darwin_arm64.tar.gz"
-      sha256 "f365608554c15461f1bf7835913eb0edd64b034a677d6ef57dc8ecaf9b6328da"
+      url "https://github.com/atinylittleshell/gsh/releases/download/v0.15.4/gsh_Darwin_arm64.tar.gz"
+      sha256 "c2bac0467360d3df0f856589eb84c989295e127d877b8f5f7c53c0fe020d7d71"
 
       def install
         bin.install "gsh"
@@ -30,8 +30,8 @@ class Gsh < Formula
   on_linux do
     if Hardware::CPU.intel?
       if Hardware::CPU.is_64_bit?
-        url "https://github.com/atinylittleshell/gsh/releases/download/v0.15.3/gsh_Linux_x86_64.tar.gz"
-        sha256 "6f7b32d8033e693a3b65f2d46bb5bd8dff8498cfe7cd98cf4f36be0e3f6f4970"
+        url "https://github.com/atinylittleshell/gsh/releases/download/v0.15.4/gsh_Linux_x86_64.tar.gz"
+        sha256 "523b77616f1daa238a2ffbe15be8d53a2c5b2de6ed368cf599fdecd4e6ec6f7d"
 
         def install
           bin.install "gsh"
@@ -40,8 +40,8 @@ class Gsh < Formula
     end
     if Hardware::CPU.arm?
       if Hardware::CPU.is_64_bit?
-        url "https://github.com/atinylittleshell/gsh/releases/download/v0.15.3/gsh_Linux_arm64.tar.gz"
-        sha256 "22a5f42c28c9f892bfe1ce0e86f91891797752931d66b3c785202540bddf7c9d"
+        url "https://github.com/atinylittleshell/gsh/releases/download/v0.15.4/gsh_Linux_arm64.tar.gz"
+        sha256 "2a9942a569a03d65d7fa00d42d9dff13dde9ca264d3d98e8576a29a9e848cce2"
 
         def install
           bin.install "gsh"
