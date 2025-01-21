@@ -34,4 +34,7 @@
 # Distribution
 
 - Official Homebrew
+- apt
+- nix
+- Starship
 - Windows
