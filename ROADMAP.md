@@ -15,12 +15,10 @@
 - agent chat macros
   - ui auto suggestions
 - stop using go-openai - use raw http requests
-  - leverage openrouter's middle-out transform and replace our own pruning
 - support custom instructions
   - use readme as agent context
 - explicitly specify directory when runnning subshell commands (e.g. git status retriever)
-- set ollama context window
-- make current directory more clear in concise history context
+- [set ollama context window](https://github.com/ollama/ollama/pull/6504)
 - built-in eval
 - MCP support
   - allow agent to search the web
@@ -30,7 +28,6 @@
 
 # Engineering
 
-- support concurrent writes to output/error buffers
 - limit total history size
 
 # Distribution
