@@ -1,11 +1,93 @@
 package shellinput
 
 import (
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 )
+
+// mockCompletionProvider implements CompletionProvider for testing
+type mockCompletionProvider struct {
+	suggestions []string
+}
+
+func (m *mockCompletionProvider) GetCompletions(line string, pos int) []string {
+	// Check for exact prefix matches first
+	if strings.HasPrefix(line, "git ch") {
+		return []string{"git checkout", "git cherry-pick"}
+	}
+	if strings.HasPrefix(line, "gi") {
+		return []string{"git", "gist", "give"}
+	}
+	// Return empty slice for no completions
+	return []string{}
+}
+
+func TestCompletion(t *testing.T) {
+	model := New()
+	model.Focus()
+	model.CompletionProvider = &mockCompletionProvider{}
+
+	// Test basic completion
+	model.SetValue("gi")
+	model.SetCursor(2) // cursor at end of "gi"
+
+	// First TAB should complete to "git"
+	msg := tea.KeyMsg{Type: tea.KeyTab}
+	updatedModel, _ := model.Update(msg)
+	assert.Equal(t, "git", updatedModel.Value(), "First TAB should complete 'gi' to 'git'")
+	assert.Equal(t, 3, updatedModel.Position(), "Cursor should be at end of completion")
+	assert.True(t, updatedModel.completion.active, "Completion should be active")
+
+	// Second TAB should complete to "gist"
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "gist", updatedModel.Value(), "Second TAB should complete to 'gist'")
+	assert.Equal(t, 4, updatedModel.Position(), "Cursor should be at end of completion")
+
+	// Third TAB should complete to "give"
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "give", updatedModel.Value(), "Third TAB should complete to 'give'")
+
+	// Fourth TAB should cycle back to "git"
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "git", updatedModel.Value(), "Fourth TAB should cycle back to 'git'")
+
+	// Test Shift+TAB cycles backwards
+	msg = tea.KeyMsg{Type: tea.KeyShiftTab}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "give", updatedModel.Value(), "Shift+TAB should cycle backwards to 'give'")
+
+	// Test completion reset on other key press
+	msg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.False(t, updatedModel.completion.active, "Completion should be reset on other key press")
+
+	// Test multi-word completion
+	updatedModel.SetValue("git ch")
+	updatedModel.SetCursor(6) // cursor at end of "git ch"
+
+	// TAB should complete to "git checkout"
+	msg = tea.KeyMsg{Type: tea.KeyTab}
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "git checkout", updatedModel.Value(), "TAB should complete 'git ch' to 'git checkout'")
+
+	// Second TAB should complete to "git cherry-pick"
+	updatedModel, _ = updatedModel.Update(msg)
+	assert.Equal(t, "git cherry-pick", updatedModel.Value(), "Second TAB should complete to 'git cherry-pick'")
+
+	// Test no completion available
+	model = New() // Reset model state
+	model.Focus()
+	model.CompletionProvider = &mockCompletionProvider{}
+	model.SetValue("xyz")
+	model.SetCursor(3)
+	msg = tea.KeyMsg{Type: tea.KeyTab}
+	updatedModel, _ = model.Update(msg)
+	assert.Equal(t, "xyz", updatedModel.Value(), "Value should not change when no completion available")
+	assert.False(t, updatedModel.completion.active, "Completion should not be active when no suggestions available")
+}
 
 func TestUpdate(t *testing.T) {
 	model := New()

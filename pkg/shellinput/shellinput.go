@@ -84,6 +84,8 @@ type KeyMap struct {
 	Paste                   key.Binding
 	NextValue               key.Binding
 	PrevValue               key.Binding
+	Complete                key.Binding
+	PrevSuggestion          key.Binding
 }
 
 // DefaultKeyMap is the default set of key bindings for navigating and acting
@@ -98,6 +100,8 @@ var DefaultKeyMap = KeyMap{
 	DeleteAfterCursor:       key.NewBinding(key.WithKeys("ctrl+k")),
 	DeleteBeforeCursor:      key.NewBinding(key.WithKeys("ctrl+u")),
 	DeleteCharacterBackward: key.NewBinding(key.WithKeys("backspace", "ctrl+h")),
+	Complete:                key.NewBinding(key.WithKeys("tab")),
+	PrevSuggestion:          key.NewBinding(key.WithKeys("shift+tab")),
 	DeleteCharacterForward:  key.NewBinding(key.WithKeys("delete", "ctrl+d")),
 	LineStart:               key.NewBinding(key.WithKeys("home", "ctrl+a")),
 	LineEnd:                 key.NewBinding(key.WithKeys("end", "ctrl+e")),
@@ -115,6 +119,10 @@ type Model struct {
 	EchoMode      EchoMode
 	EchoCharacter rune
 	Cursor        cursor.Model
+
+	// Completion settings
+	CompletionProvider CompletionProvider
+	completion         completionState
 
 	// Deprecated: use [cursor.BlinkSpeed] instead.
 	BlinkSpeed time.Duration
@@ -539,7 +547,18 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// Reset completion state for any key except TAB and Shift+TAB
+		if !key.Matches(msg, m.KeyMap.Complete) && !key.Matches(msg, m.KeyMap.PrevSuggestion) {
+			m.resetCompletion()
+		}
+
 		switch {
+		case key.Matches(msg, m.KeyMap.Complete):
+			m.handleCompletion()
+			return m, nil
+		case key.Matches(msg, m.KeyMap.PrevSuggestion) && m.completion.active:
+			m.handleBackwardCompletion()
+			return m, nil
 		case key.Matches(msg, m.KeyMap.DeleteWordBackward):
 			m.deleteWordBackward()
 		case key.Matches(msg, m.KeyMap.DeleteCharacterBackward):

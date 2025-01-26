@@ -10,6 +10,7 @@ import (
 
 	"github.com/atinylittleshell/gsh/internal/agent"
 	"github.com/atinylittleshell/gsh/internal/bash"
+	"github.com/atinylittleshell/gsh/internal/completion"
 	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/history"
 	"github.com/atinylittleshell/gsh/internal/predict"
@@ -22,7 +23,7 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 )
 
-func RunInteractiveShell(ctx context.Context, runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
+func RunInteractiveShell(ctx context.Context, runner *interp.Runner, historyManager *history.HistoryManager, completionManager *completion.CompletionManager, logger *zap.Logger) error {
 	contextProvider := &rag.ContextProvider{
 		Logger: logger,
 		Retrievers: []rag.ContextRetriever{
@@ -39,6 +40,9 @@ func RunInteractiveShell(ctx context.Context, runner *interp.Runner, historyMana
 	}
 	explainer := predict.NewLLMExplainer(runner, logger)
 	agent := agent.NewAgent(runner, historyManager, logger)
+
+	// Set up completion
+	completionProvider := completion.NewShellCompletionProvider(completionManager, runner)
 
 	chanSIGINT := make(chan os.Signal, 1)
 	signal.Notify(chanSIGINT, os.Interrupt)
@@ -75,6 +79,7 @@ func RunInteractiveShell(ctx context.Context, runner *interp.Runner, historyMana
 		// Read input
 		options := gline.NewOptions()
 		options.MinHeight = environment.GetMinimumLines(runner, logger)
+		options.CompletionProvider = completionProvider
 
 		line, err := gline.Gline(prompt, historyCommands, "", predictor, explainer, logger, options)
 
@@ -88,7 +93,7 @@ func RunInteractiveShell(ctx context.Context, runner *interp.Runner, historyMana
 		// Handle agent chat and macros
 		if strings.HasPrefix(line, "#") {
 			chatMessage := strings.TrimSpace(line[1:])
-			
+
 			// Handle macros
 			if strings.HasPrefix(chatMessage, "/") {
 				macroName := strings.TrimSpace(strings.TrimPrefix(chatMessage, "/"))

@@ -77,6 +77,7 @@ func initialModel(
 	textInput.SetHistoryValues(historyValues)
 	textInput.Cursor.SetMode(cursor.CursorStatic)
 	textInput.ShowSuggestions = true
+	textInput.CompletionProvider = options.CompletionProvider
 	textInput.Focus()
 
 	return appModel{

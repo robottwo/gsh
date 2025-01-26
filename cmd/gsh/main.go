@@ -54,8 +54,11 @@ func main() {
 		panic("failed to initialize history manager")
 	}
 
+	// Initialize the completion manager
+	completionManager := initializeCompletionManager()
+
 	// Initialize the shell interpreter
-	runner, err := initializeRunner(historyManager)
+	runner, err := initializeRunner(historyManager, completionManager)
 	if err != nil {
 		panic(err)
 	}
@@ -78,7 +81,7 @@ func main() {
 	)
 
 	// Start running
-	err = run(runner, historyManager, logger)
+	err = run(runner, historyManager, completionManager, logger)
 
 	// Handle exit status
 	if code, ok := interp.IsExitStatus(err); ok {
@@ -91,7 +94,7 @@ func main() {
 	}
 }
 
-func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger) error {
+func run(runner *interp.Runner, historyManager *history.HistoryManager, completionManager *completion.CompletionManager, logger *zap.Logger) error {
 	ctx := context.Background()
 
 	// gsh -c "echo hello"
@@ -102,7 +105,7 @@ func run(runner *interp.Runner, historyManager *history.HistoryManager, logger *
 	// gsh
 	if flag.NArg() == 0 {
 		if term.IsTerminal(int(os.Stdin.Fd())) {
-			return core.RunInteractiveShell(ctx, runner, historyManager, logger)
+			return core.RunInteractiveShell(ctx, runner, historyManager, completionManager, logger)
 		}
 
 		return bash.RunBashScriptFromReader(ctx, runner, os.Stdin, "gsh")
@@ -151,9 +154,12 @@ func initializeHistoryManager() (*history.HistoryManager, error) {
 	return historyManager, nil
 }
 
+func initializeCompletionManager() *completion.CompletionManager {
+	return completion.NewCompletionManager()
+}
+
 // initializeRunner loads the shell configuration files and sets up the interpreter.
-func initializeRunner(historyManager *history.HistoryManager) (*interp.Runner, error) {
-	completionManager := completion.NewCompletionManager()
+func initializeRunner(historyManager *history.HistoryManager, completionManager *completion.CompletionManager) (*interp.Runner, error) {
 	shellPath, err := os.Executable()
 	if err != nil {
 		panic(err)

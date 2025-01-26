@@ -1,7 +1,10 @@
 package gline
 
+import "github.com/atinylittleshell/gsh/pkg/shellinput"
+
 type Options struct {
-	MinHeight int
+	MinHeight          int
+	CompletionProvider shellinput.CompletionProvider
 }
 
 func NewOptions() Options {

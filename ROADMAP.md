@@ -1,7 +1,6 @@
 # Bash Parity
 
 - history expansion
-- support bash completion
 - multiline input
 
 # Ergonomics
