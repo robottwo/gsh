@@ -73,11 +73,6 @@ aurs:
       # license
       install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/gsh/LICENSE"
 
-      # information
-      install -Dm644 "./README.md" "${pkgdir}/usr/share/doc/gsh/README.md"
-      install -Dm644 "./ROADMAP.md" "${pkgdir}/usr/share/doc/gsh/ROADMAP.md"
-      install -Dm644 "./CHANGELOG.md" "${pkgdir}/usr/share/doc/gsh/CHANGELOG.md"
-
 aur_sources:
   - name: gsh
     homepage: https://github.com/atinylittleshell/gsh
