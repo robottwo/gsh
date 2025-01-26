@@ -12,6 +12,7 @@ import (
 
 	"github.com/atinylittleshell/gsh/internal/appupdate"
 	"github.com/atinylittleshell/gsh/internal/bash"
+	"github.com/atinylittleshell/gsh/internal/completion"
 	"github.com/atinylittleshell/gsh/internal/core"
 	"github.com/atinylittleshell/gsh/internal/environment"
 	"github.com/atinylittleshell/gsh/internal/filesystem"
@@ -152,6 +153,7 @@ func initializeHistoryManager() (*history.HistoryManager, error) {
 
 // initializeRunner loads the shell configuration files and sets up the interpreter.
 func initializeRunner(historyManager *history.HistoryManager) (*interp.Runner, error) {
+	completionManager := completion.NewCompletionManager()
 	shellPath, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -166,7 +168,10 @@ func initializeRunner(historyManager *history.HistoryManager) (*interp.Runner, e
 		interp.Interactive(true),
 		interp.Env(env),
 		interp.StdIO(os.Stdin, os.Stdout, os.Stderr),
-		interp.ExecHandlers(history.NewHistoryCommandHandler(historyManager)),
+		interp.ExecHandlers(
+			history.NewHistoryCommandHandler(historyManager),
+			completion.NewCompleteCommandHandler(completionManager),
+		),
 	)
 	if err != nil {
 		panic(err)
