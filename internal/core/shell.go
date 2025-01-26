@@ -35,7 +35,7 @@ func RunInteractiveShell(ctx context.Context, runner *interp.Runner, historyMana
 		},
 	}
 	predictor := &predict.PredictRouter{
-		PrefixPredictor:    predict.NewLLMPrefixPredictor(runner, logger),
+		PrefixPredictor:    predict.NewLLMPrefixPredictor(runner, historyManager, logger),
 		NullStatePredictor: predict.NewLLMNullStatePredictor(runner, logger),
 	}
 	explainer := predict.NewLLMExplainer(runner, logger)

@@ -99,3 +99,16 @@ func (historyManager *HistoryManager) ResetHistory() error {
 
 	return nil
 }
+
+func (historyManager *HistoryManager) GetRecentEntriesByPrefix(prefix string, limit int) ([]HistoryEntry, error) {
+	var entries []HistoryEntry
+	result := historyManager.db.Where("command LIKE ?", prefix+"%").
+		Order("created_at desc").
+		Limit(limit).
+		Find(&entries)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return entries, nil
+}

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/atinylittleshell/gsh/internal/environment"
+	"github.com/atinylittleshell/gsh/internal/history"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -14,32 +15,37 @@ import (
 )
 
 type LLMPrefixPredictor struct {
-	runner      *interp.Runner
-	llmClient   *openai.Client
-	contextText string
-	logger      *zap.Logger
-	modelId     string
-	temperature float32
+	runner            *interp.Runner
+	historyManager    *history.HistoryManager
+	llmClient         *openai.Client
+	contextText       string
+	logger            *zap.Logger
+	modelId           string
+	temperature       float32
+	numHistoryContext int
 }
 
 func NewLLMPrefixPredictor(
 	runner *interp.Runner,
+	historyManager *history.HistoryManager,
 	logger *zap.Logger,
 ) *LLMPrefixPredictor {
 	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.FastModel)
 	return &LLMPrefixPredictor{
-		runner:      runner,
-		llmClient:   llmClient,
-		contextText: "",
-		logger:      logger,
-		modelId:     modelId,
-		temperature: float32(temperature),
+		runner:         runner,
+		historyManager: historyManager,
+		llmClient:      llmClient,
+		contextText:    "",
+		logger:         logger,
+		modelId:        modelId,
+		temperature:    float32(temperature),
 	}
 }
 
 func (p *LLMPrefixPredictor) UpdateContext(context *map[string]string) {
 	contextTypes := environment.GetContextTypesForPredictionWithPrefix(p.runner, p.logger)
 	p.contextText = utils.ComposeContextText(context, contextTypes, p.logger)
+	p.numHistoryContext = environment.GetContextNumHistoryConcise(p.runner, p.logger)
 }
 
 func (p *LLMPrefixPredictor) Predict(input string) (string, error) {
@@ -51,6 +57,20 @@ func (p *LLMPrefixPredictor) Predict(input string) (string, error) {
 	schema, err := PREDICTED_COMMAND_SCHEMA.MarshalJSON()
 	if err != nil {
 		return "", err
+	}
+
+	matchingHistoryEntries, err := p.historyManager.GetRecentEntriesByPrefix(
+		input,
+		p.numHistoryContext,
+	)
+	matchingHistoryContext := strings.Builder{}
+	if err == nil {
+		for _, entry := range matchingHistoryEntries {
+			matchingHistoryContext.WriteString(fmt.Sprintf(
+				"%s\n",
+				entry.Command,
+			))
+		}
 	}
 
 	systemMessage := fmt.Sprintf(`You are gsh, an intelligent shell program.
@@ -68,10 +88,14 @@ You are asked to predict what the complete bash command is.
 # Latest Context
 %s
 
+# Previous Commands with Similar Prefix
+%s
+
 # Response JSON Schema
 %s`,
 		BEST_PRACTICES,
 		p.contextText,
+		matchingHistoryContext.String(),
 		string(schema),
 	)
 

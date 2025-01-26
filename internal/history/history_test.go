@@ -243,3 +243,57 @@ func TestHistoryCommandHandler(t *testing.T) {
 	}
 }
 
+func TestGetRecentEntriesByPrefix(t *testing.T) {
+	historyManager, err := NewHistoryManager(":memory:")
+	assert.NoError(t, err, "Failed to create history manager")
+
+	// Create test entries
+	testCases := []struct {
+		command   string
+		directory string
+		exitCode  int
+	}{
+		{"git status", "/", 0},
+		{"git commit", "/", 0},
+		{"echo hello", "/", 0},
+		{"git push", "/", 0},
+		{"ls -l", "/", 0},
+	}
+
+	for _, tc := range testCases {
+		entry, err := historyManager.StartCommand(tc.command, tc.directory)
+		assert.NoError(t, err)
+		_, err = historyManager.FinishCommand(entry, tc.exitCode)
+		assert.NoError(t, err)
+	}
+
+	// Test cases for prefix search
+	t.Run("Find git commands", func(t *testing.T) {
+		entries, err := historyManager.GetRecentEntriesByPrefix("git", 10)
+		assert.NoError(t, err)
+		assert.Len(t, entries, 3)
+		assert.Equal(t, "git push", entries[0].Command)
+		assert.Equal(t, "git commit", entries[1].Command)
+		assert.Equal(t, "git status", entries[2].Command)
+	})
+
+	t.Run("Find with limit", func(t *testing.T) {
+		entries, err := historyManager.GetRecentEntriesByPrefix("git", 2)
+		assert.NoError(t, err)
+		assert.Len(t, entries, 2)
+		assert.Equal(t, "git push", entries[0].Command)
+		assert.Equal(t, "git commit", entries[1].Command)
+	})
+
+	t.Run("Find with non-matching prefix", func(t *testing.T) {
+		entries, err := historyManager.GetRecentEntriesByPrefix("xyz", 10)
+		assert.NoError(t, err)
+		assert.Len(t, entries, 0)
+	})
+
+	t.Run("Find with empty prefix", func(t *testing.T) {
+		entries, err := historyManager.GetRecentEntriesByPrefix("", 10)
+		assert.NoError(t, err)
+		assert.Len(t, entries, 5)
+	})
+}
