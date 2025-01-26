@@ -159,4 +159,3 @@ func TestCompleteCommandHandler(t *testing.T) {
 		assert.True(t, nextCalled)
 	})
 }
-
