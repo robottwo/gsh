@@ -3,12 +3,132 @@ package completion
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"mvdan.cc/sh/v3/interp"
+	"mvdan.cc/sh/v3/syntax"
 )
 
 func TestCompletionManager(t *testing.T) {
+	t.Run("execute completion", func(t *testing.T) {
+		manager := NewCompletionManager()
+
+		// Create a shell runner for function-based completion
+		parser := syntax.NewParser()
+		runner, err := interp.New()
+		assert.NoError(t, err)
+
+		// Set up completion functions
+		setupScript := `
+			my_completion() {
+				COMPREPLY=(foo bar baz)
+			}
+
+			prefix_completion() {
+				local cur="${COMP_WORDS[COMP_CWORD]}"
+				local words="foo bar baz"
+				COMPREPLY=()
+				for w in $words; do
+					if [[ "$w" == "$cur"* ]]; then
+						COMPREPLY+=("$w")
+					fi
+				done
+			}
+		`
+		file, err := parser.Parse(strings.NewReader(setupScript), "")
+		assert.NoError(t, err)
+		err = runner.Run(context.Background(), file)
+		assert.NoError(t, err)
+
+		tests := []struct {
+			name    string
+			spec    CompletionSpec
+			args    []string
+			want    []string
+			wantErr bool
+		}{
+			{
+				name: "word list completion - no filter",
+				spec: CompletionSpec{
+					Type:  WordListCompletion,
+					Value: "apple banana cherry",
+				},
+				args: []string{},
+				want: []string{"apple", "banana", "cherry"},
+			},
+			{
+				name: "word list completion - with filter",
+				spec: CompletionSpec{
+					Type:  WordListCompletion,
+					Value: "apple banana cherry",
+				},
+				args: []string{"command", "b"},
+				want: []string{"banana"},
+			},
+			{
+				name: "word list completion - no matches",
+				spec: CompletionSpec{
+					Type:  WordListCompletion,
+					Value: "apple banana cherry",
+				},
+				args: []string{"command", "x"},
+				want: []string{},
+			},
+			{
+				name: "function completion - basic",
+				spec: CompletionSpec{
+					Type:  FunctionCompletion,
+					Value: "my_completion",
+				},
+				args: []string{"command", "arg"},
+				want: []string{"foo", "bar", "baz"},
+			},
+			{
+				name: "function completion - with prefix handling",
+				spec: CompletionSpec{
+					Type:  FunctionCompletion,
+					Value: "prefix_completion",
+				},
+				args: []string{"command", "b"},
+				want: []string{"bar", "baz"},
+			},
+			{
+				name: "function completion - empty args",
+				spec: CompletionSpec{
+					Type:  FunctionCompletion,
+					Value: "my_completion",
+				},
+				args: []string{},
+				want: []string{"foo", "bar", "baz"},
+			},
+			{
+				name: "invalid completion type",
+				spec: CompletionSpec{
+					Type:  CompletionType("invalid"),
+					Value: "something",
+				},
+				args:    []string{"command", "arg"},
+				wantErr: true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				got, err := manager.ExecuteCompletion(context.Background(), runner, tt.spec, tt.args)
+
+				if tt.wantErr {
+					assert.Error(t, err)
+					return
+				}
+
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			})
+		}
+	})
+
 	t.Run("basic operations", func(t *testing.T) {
 		manager := NewCompletionManager()
 

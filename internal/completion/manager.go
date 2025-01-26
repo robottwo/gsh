@@ -1,5 +1,13 @@
 package completion
 
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"mvdan.cc/sh/v3/interp"
+)
+
 // CompletionType represents the type of completion
 type CompletionType string
 
@@ -14,8 +22,8 @@ const (
 type CompletionSpec struct {
 	Command string
 	Type    CompletionType
-	Value   string        // function name or wordlist
-	Options []string      // additional options like -o dirname
+	Value   string   // function name or wordlist
+	Options []string // additional options like -o dirname
 }
 
 // CompletionManager manages command completion specifications
@@ -55,3 +63,29 @@ func (m *CompletionManager) ListSpecs() []CompletionSpec {
 	return specs
 }
 
+// ExecuteCompletion executes a completion specification for a given command line
+// and returns the list of possible completions
+func (m *CompletionManager) ExecuteCompletion(ctx context.Context, runner *interp.Runner, spec CompletionSpec, args []string) ([]string, error) {
+	switch spec.Type {
+	case WordListCompletion:
+		words := strings.Fields(spec.Value)
+		completions := make([]string, 0)
+		word := ""
+		if len(args) > 0 {
+			word = args[len(args)-1]
+		}
+		for _, w := range words {
+			if word == "" || strings.HasPrefix(w, word) {
+				completions = append(completions, w)
+			}
+		}
+		return completions, nil
+
+	case FunctionCompletion:
+		fn := NewCompletionFunction(spec.Value, runner)
+		return fn.Execute(ctx, args)
+
+	default:
+		return nil, fmt.Errorf("unsupported completion type: %s", spec.Type)
+	}
+}
