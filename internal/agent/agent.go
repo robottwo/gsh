@@ -29,6 +29,11 @@ type Agent struct {
 	modelId     string
 	temperature float32
 	messages    []openai.ChatCompletionMessage
+
+	lastRequestPromptTokens     int
+	lastRequestCompletionTokens int
+	sessionPromptTokens         int
+	sessionCompletionTokens     int
 }
 
 func NewAgent(
@@ -92,6 +97,34 @@ Whenever you are trying to create a git commit:
 
 # Latest Context
 ` + agent.contextText
+}
+
+func (agent *Agent) ResetChat() {
+	agent.lastRequestPromptTokens = 0
+	agent.lastRequestCompletionTokens = 0
+	agent.sessionPromptTokens = 0
+	agent.sessionCompletionTokens = 0
+
+	agent.messages = []openai.ChatCompletionMessage{
+		{
+			Role:    "system",
+			Content: "",
+		},
+	}
+	agent.updateSystemMessage()
+}
+
+func (agent *Agent) PrintTokenStats() {
+	fmt.Print(
+		gline.RESET_CURSOR_COLUMN +
+			styles.AGENT_MESSAGE(fmt.Sprintf(
+				"Last request prompt tokens: %d\nLast request completion tokens: %d\nSession total prompt tokens: %d\nSession total completion tokens: %d\n",
+				agent.lastRequestPromptTokens,
+				agent.lastRequestCompletionTokens,
+				agent.sessionPromptTokens,
+				agent.sessionCompletionTokens),
+			) + gline.RESET_CURSOR_COLUMN,
+	)
 }
 
 func (agent *Agent) Chat(prompt string) (<-chan string, error) {
@@ -162,6 +195,11 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 				return
 			}
 
+			agent.lastRequestPromptTokens = response.Usage.PromptTokens
+			agent.lastRequestCompletionTokens = response.Usage.CompletionTokens
+			agent.sessionPromptTokens += response.Usage.PromptTokens
+			agent.sessionCompletionTokens += response.Usage.CompletionTokens
+
 			if len(response.Choices) == 0 {
 				fmt.Print(gline.RESET_CURSOR_COLUMN + styles.ERROR("LLM responded with an empty response. This is typically a problem with the model being used. Please try again.") + "\n")
 				agent.logger.Error("Error parsing LLM response", zap.String("response", fmt.Sprintf("%+v", response)))
@@ -169,7 +207,13 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 			}
 
 			msg := response.Choices[0]
-			agent.logger.Debug("LLM chat response", zap.Any("messages", agent.messages), zap.Any("response", msg))
+			agent.logger.Debug(
+				"LLM chat response",
+				zap.Any("messages", agent.messages),
+				zap.Any("response", msg),
+				zap.Int("promptTokens", response.Usage.PromptTokens),
+				zap.Int("completionTokens", response.Usage.CompletionTokens),
+			)
 			agent.messages = append(agent.messages, msg.Message)
 
 			if msg.FinishReason == "stop" || msg.FinishReason == "end_turn" || msg.FinishReason == "tool_calls" || msg.FinishReason == "function_call" {

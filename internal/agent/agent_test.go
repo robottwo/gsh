@@ -10,6 +10,37 @@ import (
 	"mvdan.cc/sh/v3/interp"
 )
 
+func TestResetChat(t *testing.T) {
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+
+	runner, _ := interp.New(
+		interp.StdIO(nil, nil, nil),
+	)
+
+	agent := &Agent{
+		runner: runner,
+		logger: logger,
+		messages: []openai.ChatCompletionMessage{
+			{Role: "system", Content: "Old system message"},
+			{Role: "user", Content: "User message 1"},
+			{Role: "assistant", Content: "Assistant message 1"},
+			{Role: "user", Content: "User message 2"},
+			{Role: "assistant", Content: "Assistant message 2"},
+		},
+	}
+
+	// Reset the chat
+	agent.ResetChat()
+
+	// Verify that only one system message remains
+	assert.Len(t, agent.messages, 1, "Expected only one message after reset")
+	assert.Equal(t, "system", agent.messages[0].Role, "Expected the remaining message to be 'system'")
+
+	// Verify that the system message contains the latest context
+	assert.Contains(t, agent.messages[0].Content, "You are gsh", "Expected system message to contain the latest context")
+}
+
 func TestPruneMessages(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	defer logger.Sync()

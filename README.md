@@ -71,6 +71,17 @@ You can customize your own macros by modifying the `GSH_AGENT_MACROS` configurat
 The value should be a JSON object mapping macro names to their corresponding chat messages.
 See [Configuration](#configuration) for more details.
 
+#### Agent Controls
+
+Agent controls are built-in commands that help you manage your interaction with the agent.
+An agent control starts with "#!" followed by the control name.
+
+Currently supported controls:
+```bash
+# Reset the current chat session and start fresh
+gsh> #!new
+```
+
 ### Supports both local and remote LLMs
 
 gsh can run with either

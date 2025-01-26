@@ -94,6 +94,24 @@ func RunInteractiveShell(ctx context.Context, runner *interp.Runner, historyMana
 		if strings.HasPrefix(line, "#") {
 			chatMessage := strings.TrimSpace(line[1:])
 
+			// Handle agent controls
+			if strings.HasPrefix(chatMessage, "!") {
+				control := strings.TrimSpace(strings.TrimPrefix(chatMessage, "!"))
+				switch control {
+				case "new":
+					agent.ResetChat()
+					fmt.Print(gline.RESET_CURSOR_COLUMN + styles.AGENT_MESSAGE("gsh: Chat session reset.\n") + gline.RESET_CURSOR_COLUMN)
+					continue
+				case "tokens":
+					agent.PrintTokenStats()
+					continue
+				default:
+					logger.Warn("unknown agent control", zap.String("control", control))
+					fmt.Print(gline.RESET_CURSOR_COLUMN + styles.AGENT_MESSAGE("gsh: Unknown agent control: "+control+"\n") + gline.RESET_CURSOR_COLUMN)
+					continue
+				}
+			}
+
 			// Handle macros
 			if strings.HasPrefix(chatMessage, "/") {
 				macroName := strings.TrimSpace(strings.TrimPrefix(chatMessage, "/"))
