@@ -80,6 +80,9 @@ Currently supported controls:
 ```bash
 # Reset the current chat session and start fresh
 gsh> #!new
+
+# Show token usage statistics for the current chat session
+gsh> #!tokens
 ```
 
 ### Supports both local and remote LLMs

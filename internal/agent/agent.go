@@ -14,6 +14,8 @@ import (
 	"github.com/atinylittleshell/gsh/internal/styles"
 	"github.com/atinylittleshell/gsh/internal/utils"
 	"github.com/atinylittleshell/gsh/pkg/gline"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
@@ -115,15 +117,16 @@ func (agent *Agent) ResetChat() {
 }
 
 func (agent *Agent) PrintTokenStats() {
+	table := table.New().
+		Border(lipgloss.NormalBorder()).
+		Headers("Group", "Metric", "Value").
+		Row("Last Request", "Prompt Tokens", fmt.Sprintf("%d", agent.lastRequestPromptTokens)).
+		Row("Last Request", "Completion Tokens", fmt.Sprintf("%d", agent.lastRequestCompletionTokens)).
+		Row("Session Total", "Prompt Tokens", fmt.Sprintf("%d", agent.sessionPromptTokens)).
+		Row("Session Total", "Completion Tokens", fmt.Sprintf("%d", agent.sessionCompletionTokens))
+
 	fmt.Print(
-		gline.RESET_CURSOR_COLUMN +
-			styles.AGENT_MESSAGE(fmt.Sprintf(
-				"Last request prompt tokens: %d\nLast request completion tokens: %d\nSession total prompt tokens: %d\nSession total completion tokens: %d\n",
-				agent.lastRequestPromptTokens,
-				agent.lastRequestCompletionTokens,
-				agent.sessionPromptTokens,
-				agent.sessionCompletionTokens),
-			) + gline.RESET_CURSOR_COLUMN,
+		gline.RESET_CURSOR_COLUMN + table.String() + "\n" + gline.RESET_CURSOR_COLUMN,
 	)
 }
 
