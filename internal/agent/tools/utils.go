@@ -17,7 +17,7 @@ func printToolMessage(message string) {
 	fmt.Print(gline.RESET_CURSOR_COLUMN + styles.AGENT_QUESTION(message) + "\n")
 }
 
-func userConfirmation(logger *zap.Logger, question string, explanation string) string {
+var userConfirmation = func(logger *zap.Logger, question string, explanation string) string {
 	prompt :=
 		styles.AGENT_QUESTION(question + " (y/N/freeform reply) ")
 

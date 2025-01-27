@@ -14,9 +14,7 @@
 - agent chat macros
   - ui auto suggestions
 - stop using go-openai - use raw http requests
-- support custom instructions
-  - use readme as agent context
-- explicitly specify directory when runnning subshell commands (e.g. git status retriever)
+- support custom instructions and memory
 - [set ollama context window](https://github.com/ollama/ollama/pull/6504)
 - built-in eval
 - MCP support
@@ -24,6 +22,7 @@
   - allow agent to browse web urls
 - persist agent message history
 - training a small command prediction model
+  - log context and prediction history
 
 # Engineering
 

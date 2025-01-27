@@ -42,9 +42,30 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 		return failedToolResponse("The create_file tool failed to parse parameter 'content'")
 	}
 
-	privacySafePath := utils.HideHomeDirPath(runner, path)
+	tmpFile, err := os.CreateTemp("", "gsh_create_file_preview")
+	if err != nil {
+		logger.Error("create_file tool failed to create temporary file", zap.Error(err))
+		return failedToolResponse(fmt.Sprintf("Error creating temporary file: %s", err))
+	}
+	defer os.Remove(tmpFile.Name())
 
-	fmt.Print(gline.RESET_CURSOR_COLUMN + fmt.Sprintf("%s\n\n%s\n", privacySafePath, content) + gline.RESET_CURSOR_COLUMN)
+	_, err = tmpFile.WriteString(content)
+	if err != nil {
+		logger.Error("create_file tool failed to write to temporary file", zap.Error(err))
+		return failedToolResponse(fmt.Sprintf("Error writing to temporary file: %s", err))
+	}
+
+	compareWith := "/dev/null"
+	if _, err := os.Stat(path); err == nil {
+		compareWith = path
+	}
+
+	diff, err := getDiff(runner, logger, compareWith, tmpFile.Name())
+	if err != nil {
+		return failedToolResponse(fmt.Sprintf("Error generating diff: %s", err))
+	}
+
+	fmt.Print(gline.RESET_CURSOR_COLUMN + diff + "\n" + gline.RESET_CURSOR_COLUMN)
 
 	confirmResponse := userConfirmation(
 		logger,
@@ -58,12 +79,11 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 	}
 
 	file, err := os.Create(path)
-	defer file.Close()
-
 	if err != nil {
 		logger.Error("create_file tool failed to create file", zap.Error(err))
 		return failedToolResponse(fmt.Sprintf("Error creating file: %s", err))
 	}
+	defer file.Close()
 
 	_, err = file.WriteString(content)
 	if err != nil {
