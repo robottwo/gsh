@@ -291,33 +291,62 @@ func (agent *Agent) handleToolCall(toolCall openai.ToolCall) bool {
 }
 
 func (agent *Agent) pruneMessages() {
-	keptMessages := []openai.ChatCompletionMessage{}
+	if len(agent.messages) <= 1 {
+		return
+	}
 
 	// This is a naive algorithm that assumes each llm token takes 4 bytes on average
 	maxBytes := 4 * environment.GetAgentContextWindowTokens(agent.runner, agent.logger)
 
-	usedBytes := 0
-	for i := len(agent.messages) - 1; i > 0; i-- {
+	// First, calculate total bytes used by all messages except system message
+	totalBytes := 0
+	messageSizes := make([]int, len(agent.messages))
+	for i := 1; i < len(agent.messages); i++ {
 		bytes, err := agent.messages[i].MarshalJSON()
 		if err != nil {
 			agent.logger.Error("Failed to marshal message for pruning", zap.Error(err))
-			break
+			return
 		}
-
-		length := len(bytes)
-		if usedBytes+length > maxBytes {
-			break
-		}
-
-		usedBytes += length
-		keptMessages = append(
-			[]openai.ChatCompletionMessage{agent.messages[i]},
-			keptMessages...,
-		)
+		messageSizes[i] = len(bytes)
+		totalBytes += len(bytes)
 	}
 
-	agent.messages = append(
-		[]openai.ChatCompletionMessage{agent.messages[0]},
-		keptMessages...,
-	)
+	// If we're within limits, no need to prune
+	if totalBytes <= maxBytes {
+		return
+	}
+
+	// We'll keep the first message (system) and try to keep 2/3 recent and 1/3 early messages
+	keptMessages := []openai.ChatCompletionMessage{agent.messages[0]}
+
+	// Calculate budgets for recent and early messages
+	remainingBytes := maxBytes
+	recentBudget := (remainingBytes * 2) / 3     // 2/3 of the budget for recent messages
+	earlyBudget := remainingBytes - recentBudget // 1/3 of the budget for early messages
+
+	recentMessages := []openai.ChatCompletionMessage{}
+	earlyMessages := []openai.ChatCompletionMessage{}
+
+	// Add messages from the end until we use the recent messages budget
+	bytesUsed := 0
+	for i := len(agent.messages) - 1; i > 0; i-- {
+		if bytesUsed+messageSizes[i] > recentBudget {
+			break
+		}
+		recentMessages = append([]openai.ChatCompletionMessage{agent.messages[i]}, recentMessages...)
+		bytesUsed += messageSizes[i]
+	}
+
+	// Add messages from the beginning with the early messages budget
+	bytesUsed = 0
+	for i := 1; i < len(agent.messages)-len(recentMessages); i++ {
+		if bytesUsed+messageSizes[i] > earlyBudget {
+			break
+		}
+		earlyMessages = append(earlyMessages, agent.messages[i])
+		bytesUsed += messageSizes[i]
+	}
+
+	// Combine all parts: system message + early messages + recent messages
+	agent.messages = append(keptMessages, append(earlyMessages, recentMessages...)...)
 }
