@@ -21,6 +21,10 @@ var mockGetFileCompletions fileCompleter = func(prefix, currentDirectory string)
 	case "":
 		// Empty prefix means list everything in current directory
 		return []string{"folder1/", "folder2/", "file1.txt", "file2.txt"}
+	case "foo/bar/b":
+		return []string{"foo/bar/baz", "foo/bar/bin"}
+	case "other/path/te":
+		return []string{"other/path/test.txt", "other/path/temp.txt"}
 	default:
 		// No match found
 		return []string{}
@@ -154,6 +158,24 @@ func TestGetCompletions(t *testing.T) {
 				manager.On("GetSpec", "cd").Return(CompletionSpec{}, false)
 			},
 			expected: []string{"cd folder1/", "cd folder2/", "cd file1.txt", "cd file2.txt"},
+		},
+		{
+			name: "file completion with multiple path segments should only replace last segment",
+			line: "ls foo/bar/b",
+			pos:  12,
+			setup: func() {
+				manager.On("GetSpec", "ls").Return(CompletionSpec{}, false)
+			},
+			expected: []string{"ls foo/bar/baz", "ls foo/bar/bin"},
+		},
+		{
+			name: "file completion with multiple arguments should preserve earlier arguments",
+			line: "ls some/path other/path/te",
+			pos:  26,
+			setup: func() {
+				manager.On("GetSpec", "ls").Return(CompletionSpec{}, false)
+			},
+			expected: []string{"ls some/path other/path/test.txt", "ls some/path other/path/temp.txt"},
 		},
 	}
 

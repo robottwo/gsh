@@ -51,8 +51,15 @@ func (p *ShellCompletionProvider) GetCompletions(line string, pos int) []string 
 
 		completions := getFileCompletions(prefix, environment.GetPwd(p.Runner))
 
-		// Prepend command to maintain the full command line
-		cmdPrefix := command + " "
+		// Build the prefix from all words except the last one
+		var cmdPrefix string
+		if len(words) == 1 {
+			cmdPrefix = command + " "
+		} else {
+			cmdPrefix = strings.Join(words[:len(words)-1], " ") + " "
+		}
+
+		// Add completions with proper prefix
 		for i, completion := range completions {
 			if strings.Contains(completion, " ") {
 				// Quote completions that contain spaces
