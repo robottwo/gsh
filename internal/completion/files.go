@@ -11,30 +11,77 @@ type fileCompleter func(prefix string, currentDirectory string) []string
 
 // getFileCompletions is the default implementation of file completion
 var getFileCompletions fileCompleter = func(prefix string, currentDirectory string) []string {
-	prefixIsAbs := filepath.IsAbs(prefix)
-	// If prefix is empty, use current directory
-	dir := currentDirectory
-	filePrefix := ""
-
-	if prefix != "" {
-		// If prefix is absolute path, use it as is
-		if prefixIsAbs {
-			dir = filepath.Dir(prefix)
-		} else {
-			// For relative paths, join with current directory
-			fullPath := filepath.Join(currentDirectory, prefix)
-			dir = filepath.Dir(fullPath)
+	if prefix == "" {
+		// If prefix is empty, use current directory
+		entries, err := os.ReadDir(currentDirectory)
+		if err != nil {
+			return []string{}
 		}
-		filePrefix = filepath.Base(prefix)
 
-		// If the prefix ends with '/', we're looking for contents of that directory
-		if strings.HasSuffix(prefix, "/") {
-			if prefixIsAbs {
-				dir = prefix
-			} else {
-				dir = filepath.Join(currentDirectory, prefix)
+		matches := make([]string, 0, len(entries))
+		for _, entry := range entries {
+			name := entry.Name()
+			if entry.IsDir() {
+				name += "/"
 			}
+			matches = append(matches, name)
+		}
+		return matches
+	}
+
+	// Determine path type and prepare directory and prefix
+	var dir string        // directory to search in
+	var filePrefix string // prefix to match file names against
+	var pathType string   // "home", "abs", or "rel"
+	var prefixDir string  // directory part of the prefix
+	var homeDir string    // user's home directory if needed
+
+	// Check if path starts with "~"
+	if strings.HasPrefix(prefix, "~") {
+		pathType = "home"
+		var err error
+		homeDir, err = os.UserHomeDir()
+		if err != nil {
+			return []string{}
+		}
+		// Replace "~" with actual home directory for searching
+		searchPath := filepath.Join(homeDir, prefix[1:])
+		dir = filepath.Dir(searchPath)
+		filePrefix = filepath.Base(prefix)
+		prefixDir = filepath.Dir(prefix)
+
+		// If prefix ends with "/", adjust accordingly
+		if strings.HasSuffix(prefix, "/") {
+			dir = searchPath
 			filePrefix = ""
+			prefixDir = prefix
+		}
+	} else if filepath.IsAbs(prefix) {
+		// Absolute path
+		pathType = "abs"
+		dir = filepath.Dir(prefix)
+		filePrefix = filepath.Base(prefix)
+		prefixDir = filepath.Dir(prefix)
+
+		// If prefix ends with "/", adjust accordingly
+		if strings.HasSuffix(prefix, "/") {
+			dir = prefix
+			filePrefix = ""
+			prefixDir = prefix
+		}
+	} else {
+		// Relative path
+		pathType = "rel"
+		fullPath := filepath.Join(currentDirectory, prefix)
+		dir = filepath.Dir(fullPath)
+		filePrefix = filepath.Base(prefix)
+		prefixDir = filepath.Dir(prefix)
+
+		// If prefix ends with "/", adjust accordingly
+		if strings.HasSuffix(prefix, "/") {
+			dir = fullPath
+			filePrefix = ""
+			prefixDir = prefix
 		}
 	}
 
@@ -45,32 +92,40 @@ var getFileCompletions fileCompleter = func(prefix string, currentDirectory stri
 	}
 
 	// Filter and format matches
-	var matches []string = make([]string, 0, len(entries))
+	matches := make([]string, 0, len(entries))
 	for _, entry := range entries {
 		name := entry.Name()
 		if !strings.HasPrefix(name, filePrefix) {
 			continue
 		}
 
-		// Build full path
-		var fullPath string
-		if prefixIsAbs {
-			fullPath = filepath.Join(dir, name)
-		} else {
-			// For relative paths, make them relative to current directory
-			relPath := filepath.Join(filepath.Dir(prefix), name)
-			if relPath == "." {
-				relPath = name
+		// Build path based on type
+		var completionPath string
+		if pathType == "home" {
+			// For home directory paths, keep the "~" prefix
+			if prefixDir == "~" || prefixDir == "." {
+				completionPath = "~/" + name
+			} else {
+				completionPath = filepath.Join(prefixDir, name)
 			}
-			fullPath = relPath
+		} else if pathType == "abs" {
+			// For absolute paths, keep the full path
+			completionPath = filepath.Join(prefixDir, name)
+		} else {
+			// For relative paths, keep them relative
+			if prefixDir == "." {
+				completionPath = name
+			} else {
+				completionPath = filepath.Join(prefixDir, name)
+			}
 		}
 
 		// Add trailing slash for directories
 		if entry.IsDir() {
-			fullPath += "/"
+			completionPath += "/"
 		}
 
-		matches = append(matches, fullPath)
+		matches = append(matches, completionPath)
 	}
 
 	return matches
