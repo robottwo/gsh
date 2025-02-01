@@ -12,6 +12,7 @@ type UserPrompter interface {
 		explanation string,
 		predictor gline.Predictor,
 		explainer gline.Explainer,
+		analytics gline.PredictionAnalytics,
 		logger *zap.Logger,
 		options gline.Options,
 	) (string, error)
@@ -25,8 +26,9 @@ func (p DefaultUserPrompter) Prompt(
 	explanation string,
 	predictor gline.Predictor,
 	explainer gline.Explainer,
+	analytics gline.PredictionAnalytics,
 	logger *zap.Logger,
 	options gline.Options,
 ) (string, error) {
-	return gline.Gline(prompt, historyValues, explanation, predictor, explainer, logger, options)
+	return gline.Gline(prompt, historyValues, explanation, predictor, explainer, analytics, logger, options)
 }

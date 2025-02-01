@@ -77,6 +77,7 @@ func updateToLatestVersion(currentSemVer *semver.Version, logger *zap.Logger, fs
 		latestVersion,
 		nil,
 		nil,
+		nil,
 		logger,
 		gline.NewOptions(),
 	)

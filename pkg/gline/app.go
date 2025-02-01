@@ -15,14 +15,17 @@ import (
 type appModel struct {
 	predictor Predictor
 	explainer Explainer
+	analytics PredictionAnalytics
 	logger    *zap.Logger
 	options   Options
 
-	textInput         shellinput.Model
-	dirty             bool
-	prediction        string
-	explanation       string
-	predictionStateId int
+	textInput           shellinput.Model
+	dirty               bool
+	prediction          string
+	explanation         string
+	lastPredictionInput string
+	lastPrediction      string
+	predictionStateId   int
 
 	historyValues []string
 	result        string
@@ -36,8 +39,9 @@ type attemptPredictionMsg struct {
 }
 
 type setPredictionMsg struct {
-	stateId    int
-	prediction string
+	stateId      int
+	prediction   string
+	inputContext string
 }
 
 type attemptExplanationMsg struct {
@@ -69,6 +73,7 @@ func initialModel(
 	explanation string,
 	predictor Predictor,
 	explainer Explainer,
+	analytics PredictionAnalytics,
 	logger *zap.Logger,
 	options Options,
 ) appModel {
@@ -83,6 +88,7 @@ func initialModel(
 	return appModel{
 		predictor: predictor,
 		explainer: explainer,
+		analytics: analytics,
 		logger:    logger,
 		options:   options,
 
@@ -126,7 +132,7 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.attemptPrediction(msg)
 
 	case setPredictionMsg:
-		return m.setPrediction(msg.stateId, msg.prediction)
+		return m.setPrediction(msg.stateId, msg.prediction, msg.inputContext)
 
 	case attemptExplanationMsg:
 		return m.attemptExplanation(msg)
@@ -237,7 +243,7 @@ func (m *appModel) clearPrediction() {
 	m.textInput.SetSuggestions([]string{})
 }
 
-func (m appModel) setPrediction(stateId int, prediction string) (appModel, tea.Cmd) {
+func (m appModel) setPrediction(stateId int, prediction string, inputContext string) (appModel, tea.Cmd) {
 	if stateId != m.predictionStateId {
 		m.logger.Debug(
 			"gline discarding prediction",
@@ -248,6 +254,8 @@ func (m appModel) setPrediction(stateId int, prediction string) (appModel, tea.C
 	}
 
 	m.prediction = prediction
+	m.lastPredictionInput = inputContext
+	m.lastPrediction = prediction
 	m.textInput.SetSuggestions([]string{prediction})
 	m.explanation = ""
 	return m, tea.Cmd(func() tea.Msg {
@@ -264,7 +272,7 @@ func (m appModel) attemptPrediction(msg attemptPredictionMsg) (tea.Model, tea.Cm
 	}
 
 	return m, tea.Cmd(func() tea.Msg {
-		prediction, err := m.predictor.Predict(m.textInput.Value())
+		prediction, inputContext, err := m.predictor.Predict(m.textInput.Value())
 		if err != nil {
 			m.logger.Error("gline prediction failed", zap.Error(err))
 			return nil
@@ -274,8 +282,9 @@ func (m appModel) attemptPrediction(msg attemptPredictionMsg) (tea.Model, tea.Cm
 			"gline predicted input",
 			zap.Int("stateId", msg.stateId),
 			zap.String("prediction", prediction),
+			zap.String("inputContext", inputContext),
 		)
-		return setPredictionMsg{stateId: msg.stateId, prediction: prediction}
+		return setPredictionMsg{stateId: msg.stateId, prediction: prediction, inputContext: inputContext}
 	})
 }
 
@@ -323,11 +332,12 @@ func Gline(
 	explanation string,
 	predictor Predictor,
 	explainer Explainer,
+	analytics PredictionAnalytics,
 	logger *zap.Logger,
 	options Options,
 ) (string, error) {
 	p := tea.NewProgram(
-		initialModel(prompt, historyValues, explanation, predictor, explainer, logger, options),
+		initialModel(prompt, historyValues, explanation, predictor, explainer, analytics, logger, options),
 	)
 
 	m, err := p.Run()
@@ -342,6 +352,11 @@ func Gline(
 	}
 
 	fmt.Print(RESET_CURSOR_COLUMN + appModel.getFinalOutput() + "\n")
+
+	err = analytics.NewEntry(appModel.lastPredictionInput, appModel.lastPrediction, appModel.result)
+	if err != nil {
+		logger.Error("failed to log analytics entry", zap.Error(err))
+	}
 
 	return appModel.result, nil
 }

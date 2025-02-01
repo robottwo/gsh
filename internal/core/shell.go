@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/atinylittleshell/gsh/internal/agent"
+	"github.com/atinylittleshell/gsh/internal/analytics"
 	"github.com/atinylittleshell/gsh/internal/bash"
 	"github.com/atinylittleshell/gsh/internal/completion"
 	"github.com/atinylittleshell/gsh/internal/environment"
@@ -23,7 +24,14 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 )
 
-func RunInteractiveShell(ctx context.Context, runner *interp.Runner, historyManager *history.HistoryManager, completionManager *completion.CompletionManager, logger *zap.Logger) error {
+func RunInteractiveShell(
+	ctx context.Context,
+	runner *interp.Runner,
+	historyManager *history.HistoryManager,
+	analyticsManager *analytics.AnalyticsManager,
+	completionManager *completion.CompletionManager,
+	logger *zap.Logger,
+) error {
 	contextProvider := &rag.ContextProvider{
 		Logger: logger,
 		Retrievers: []rag.ContextRetriever{
@@ -81,7 +89,7 @@ func RunInteractiveShell(ctx context.Context, runner *interp.Runner, historyMana
 		options.MinHeight = environment.GetMinimumLines(runner, logger)
 		options.CompletionProvider = completionProvider
 
-		line, err := gline.Gline(prompt, historyCommands, "", predictor, explainer, logger, options)
+		line, err := gline.Gline(prompt, historyCommands, "", predictor, explainer, analyticsManager, logger, options)
 
 		logger.Debug("received command", zap.String("line", line))
 

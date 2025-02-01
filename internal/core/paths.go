@@ -10,6 +10,7 @@ type Paths struct {
 	DataDir           string
 	LogFile           string
 	HistoryFile       string
+	AnalyticsFile     string
 	LatestVersionFile string
 }
 
@@ -27,6 +28,7 @@ func ensureDefaultPaths() {
 			DataDir:           filepath.Join(homeDir, ".local", "share", "gsh"),
 			LogFile:           filepath.Join(homeDir, ".local", "share", "gsh", "gsh.log"),
 			HistoryFile:       filepath.Join(homeDir, ".local", "share", "gsh", "history.db"),
+			AnalyticsFile:     filepath.Join(homeDir, ".local", "share", "gsh", "analytics.db"),
 			LatestVersionFile: filepath.Join(homeDir, ".local", "share", "gsh", "latest_version.txt"),
 		}
 
@@ -53,6 +55,11 @@ func LogFile() string {
 }
 
 func HistoryFile() string {
+	ensureDefaultPaths()
+	return defaultPaths.HistoryFile
+}
+
+func AnalyticsFile() string {
 	ensureDefaultPaths()
 	return defaultPaths.HistoryFile
 }

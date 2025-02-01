@@ -56,6 +56,7 @@ func (m *MockPrompter) Prompt(
 	explanation string,
 	predictor gline.Predictor,
 	explainer gline.Explainer,
+	analytics gline.PredictionAnalytics,
 	logger *zap.Logger,
 	options gline.Options,
 ) (string, error) {

@@ -41,18 +41,18 @@ func (p *LLMNullStatePredictor) UpdateContext(context *map[string]string) {
 	p.contextText = utils.ComposeContextText(context, contextTypes, p.logger)
 }
 
-func (p *LLMNullStatePredictor) Predict(input string) (string, error) {
+func (p *LLMNullStatePredictor) Predict(input string) (string, string, error) {
 	if input != "" {
 		// this predictor is only for null state
-		return "", nil
+		return "", "", nil
 	}
 
 	schema, err := PREDICTED_COMMAND_SCHEMA.MarshalJSON()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	systemMessage := fmt.Sprintf(`You are gsh, an intelligent shell program.
+	userMessage := fmt.Sprintf(`You are gsh, an intelligent shell program.
 You are asked to predict the next command I'm likely to want to run.
 
 # Instructions
@@ -66,17 +66,16 @@ You are asked to predict the next command I'm likely to want to run.
 %s
 
 # Response JSON Schema
-%s`,
+%s
+
+Now predict what my next command should be.`,
 		BEST_PRACTICES,
 		p.contextText,
 		string(schema),
 	)
 
-	userMessage := `Now predict what my next command should be.`
-
 	p.logger.Debug(
 		"predicting using LLM",
-		zap.String("system", systemMessage),
 		zap.String("user", userMessage),
 	)
 
@@ -84,10 +83,6 @@ You are asked to predict the next command I'm likely to want to run.
 		Model:       p.modelId,
 		Temperature: p.temperature,
 		Messages: []openai.ChatCompletionMessage{
-			{
-				Role:    "system",
-				Content: systemMessage,
-			},
 			{
 				Role:    "user",
 				Content: userMessage,
@@ -99,7 +94,7 @@ You are asked to predict the next command I'm likely to want to run.
 	})
 
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	prediction := predictedCommand{}
@@ -110,5 +105,5 @@ You are asked to predict the next command I'm likely to want to run.
 		zap.Any("response", prediction),
 	)
 
-	return prediction.PredictedCommand, nil
+	return prediction.PredictedCommand, userMessage, nil
 }

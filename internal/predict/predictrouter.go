@@ -15,7 +15,7 @@ func (p *PredictRouter) UpdateContext(context *map[string]string) {
 	}
 }
 
-func (p *PredictRouter) Predict(input string) (string, error) {
+func (p *PredictRouter) Predict(input string) (string, string, error) {
 	if input == "" {
 		return p.NullStatePredictor.Predict(input)
 	}

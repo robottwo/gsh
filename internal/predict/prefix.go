@@ -48,15 +48,15 @@ func (p *LLMPrefixPredictor) UpdateContext(context *map[string]string) {
 	p.numHistoryContext = environment.GetContextNumHistoryConcise(p.runner, p.logger)
 }
 
-func (p *LLMPrefixPredictor) Predict(input string) (string, error) {
+func (p *LLMPrefixPredictor) Predict(input string) (string, string, error) {
 	if strings.HasPrefix(input, "#") {
 		// Don't do prediction for agent chat messages
-		return "", nil
+		return "", "", nil
 	}
 
 	schema, err := PREDICTED_COMMAND_SCHEMA.MarshalJSON()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	matchingHistoryEntries, err := p.historyManager.GetRecentEntriesByPrefix(
@@ -73,7 +73,7 @@ func (p *LLMPrefixPredictor) Predict(input string) (string, error) {
 		}
 	}
 
-	systemMessage := fmt.Sprintf(`You are gsh, an intelligent shell program.
+	userMessage := fmt.Sprintf(`You are gsh, an intelligent shell program.
 You will be given a partial bash command prefix entered by me, enclosed in <prefix> tags.
 You are asked to predict what the complete bash command is.
 
@@ -92,21 +92,18 @@ You are asked to predict what the complete bash command is.
 %s
 
 # Response JSON Schema
-%s`,
+%s
+
+<prefix>%s</prefix>`,
 		BEST_PRACTICES,
 		p.contextText,
 		matchingHistoryContext.String(),
 		string(schema),
-	)
-
-	userMessage := fmt.Sprintf(
-		`<prefix>%s</prefix>`,
 		input,
 	)
 
 	p.logger.Debug(
 		"predicting using LLM",
-		zap.String("system", systemMessage),
 		zap.String("user", userMessage),
 	)
 
@@ -114,10 +111,6 @@ You are asked to predict what the complete bash command is.
 		Model:       p.modelId,
 		Temperature: p.temperature,
 		Messages: []openai.ChatCompletionMessage{
-			{
-				Role:    "system",
-				Content: systemMessage,
-			},
 			{
 				Role:    "user",
 				Content: userMessage,
@@ -129,7 +122,7 @@ You are asked to predict what the complete bash command is.
 	})
 
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	prediction := predictedCommand{}
@@ -140,5 +133,5 @@ You are asked to predict what the complete bash command is.
 		zap.Any("response", prediction),
 	)
 
-	return prediction.PredictedCommand, nil
+	return prediction.PredictedCommand, userMessage, nil
 }
