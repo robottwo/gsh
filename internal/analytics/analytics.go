@@ -76,3 +76,12 @@ func (analyticsManager *AnalyticsManager) DeleteEntry(id uint) error {
 	}
 	return nil
 }
+
+func (analyticsManager *AnalyticsManager) GetTotalCount() (int64, error) {
+	var count int64
+	result := analyticsManager.db.Model(&AnalyticsEntry{}).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}

@@ -93,6 +93,37 @@ func TestAnalyticsCommand(t *testing.T) {
 				assert.Len(t, entries, 0)
 			},
 		},
+		{
+			name:          "Show count with short flag",
+			args:          []string{"gsh_analytics", "-n"},
+			expectedError: false,
+			setupFn: func() {
+				analyticsManager.ResetAnalytics()
+				analyticsManager.NewEntry("test1", "test1", "test1")
+				analyticsManager.NewEntry("test2", "test2", "test2")
+			},
+			verify: func(t *testing.T, am *AnalyticsManager) {
+				count, err := am.GetTotalCount()
+				assert.NoError(t, err)
+				assert.Equal(t, int64(2), count)
+			},
+		},
+		{
+			name:          "Show count with long flag",
+			args:          []string{"gsh_analytics", "--count"},
+			expectedError: false,
+			setupFn: func() {
+				analyticsManager.ResetAnalytics()
+				analyticsManager.NewEntry("test1", "test1", "test1")
+				analyticsManager.NewEntry("test2", "test2", "test2")
+				analyticsManager.NewEntry("test3", "test3", "test3")
+			},
+			verify: func(t *testing.T, am *AnalyticsManager) {
+				count, err := am.GetTotalCount()
+				assert.NoError(t, err)
+				assert.Equal(t, int64(3), count)
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -221,5 +252,14 @@ func TestAnalyticsCommandEdgeCases(t *testing.T) {
 	// Test with zero limit
 	err = wrappedHandler(context.Background(), []string{"gsh_analytics", "0"})
 	assert.NoError(t, err) // Should default to 20
+
+	// Test count after clearing analytics
+	analyticsManager.ResetAnalytics()
+	analyticsManager.NewEntry("test1", "test1", "test1")
+	analyticsManager.NewEntry("test2", "test2", "test2")
+	err = wrappedHandler(context.Background(), []string{"gsh_analytics", "-c"})
+	assert.NoError(t, err)
+	err = wrappedHandler(context.Background(), []string{"gsh_analytics", "--count"})
+	assert.NoError(t, err) // Should show count as 0
 }
 

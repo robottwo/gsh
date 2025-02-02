@@ -45,6 +45,15 @@ func NewAnalyticsCommandHandler(analyticsManager *AnalyticsManager) func(next in
 				case "-h", "--help":
 					printAnalyticsHelp()
 					return nil
+
+				case "-n", "--count":
+					// Show total count of entries
+					count, err := analyticsManager.GetTotalCount()
+					if err != nil {
+						return fmt.Errorf("failed to get analytics count: %v", err)
+					}
+					fmt.Printf("Total analytics entries: %d\n", count)
+					return nil
 				}
 			}
 
@@ -87,6 +96,7 @@ func printAnalyticsHelp() {
 		"  -c, --clear    clear all analytics data",
 		"  -d, --delete   delete analytics entry at offset",
 		"  -h, --help     display this help message",
+		"  -n, --count    display total number of entries",
 		"",
 		"If n is given, display only the last n entries.",
 		"If no options are given, display the analytics list with line numbers.",

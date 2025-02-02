@@ -7,6 +7,41 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetTotalCount(t *testing.T) {
+	analyticsManager, err := NewAnalyticsManager(":memory:")
+	assert.NoError(t, err, "Failed to create analytics manager")
+
+	// Test initial count
+	count, err := analyticsManager.GetTotalCount()
+	assert.NoError(t, err, "Failed to get count")
+	assert.Equal(t, int64(0), count, "Expected initial count to be 0")
+
+	// Add some entries
+	entries := []struct{ input, prediction, actual string }{
+		{"cmd1", "pred1", "act1"},
+		{"cmd2", "pred2", "act2"},
+		{"cmd3", "pred3", "act3"},
+	}
+
+	for _, e := range entries {
+		err := analyticsManager.NewEntry(e.input, e.prediction, e.actual)
+		assert.NoError(t, err, "Failed to create entry")
+	}
+
+	// Test count after adding entries
+	count, err = analyticsManager.GetTotalCount()
+	assert.NoError(t, err, "Failed to get count")
+	assert.Equal(t, int64(len(entries)), count, "Expected count to match number of entries")
+
+	// Test count after clearing
+	err = analyticsManager.ResetAnalytics()
+	assert.NoError(t, err, "Failed to reset analytics")
+
+	count, err = analyticsManager.GetTotalCount()
+	assert.NoError(t, err, "Failed to get count")
+	assert.Equal(t, int64(0), count, "Expected count to be 0 after reset")
+}
+
 func TestBasicOperations(t *testing.T) {
 	analyticsManager, err := NewAnalyticsManager(":memory:")
 	assert.NoError(t, err, "Failed to create analytics manager")
