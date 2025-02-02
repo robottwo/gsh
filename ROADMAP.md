@@ -1,7 +1,7 @@
 # Bash Parity
 
 - history expansion
-- multiline input
+- [1.0] multiline input
 
 # Ergonomics
 
@@ -14,13 +14,13 @@
 - agent chat macros
   - ui auto suggestions
 - stop using go-openai - use raw http requests
-- support custom instructions and memory
+- [1.0] support custom instructions
+- support agent modifying memory
 - [set ollama context window](https://github.com/ollama/ollama/pull/6504)
-- built-in eval
+- [1.0] built-in eval
 - MCP support
   - allow agent to search the web
   - allow agent to browse web urls
-- persist agent message history
 - training a small command prediction model
   - log context and prediction history
 

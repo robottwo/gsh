@@ -353,9 +353,11 @@ func Gline(
 
 	fmt.Print(RESET_CURSOR_COLUMN + appModel.getFinalOutput() + "\n")
 
-	err = analytics.NewEntry(appModel.lastPredictionInput, appModel.lastPrediction, appModel.result)
-	if err != nil {
-		logger.Error("failed to log analytics entry", zap.Error(err))
+	if analytics != nil {
+		err = analytics.NewEntry(appModel.lastPredictionInput, appModel.lastPrediction, appModel.result)
+		if err != nil {
+			logger.Error("failed to log analytics entry", zap.Error(err))
+		}
 	}
 
 	return appModel.result, nil

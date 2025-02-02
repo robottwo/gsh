@@ -61,7 +61,7 @@ func HistoryFile() string {
 
 func AnalyticsFile() string {
 	ensureDefaultPaths()
-	return defaultPaths.HistoryFile
+	return defaultPaths.AnalyticsFile
 }
 
 func LatestVersionFile() string {
