@@ -16,6 +16,7 @@ import (
 	"github.com/atinylittleshell/gsh/internal/completion"
 	"github.com/atinylittleshell/gsh/internal/core"
 	"github.com/atinylittleshell/gsh/internal/environment"
+	"github.com/atinylittleshell/gsh/internal/evaluate"
 	"github.com/atinylittleshell/gsh/internal/filesystem"
 	"github.com/atinylittleshell/gsh/internal/history"
 	"go.uber.org/zap"
@@ -76,6 +77,8 @@ func main() {
 		panic(err)
 	}
 	defer logger.Sync() // Flush any buffered log entries
+
+	analyticsManager.Logger = logger
 
 	logger.Info("-------- new gsh session --------", zap.Any("args", os.Args))
 
@@ -198,6 +201,7 @@ func initializeRunner(analyticsManager *analytics.AnalyticsManager, historyManag
 		interp.StdIO(os.Stdin, os.Stdout, os.Stderr),
 		interp.ExecHandlers(
 			analytics.NewAnalyticsCommandHandler(analyticsManager),
+			evaluate.NewEvaluateCommandHandler(analyticsManager),
 			history.NewHistoryCommandHandler(historyManager),
 			completion.NewCompleteCommandHandler(completionManager),
 		),
@@ -240,6 +244,8 @@ func initializeRunner(analyticsManager *analytics.AnalyticsManager, historyManag
 			}
 		}
 	}
+
+	analyticsManager.Runner = runner
 
 	return runner, nil
 }

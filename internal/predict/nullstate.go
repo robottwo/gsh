@@ -97,7 +97,7 @@ Now predict what my next command should be.`,
 		return "", "", err
 	}
 
-	prediction := predictedCommand{}
+	prediction := PredictedCommand{}
 	_ = json.Unmarshal([]byte(chatCompletion.Choices[0].Message.Content), &prediction)
 
 	p.logger.Debug(

@@ -89,7 +89,7 @@ func NewAnalyticsCommandHandler(analyticsManager *AnalyticsManager) func(next in
 
 func printAnalyticsHelp() {
 	help := []string{
-		"Usage: analytics [option] [n]",
+		"Usage: gsh_analytics [option] [n]",
 		"Display or manipulate the analytics data.",
 		"",
 		"Options:",

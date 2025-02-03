@@ -6,11 +6,15 @@ import (
 	"time"
 
 	"github.com/glebarez/sqlite"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"mvdan.cc/sh/v3/interp"
 )
 
 type AnalyticsManager struct {
-	db *gorm.DB
+	db     *gorm.DB
+	Runner *interp.Runner
+	Logger *zap.Logger
 }
 
 type AnalyticsEntry struct {
@@ -54,7 +58,7 @@ func (analyticsManager *AnalyticsManager) NewEntry(input string, prediction stri
 
 func (analyticsManager *AnalyticsManager) GetRecentEntries(limit int) ([]AnalyticsEntry, error) {
 	var entries []AnalyticsEntry
-	result := analyticsManager.db.Order("created_at desc").Limit(limit).Find(&entries)
+	result := analyticsManager.db.Where("input <> '' AND actual NOT LIKE '#%'").Order("created_at desc").Limit(limit).Find(&entries)
 	if result.Error != nil {
 		return nil, result.Error
 	}

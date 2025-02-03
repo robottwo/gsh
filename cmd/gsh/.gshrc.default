@@ -1,7 +1,7 @@
 # GSH_UPDATE_PROMPT gets called each time before gsh renders the prompt
 # It should update the value of the $GSH_PROMPT environment variable
 function GSH_UPDATE_PROMPT() {
-  GSH_PROMPT="gsh> "
+  # GSH_PROMPT="gsh> "
 }
 
 # The value of GSH_PROMPT is what gets rendered as the prompt

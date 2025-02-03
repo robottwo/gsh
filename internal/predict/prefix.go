@@ -125,7 +125,7 @@ You are asked to predict what the complete bash command is.
 		return "", "", err
 	}
 
-	prediction := predictedCommand{}
+	prediction := PredictedCommand{}
 	_ = json.Unmarshal([]byte(chatCompletion.Choices[0].Message.Content), &prediction)
 
 	p.logger.Debug(
