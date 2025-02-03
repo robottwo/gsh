@@ -229,7 +229,7 @@ Available options:
 - `-m, --model <model-id>`: Specify the model to use (default: use the default fast model)
 - `-i, --iterations <number>`: Number of times to repeat the evaluation (default: 3)
 
-You will get a report like below on how well the model performed in predicting the commands you ran.
+You will get a report like below on how well the model performed in predicting the commands you recently ran.
 
 ```
 ┌────────────────────────┬──────────┬──────────┐
