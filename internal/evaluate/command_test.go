@@ -71,6 +71,18 @@ func TestEvaluateCommandHandler(t *testing.T) {
 			expectError:    false,
 		},
 		{
+			name:           "custom iterations",
+			args:           []string{"gsh_evaluate", "-l", "3", "--iterations", "2"},
+			shouldCallNext: false,
+			expectError:    false,
+		},
+		{
+			name:           "custom iterations short flag",
+			args:           []string{"gsh_evaluate", "-l", "3", "-i", "2"},
+			shouldCallNext: false,
+			expectError:    false,
+		},
+		{
 			name:           "both custom limit and model",
 			args:           []string{"gsh_evaluate", "-l", "2", "-m", "gpt-4"},
 			shouldCallNext: false,

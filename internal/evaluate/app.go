@@ -38,6 +38,8 @@ type model struct {
 	entries          []analytics.AnalyticsEntry
 	results          []evaluationResult
 	currentIndex     int
+	currentIteration int
+	totalIterations  int
 	progress         progress.Model
 	spinner          spinner.Model
 	evaluating       bool
@@ -48,7 +50,7 @@ type model struct {
 	isWarmingUp      bool
 }
 
-func initialModel(analyticsManager *analytics.AnalyticsManager, entries []analytics.AnalyticsEntry, llmClient *openai.Client, modelId string, temperature float32) model {
+func initialModel(analyticsManager *analytics.AnalyticsManager, entries []analytics.AnalyticsEntry, llmClient *openai.Client, modelId string, temperature float32, iterations int) model {
 	p := progress.New(
 		progress.WithDefaultGradient(),
 		progress.WithWidth(40),
@@ -68,6 +70,8 @@ func initialModel(analyticsManager *analytics.AnalyticsManager, entries []analyt
 		modelId:          modelId,
 		temperature:      temperature,
 		isWarmingUp:      true,
+		currentIteration: 1,
+		totalIterations:  iterations,
 	}
 }
 
@@ -131,7 +135,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentIndex++
 
 		if m.currentIndex >= len(m.entries) {
-			return m, tea.Quit
+			if m.currentIteration >= m.totalIterations {
+				return m, tea.Quit
+			}
+			// Start next iteration
+			m.currentIteration++
+			m.currentIndex = 0
 		}
 
 		return m, tea.Batch(
@@ -156,7 +165,11 @@ func (m model) View() string {
 	} else if m.currentIndex < len(m.entries) {
 		s.WriteString(m.spinner.View())
 		s.WriteString(m.progress.ViewAs(float64(m.currentIndex+1) / float64(len(m.entries))))
-		s.WriteString(fmt.Sprintf(" (%d/%d)\n", m.currentIndex+1, len(m.entries)))
+		s.WriteString(fmt.Sprintf(" (Entry %d/%d, Iteration %d/%d)\n",
+			m.currentIndex+1,
+			len(m.entries),
+			m.currentIteration,
+			m.totalIterations))
 	}
 
 	perfectMatches := 0
@@ -178,11 +191,11 @@ func (m model) View() string {
 		totalDuration += result.duration
 	}
 
-	avgInputTokens := float64(totalInputTokens) / float64(len(m.results))
-	avgDuration := totalDuration / float64(len(m.results))
+	totalEntries := len(m.results)
+	avgInputTokens := float64(totalInputTokens) / float64(totalEntries)
+	avgDuration := totalDuration / float64(totalEntries)
 	outputTokensPerSecond := float64(totalOutputTokens) / totalDuration
 
-	totalEntries := len(m.results)
 	t := table.New().
 		Border(lipgloss.NormalBorder()).
 		Headers("Metric", "Value", "Percentage").
@@ -208,7 +221,7 @@ func average(numbers []float64) float64 {
 	return total / float64(len(numbers))
 }
 
-func RunEvaluation(analyticsManager *analytics.AnalyticsManager, limit int, customModelId string) error {
+func RunEvaluation(analyticsManager *analytics.AnalyticsManager, limit int, customModelId string, iterations int) error {
 	llmClient, defaultModelId, temperature := utils.GetLLMClient(analyticsManager.Runner, utils.FastModel)
 
 	// Use custom model ID if provided, otherwise use default
@@ -230,7 +243,7 @@ func RunEvaluation(analyticsManager *analytics.AnalyticsManager, limit int, cust
 	}
 
 	if term.IsTerminal(int(os.Stdin.Fd())) {
-		p := tea.NewProgram(initialModel(analyticsManager, entries, llmClient, modelId, temperature))
+		p := tea.NewProgram(initialModel(analyticsManager, entries, llmClient, modelId, temperature, iterations))
 
 		_, err = p.Run()
 		return err

@@ -24,6 +24,7 @@ func NewEvaluateCommandHandler(analyticsManager *analytics.AnalyticsManager) fun
 			// Default values
 			limit := 100
 			modelId := "" // empty string means use default from GetLLMClient
+			iterations := 3
 
 			// Parse flags and arguments
 			for i := 1; i < len(args); i++ {
@@ -43,10 +44,17 @@ func NewEvaluateCommandHandler(analyticsManager *analytics.AnalyticsManager) fun
 						modelId = args[i+1]
 						i++ // skip the next argument since we consumed it
 					}
+				case "-i", "--iterations":
+					if i+1 < len(args) {
+						if val, err := strconv.Atoi(args[i+1]); err == nil {
+							iterations = val
+							i++ // skip the next argument since we consumed it
+						}
+					}
 				}
 			}
 
-			return RunEvaluation(analyticsManager, limit, modelId)
+			return RunEvaluation(analyticsManager, limit, modelId, iterations)
 		}
 	}
 }
@@ -60,6 +68,7 @@ func printEvaluateHelp() {
 		"  -h, --help               display this help message",
 		"  -l, --limit <number>     limit the number of entries to evaluate (default: 100)",
 		"  -m, --model <model-id>   specify the model to use (default: use the default fast model)",
+		"  -i, --iterations <number> number of times to repeat the evaluation (default: 3)",
 	}
 	fmt.Println(strings.Join(help, "\n"))
 }
