@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
+	"golang.org/x/term"
 )
 
 type evaluationResult struct {
@@ -227,10 +229,14 @@ func RunEvaluation(analyticsManager *analytics.AnalyticsManager, limit int, cust
 		return errors.New(errMsg)
 	}
 
-	p := tea.NewProgram(initialModel(analyticsManager, entries, llmClient, modelId, temperature))
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		p := tea.NewProgram(initialModel(analyticsManager, entries, llmClient, modelId, temperature))
 
-	_, err = p.Run()
-	return err
+		_, err = p.Run()
+		return err
+	}
+
+	return nil
 }
 
 func evaluateEntry(analyticsManager *analytics.AnalyticsManager, entry analytics.AnalyticsEntry, llmClient *openai.Client, modelId string, temperature float32) evaluationResult {
