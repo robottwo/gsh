@@ -93,50 +93,6 @@ gsh can run with either
 - Local LLMs through [Ollama](https://ollama.com/)
 - Or remote LLMs through an OpenAI API-compatible endpoint, such as [OpenRouter](https://openrouter.ai/)
 
-### Model Evaluation
-
-gsh provides a built-in command to evaluate how well different LLM models work for predicting commands you ran.
-You can run the evaluation command with various options:
-
-```bash
-# Evaluate using the configured fast model
-gsh> gsh_evaluate
-
-# Evaluate using the configured fast model but change model id to mistral:7b
-gsh> gsh_evaluate -m mistral:7b
-
-# Control the number of recent commands to use for evaluation
-gsh> gsh_evaluate -l 50  # evaluate with the most recent 50 commands you ran
-
-# Run multiple iterations for more accurate results
-gsh> gsh_evaluate -i 5  # run 5 iterations
-```
-
-Available options:
-
-- `-h, --help`: Display help message
-- `-l, --limit <number>`: Limit the number of entries to evaluate (default: 100)
-- `-m, --model <model-id>`: Specify the model to use (default: use the default fast model)
-- `-i, --iterations <number>`: Number of times to repeat the evaluation (default: 3)
-
-You will get a report like below on how well the model performed in predicting the commands you ran.
-
-```
-┌────────────────────────┬──────────┬──────────┐
-│Metric                  │Value     │Percentage│
-├────────────────────────┼──────────┼──────────┤
-│Model ID                │qwen2.5:3b│          │
-│Current Iteration       │3/3       │          │
-│Evaluated Entries       │300       │          │
-│Prediction Errors       │0         │0.0%      │
-│Perfect Predictions     │77        │25.7%     │
-│Average Similarity      │0.38      │38.4%     │
-│Average Latency         │0.9s      │          │
-│Input Tokens Per Request│723.1     │          │
-│Output Tokens Per Second│17.7      │          │
-└────────────────────────┴──────────┴──────────┘
-```
-
 ## Installation
 
 To install gsh:
@@ -246,6 +202,50 @@ It's on the roadmap to allow users to customize these key bindings.
 - **Line Start**: `Home`, `Ctrl+A`
 - **Line End**: `End`, `Ctrl+E`
 - **Paste**: `Ctrl+V`
+
+## Model Evaluation
+
+gsh provides a built-in command to use your recent command history to evaluate how well different LLM models work for predicting your commands.
+You can run the evaluation command with various options:
+
+```bash
+# Evaluate using the configured fast model
+gsh> gsh_evaluate
+
+# Evaluate using the configured fast model but change model id to mistral:7b
+gsh> gsh_evaluate -m mistral:7b
+
+# Control the number of recent commands to use for evaluation
+gsh> gsh_evaluate -l 50  # evaluate with the most recent 50 commands you ran
+
+# Run multiple iterations for more accurate results
+gsh> gsh_evaluate -i 5  # run 5 iterations
+```
+
+Available options:
+
+- `-h, --help`: Display help message
+- `-l, --limit <number>`: Limit the number of entries to evaluate (default: 100)
+- `-m, --model <model-id>`: Specify the model to use (default: use the default fast model)
+- `-i, --iterations <number>`: Number of times to repeat the evaluation (default: 3)
+
+You will get a report like below on how well the model performed in predicting the commands you ran.
+
+```
+┌────────────────────────┬──────────┬──────────┐
+│Metric                  │Value     │Percentage│
+├────────────────────────┼──────────┼──────────┤
+│Model ID                │qwen2.5:3b│          │
+│Current Iteration       │3/3       │          │
+│Evaluated Entries       │300       │          │
+│Prediction Errors       │0         │0.0%      │
+│Perfect Predictions     │77        │25.7%     │
+│Average Similarity      │0.38      │38.4%     │
+│Average Latency         │0.9s      │          │
+│Input Tokens Per Request│723.1     │          │
+│Output Tokens Per Second│17.7      │          │
+└────────────────────────┴──────────┴──────────┘
+```
 
 ## Roadmap
 
