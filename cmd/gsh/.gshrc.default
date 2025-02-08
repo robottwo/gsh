@@ -29,6 +29,7 @@ GSH_FAST_MODEL_API_KEY=ollama
 GSH_FAST_MODEL_BASE_URL=http://localhost:11434/v1/
 GSH_FAST_MODEL_ID=qwen2.5
 GSH_FAST_MODEL_TEMPERATURE=0.1
+GSH_FAST_MODEL_PARALLEL_TOOL_CALLS=true
 GSH_FAST_MODEL_HEADERS='{}'
 
 # The "slow" model is used for chat and agentic operations.
@@ -37,6 +38,7 @@ GSH_SLOW_MODEL_API_KEY=ollama
 GSH_SLOW_MODEL_BASE_URL=http://localhost:11434/v1/
 GSH_SLOW_MODEL_ID=qwen2.5:32b
 GSH_SLOW_MODEL_TEMPERATURE=0.1
+GSH_FAST_MODEL_PARALLEL_TOOL_CALLS=true
 GSH_SLOW_MODEL_HEADERS='{}'
 
 # -------- RAG Configuration --------

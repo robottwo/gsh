@@ -18,21 +18,21 @@ type LLMExplainer struct {
 	contextText string
 	logger      *zap.Logger
 	modelId     string
-	temperature float32
+	temperature *float64
 }
 
 func NewLLMExplainer(
 	runner *interp.Runner,
 	logger *zap.Logger,
 ) *LLMExplainer {
-	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.FastModel)
+	llmClient, modelConfig := utils.GetLLMClient(runner, utils.FastModel)
 	return &LLMExplainer{
 		runner:      runner,
 		llmClient:   llmClient,
 		contextText: "",
 		logger:      logger,
-		modelId:     modelId,
-		temperature: float32(temperature),
+		modelId:     modelConfig.ModelId,
+		temperature: modelConfig.Temperature,
 	}
 }
 
@@ -79,9 +79,8 @@ You will be given a bash command entered by me, enclosed in <command> tags.
 		zap.String("user", userMessage),
 	)
 
-	chatCompletion, err := e.llmClient.CreateChatCompletion(context.TODO(), openai.ChatCompletionRequest{
-		Model:       e.modelId,
-		Temperature: e.temperature,
+	request := openai.ChatCompletionRequest{
+		Model: e.modelId,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    "system",
@@ -95,7 +94,12 @@ You will be given a bash command entered by me, enclosed in <command> tags.
 		ResponseFormat: &openai.ChatCompletionResponseFormat{
 			Type: openai.ChatCompletionResponseFormatTypeJSONObject,
 		},
-	})
+	}
+	if e.temperature != nil {
+		request.Temperature = float32(*e.temperature)
+	}
+
+	chatCompletion, err := e.llmClient.CreateChatCompletion(context.TODO(), request)
 
 	if err != nil {
 		return "", err

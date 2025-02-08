@@ -21,7 +21,7 @@ type LLMPrefixPredictor struct {
 	contextText       string
 	logger            *zap.Logger
 	modelId           string
-	temperature       float32
+	temperature       *float64
 	numHistoryContext int
 }
 
@@ -30,15 +30,15 @@ func NewLLMPrefixPredictor(
 	historyManager *history.HistoryManager,
 	logger *zap.Logger,
 ) *LLMPrefixPredictor {
-	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.FastModel)
+	llmClient, modelConfig := utils.GetLLMClient(runner, utils.FastModel)
 	return &LLMPrefixPredictor{
 		runner:         runner,
 		historyManager: historyManager,
 		llmClient:      llmClient,
 		contextText:    "",
 		logger:         logger,
-		modelId:        modelId,
-		temperature:    float32(temperature),
+		modelId:        modelConfig.ModelId,
+		temperature:    modelConfig.Temperature,
 	}
 }
 
@@ -107,9 +107,8 @@ You are asked to predict what the complete bash command is.
 		zap.String("user", userMessage),
 	)
 
-	chatCompletion, err := p.llmClient.CreateChatCompletion(context.TODO(), openai.ChatCompletionRequest{
-		Model:       p.modelId,
-		Temperature: p.temperature,
+	request := openai.ChatCompletionRequest{
+		Model: p.modelId,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    "user",
@@ -119,7 +118,12 @@ You are asked to predict what the complete bash command is.
 		ResponseFormat: &openai.ChatCompletionResponseFormat{
 			Type: openai.ChatCompletionResponseFormatTypeJSONObject,
 		},
-	})
+	}
+	if p.temperature != nil {
+		request.Temperature = float32(*p.temperature)
+	}
+
+	chatCompletion, err := p.llmClient.CreateChatCompletion(context.TODO(), request)
 
 	if err != nil {
 		return "", "", err

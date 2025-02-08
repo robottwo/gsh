@@ -27,10 +27,9 @@ type Agent struct {
 	contextText    string
 	logger         *zap.Logger
 	llmClient      *openai.Client
+	llmModelConfig utils.LLMModelConfig
 
-	modelId     string
-	temperature float32
-	messages    []openai.ChatCompletionMessage
+	messages []openai.ChatCompletionMessage
 
 	lastRequestPromptTokens     int
 	lastRequestCompletionTokens int
@@ -43,7 +42,7 @@ func NewAgent(
 	historyManager *history.HistoryManager,
 	logger *zap.Logger,
 ) *Agent {
-	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.SlowModel)
+	llmClient, modelConfig := utils.GetLLMClient(runner, utils.SlowModel)
 
 	return &Agent{
 		runner:         runner,
@@ -51,8 +50,7 @@ func NewAgent(
 		contextText:    "",
 		logger:         logger,
 		llmClient:      llmClient,
-		modelId:        modelId,
-		temperature:    temperature,
+		llmModelConfig: modelConfig,
 		messages: []openai.ChatCompletionMessage{
 			{
 				Role:    "system",
@@ -171,21 +169,27 @@ func (agent *Agent) Chat(prompt string) (<-chan string, error) {
 			// in which case we'll set this to true and continue the session.
 			continueSession = false
 
+			request := openai.ChatCompletionRequest{
+				Model:    agent.llmModelConfig.ModelId,
+				Messages: agent.messages,
+				Tools: []openai.Tool{
+					tools.BashToolDefinition,
+					tools.ViewFileToolDefinition,
+					tools.ViewDirectoryToolDefinition,
+					tools.CreateFileToolDefinition,
+					tools.EditFileToolDefinition,
+				},
+			}
+			if agent.llmModelConfig.Temperature != nil {
+				request.Temperature = float32(*agent.llmModelConfig.Temperature)
+			}
+			if agent.llmModelConfig.ParallelToolCalls != nil {
+				request.ParallelToolCalls = *agent.llmModelConfig.ParallelToolCalls
+			}
+
 			response, err := agent.llmClient.CreateChatCompletion(
 				ctx,
-				openai.ChatCompletionRequest{
-					Model:       agent.modelId,
-					Messages:    agent.messages,
-					Temperature: agent.temperature,
-					Tools: []openai.Tool{
-						tools.BashToolDefinition,
-						tools.ViewFileToolDefinition,
-						tools.ViewDirectoryToolDefinition,
-						tools.CreateFileToolDefinition,
-						tools.EditFileToolDefinition,
-					},
-					ParallelToolCalls: false,
-				},
+				request,
 			)
 			if err != nil {
 				if ctx.Err() == context.Canceled {

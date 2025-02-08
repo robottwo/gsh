@@ -18,21 +18,21 @@ type LLMNullStatePredictor struct {
 	contextText string
 	logger      *zap.Logger
 	modelId     string
-	temperature float32
+	temperature *float64
 }
 
 func NewLLMNullStatePredictor(
 	runner *interp.Runner,
 	logger *zap.Logger,
 ) *LLMNullStatePredictor {
-	llmClient, modelId, temperature := utils.GetLLMClient(runner, utils.FastModel)
+	llmClient, modelConfig := utils.GetLLMClient(runner, utils.FastModel)
 	return &LLMNullStatePredictor{
 		runner:      runner,
 		llmClient:   llmClient,
 		contextText: "",
 		logger:      logger,
-		modelId:     modelId,
-		temperature: float32(temperature),
+		modelId:     modelConfig.ModelId,
+		temperature: modelConfig.Temperature,
 	}
 }
 
@@ -79,9 +79,8 @@ Now predict what my next command should be.`,
 		zap.String("user", userMessage),
 	)
 
-	chatCompletion, err := p.llmClient.CreateChatCompletion(context.TODO(), openai.ChatCompletionRequest{
-		Model:       p.modelId,
-		Temperature: p.temperature,
+	request := openai.ChatCompletionRequest{
+		Model: p.modelId,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    "user",
@@ -91,7 +90,12 @@ Now predict what my next command should be.`,
 		ResponseFormat: &openai.ChatCompletionResponseFormat{
 			Type: openai.ChatCompletionResponseFormatTypeJSONObject,
 		},
-	})
+	}
+	if p.temperature != nil {
+		request.Temperature = float32(*p.temperature)
+	}
+
+	chatCompletion, err := p.llmClient.CreateChatCompletion(context.TODO(), request)
 
 	if err != nil {
 		return "", "", err

@@ -45,12 +45,12 @@ type model struct {
 	evaluating       bool
 	llmClient        *openai.Client
 	modelId          string
-	temperature      float32
+	temperature      *float64
 	quitting         bool
 	isWarmingUp      bool
 }
 
-func initialModel(analyticsManager *analytics.AnalyticsManager, entries []analytics.AnalyticsEntry, llmClient *openai.Client, modelId string, temperature float32, iterations int) model {
+func initialModel(analyticsManager *analytics.AnalyticsManager, entries []analytics.AnalyticsEntry, llmClient *openai.Client, modelId string, temperature *float64, iterations int) model {
 	p := progress.New(
 		progress.WithDefaultGradient(),
 		progress.WithWidth(40),
@@ -222,10 +222,10 @@ func average(numbers []float64) float64 {
 }
 
 func RunEvaluation(analyticsManager *analytics.AnalyticsManager, limit int, customModelId string, iterations int) error {
-	llmClient, defaultModelId, temperature := utils.GetLLMClient(analyticsManager.Runner, utils.FastModel)
+	llmClient, llmModelConfig := utils.GetLLMClient(analyticsManager.Runner, utils.FastModel)
 
 	// Use custom model ID if provided, otherwise use default
-	modelId := defaultModelId
+	modelId := llmModelConfig.ModelId
 	if customModelId != "" {
 		modelId = customModelId
 	}
@@ -243,7 +243,7 @@ func RunEvaluation(analyticsManager *analytics.AnalyticsManager, limit int, cust
 	}
 
 	if term.IsTerminal(int(os.Stdin.Fd())) {
-		p := tea.NewProgram(initialModel(analyticsManager, entries, llmClient, modelId, temperature, iterations))
+		p := tea.NewProgram(initialModel(analyticsManager, entries, llmClient, modelId, llmModelConfig.Temperature, iterations))
 
 		_, err = p.Run()
 		return err
@@ -252,15 +252,14 @@ func RunEvaluation(analyticsManager *analytics.AnalyticsManager, limit int, cust
 	return nil
 }
 
-func evaluateEntry(analyticsManager *analytics.AnalyticsManager, entry analytics.AnalyticsEntry, llmClient *openai.Client, modelId string, temperature float32) evaluationResult {
+func evaluateEntry(analyticsManager *analytics.AnalyticsManager, entry analytics.AnalyticsEntry, llmClient *openai.Client, modelId string, temperature *float64) evaluationResult {
 	startTime := time.Now()
 	result := evaluationResult{
 		truth: entry.Actual,
 	}
 
-	chatCompletion, err := llmClient.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
-		Model:       modelId,
-		Temperature: temperature,
+	request := openai.ChatCompletionRequest{
+		Model: modelId,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    "user",
@@ -270,7 +269,12 @@ func evaluateEntry(analyticsManager *analytics.AnalyticsManager, entry analytics
 		ResponseFormat: &openai.ChatCompletionResponseFormat{
 			Type: openai.ChatCompletionResponseFormatTypeJSONObject,
 		},
-	})
+	}
+	if temperature != nil {
+		request.Temperature = float32(*temperature)
+	}
+
+	chatCompletion, err := llmClient.CreateChatCompletion(context.Background(), request)
 
 	if analyticsManager.Logger != nil {
 		analyticsManager.Logger.Debug(
