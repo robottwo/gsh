@@ -86,6 +86,7 @@ type KeyMap struct {
 	PrevValue               key.Binding
 	Complete                key.Binding
 	PrevSuggestion          key.Binding
+	ClearScreen             key.Binding
 }
 
 // DefaultKeyMap is the default set of key bindings for navigating and acting
@@ -108,6 +109,7 @@ var DefaultKeyMap = KeyMap{
 	Paste:                   key.NewBinding(key.WithKeys("ctrl+v")),
 	NextValue:               key.NewBinding(key.WithKeys("down", "ctrl+n")),
 	PrevValue:               key.NewBinding(key.WithKeys("up", "ctrl+p")),
+	ClearScreen:             key.NewBinding(key.WithKeys("ctrl+l")),
 }
 
 // Model is the Bubble Tea model for this text input element.
@@ -616,6 +618,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			m.nextValue()
 		case key.Matches(msg, m.KeyMap.PrevValue):
 			m.previousValue()
+		case key.Matches(msg, m.KeyMap.ClearScreen):
+			// Clear screen functionality will be handled by the gline package
+			// Return the model unchanged to prevent default character input
+			// The gline package will handle the actual screen clearing
+			return m, nil
 		default:
 			// Input one or more regular characters.
 			m.insertRunesFromUserInput(msg.Runes)

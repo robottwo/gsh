@@ -2,6 +2,8 @@ package gline
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -159,6 +161,8 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "ctrl+c":
 			return m, tea.Sequence(terminate, tea.Quit)
+		case "ctrl+l":
+			return m.handleClearScreen()
 		}
 	}
 
@@ -310,6 +314,26 @@ func (m appModel) attemptExplanation(msg attemptExplanationMsg) (tea.Model, tea.
 		)
 		return setExplanationMsg{stateId: msg.stateId, explanation: explanation}
 	})
+}
+
+func (m appModel) handleClearScreen() (tea.Model, tea.Cmd) {
+	// Try to execute /usr/bin/clear first
+	clearCmd := exec.Command("/usr/bin/clear")
+	clearCmd.Stdout = os.Stdout
+	clearCmd.Stderr = os.Stderr
+
+	err := clearCmd.Run()
+	if err != nil {
+		// If /usr/bin/clear fails, fall back to ANSI escape sequences
+		fmt.Print(CLEAR_SCREEN)
+	}
+
+	// After clearing the screen, we need to re-print the current input line
+	// We can do this by re-rendering the view and printing it
+	fmt.Print(m.View())
+
+	// Return the model unchanged
+	return m, nil
 }
 
 func (m appModel) setExplanation(msg setExplanationMsg) (tea.Model, tea.Cmd) {
