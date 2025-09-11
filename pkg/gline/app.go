@@ -159,7 +159,7 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Sequence(terminate, tea.Quit)
 
 		case "ctrl+c":
-			// Handle Ctrl-C: show abandoned command with ^C and move to new line
+			// Handle Ctrl-C: cancel current line, preserve input with "^C" appended, and present fresh prompt
 			currentInput := m.textInput.Value()
 			// Print the current input with "^C" appended, then move to next line
 			// This works for both empty and non-empty input
