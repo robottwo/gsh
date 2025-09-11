@@ -160,7 +160,33 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Sequence(terminate, tea.Quit)
 
 		case "ctrl+c":
+			// Handle Ctrl-C: show abandoned command with ^C and move to new line
+			currentInput := m.textInput.Value()
+			if currentInput != "" {
+				// Print the current input with "^C" appended, then move to next line
+				fmt.Printf("%s^C\n", currentInput)
+			} else {
+				// Even if empty, show "^C" on a new line
+				fmt.Println("^C")
+			}
+
+			// Flush output to ensure it's displayed before framework cleanup
+			os.Stdout.Sync()
+
+			// Set result to empty string so shell doesn't try to execute it
+			m.result = ""
+			// Terminate this session to show the result and start fresh
 			return m, tea.Sequence(terminate, tea.Quit)
+		case "ctrl+d":
+			// Handle Ctrl-D: exit shell if on blank line
+			currentInput := m.textInput.Value()
+			if strings.TrimSpace(currentInput) == "" {
+				// On blank line, exit the shell
+				m.result = "exit"
+				return m, tea.Sequence(terminate, tea.Quit)
+			}
+			// If there's content, do nothing (standard behavior)
+			return m, nil
 		case "ctrl+l":
 			return m.handleClearScreen()
 		}
