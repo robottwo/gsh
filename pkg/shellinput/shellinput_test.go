@@ -25,6 +25,11 @@ func (m *mockCompletionProvider) GetCompletions(line string, pos int) []string {
 	return []string{}
 }
 
+func (m *mockCompletionProvider) GetHelpInfo(line string, pos int) string {
+	// Return empty string for tests - no help info needed
+	return ""
+}
+
 func TestCompletion(t *testing.T) {
 	model := New()
 	model.Focus()

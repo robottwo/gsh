@@ -27,6 +27,7 @@ SOFTWARE.
 package shellinput
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -549,8 +550,28 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		// Reset completion state for any key except TAB and Shift+TAB
-		if !key.Matches(msg, m.KeyMap.Complete) && !key.Matches(msg, m.KeyMap.PrevSuggestion) {
+		// Handle completion-specific keys first
+		if m.completion.active {
+			switch msg.String() {
+			case "escape":
+				m.cancelCompletion()
+				return m, nil
+			case "enter":
+				if m.completion.shouldShowInfoBox() && m.completion.selected >= 0 {
+					// Accept the currently selected completion
+					suggestion := m.completion.currentSuggestion()
+					if suggestion != "" {
+						m.applySuggestion(suggestion)
+					}
+					m.resetCompletion()
+					return m, nil
+				}
+			}
+		}
+
+		// Reset completion state for any key except TAB, Shift+TAB, Escape, and Enter
+		if !key.Matches(msg, m.KeyMap.Complete) && !key.Matches(msg, m.KeyMap.PrevSuggestion) &&
+			msg.String() != "escape" && msg.String() != "enter" {
 			m.resetCompletion()
 		}
 
@@ -631,6 +652,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		// Check again if can be completed
 		// because value might be something that does not match the completion prefix
 		m.updateSuggestions()
+
+		// Update help info for special commands
+		m.updateHelpInfo()
 
 	case pasteMsg:
 		m.insertRunesFromUserInput([]rune(msg))
@@ -780,6 +804,109 @@ func (m Model) completionView(offset int) string {
 		}
 	}
 	return ""
+}
+
+// CompletionBoxView renders the completion info box with all available completions
+func (m Model) CompletionBoxView() string {
+	if !m.completion.shouldShowInfoBox() {
+		return ""
+	}
+
+	const maxVisibleItems = 4
+	totalItems := len(m.completion.suggestions)
+
+	if totalItems == 0 {
+		return ""
+	}
+
+	var content strings.Builder
+
+	// Calculate the visible window based on selected item
+	var startIdx, endIdx int
+	if totalItems <= maxVisibleItems {
+		// Show all items if we have 4 or fewer
+		startIdx = 0
+		endIdx = totalItems
+	} else {
+		// Calculate scrolling window
+		selectedIdx := m.completion.selected
+		if selectedIdx < 0 {
+			selectedIdx = 0
+		}
+
+		// More balanced scrolling logic
+		if selectedIdx < 2 {
+			// Keep selection in top positions when near the beginning
+			startIdx = 0
+		} else if selectedIdx >= totalItems-2 {
+			// Keep selection in bottom positions when near the end
+			startIdx = totalItems - maxVisibleItems
+		} else {
+			// Try to keep selection in the middle (position 1 or 2)
+			startIdx = selectedIdx - 1
+		}
+
+		endIdx = startIdx + maxVisibleItems
+
+		// Ensure bounds are valid
+		if startIdx < 0 {
+			startIdx = 0
+		}
+		if endIdx > totalItems {
+			endIdx = totalItems
+			startIdx = endIdx - maxVisibleItems
+			if startIdx < 0 {
+				startIdx = 0
+			}
+		}
+	}
+
+	// Add visible items with scroll indicators as prefixes
+	for idx, i := range []int{startIdx, startIdx + 1, startIdx + 2, startIdx + 3} {
+		if i >= endIdx {
+			break
+		}
+
+		suggestion := m.completion.suggestions[i]
+		var prefix string
+
+		// Determine prefix based on position and scroll state
+		if idx == 0 && totalItems > maxVisibleItems && startIdx > 0 {
+			// First line with "more above" indicator
+			prefix = fmt.Sprintf("↑ %-3d", startIdx)
+		} else if idx == 3 && totalItems > maxVisibleItems && endIdx < totalItems {
+			// Last line with "more below" indicator
+			prefix = fmt.Sprintf("↓ %-3d", totalItems-endIdx)
+		} else {
+			// Regular line with spacing to align with indicators
+			prefix = "     "
+		}
+
+		// Add selection indicator
+		if i == m.completion.selected {
+			prefix += "> "
+		} else {
+			prefix += "  "
+		}
+
+		content.WriteString(prefix + suggestion)
+
+		// Add newline except for the last item
+		if idx < 3 && i < endIdx-1 {
+			content.WriteString("\n")
+		}
+	}
+
+	return content.String()
+}
+
+// HelpBoxView renders the help info box for special commands
+func (m Model) HelpBoxView() string {
+	if !m.completion.shouldShowHelpBox() {
+		return ""
+	}
+
+	return m.completion.helpInfo
 }
 
 func (m *Model) getSuggestions(sugs [][]rune) []string {
