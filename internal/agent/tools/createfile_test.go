@@ -1,13 +1,14 @@
 package tools
 
 import (
+	"os"
+	"testing"
+
 	openai "github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"mvdan.cc/sh/v3/interp"
-	"os"
-	"testing"
 )
 
 func TestCreateFileToolDefinition(t *testing.T) {
@@ -149,3 +150,55 @@ func TestCreateFile(t *testing.T) {
 	}
 }
 
+func TestGenerateFileOperationRegex(t *testing.T) {
+	tests := []struct {
+		name      string
+		filePath  string
+		operation string
+		expected  string
+	}{
+		{
+			name:      "file with extension in directory",
+			filePath:  "/home/user/project/src/main.go",
+			operation: "create_file",
+			expected:  "create_file:/home/user/project/src/.*\\\\.go$",
+		},
+		{
+			name:      "file with extension in root",
+			filePath:  "/tmp/test.txt",
+			operation: "create_file",
+			expected:  "create_file:/tmp/.*\\\\.txt$",
+		},
+		{
+			name:      "file without extension",
+			filePath:  "/home/user/README",
+			operation: "create_file",
+			expected:  "create_file:/home/user/README$",
+		},
+		{
+			name:      "file with multiple dots",
+			filePath:  "/var/log/app.log.backup",
+			operation: "create_file",
+			expected:  "create_file:/var/log/.*\\\\.backup$",
+		},
+		{
+			name:      "relative path with extension",
+			filePath:  "./src/utils.js",
+			operation: "create_file",
+			expected:  "create_file:src/.*\\\\.js$",
+		},
+		{
+			name:      "edit operation",
+			filePath:  "/home/user/config.yaml",
+			operation: "edit_file",
+			expected:  "edit_file:/home/user/.*\\\\.yaml$",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := GenerateFileOperationRegex(tt.filePath, tt.operation)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
