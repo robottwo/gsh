@@ -2,6 +2,7 @@ package gline
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -158,7 +159,31 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Sequence(terminate, tea.Quit)
 
 		case "ctrl+c":
+			// Handle Ctrl-C: show abandoned command with ^C and move to new line
+			currentInput := m.textInput.Value()
+			// Print the current input with "^C" appended, then move to next line
+			// This works for both empty and non-empty input
+			fmt.Printf("%s^C\n", currentInput)
+
+			// Flush output to ensure it's displayed before framework cleanup
+			os.Stdout.Sync()
+
+			// Set result to empty string so shell doesn't try to execute it
+			m.result = ""
+			// Terminate this session to show the result and start fresh
 			return m, tea.Sequence(terminate, tea.Quit)
+		case "ctrl+d":
+			// Handle Ctrl-D: exit shell if on blank line
+			currentInput := m.textInput.Value()
+			if strings.TrimSpace(currentInput) == "" {
+				// On blank line, exit the shell
+				m.result = "exit"
+				return m, tea.Sequence(terminate, tea.Quit)
+			}
+			// If there's content, do nothing (standard behavior)
+			return m, nil
+		case "ctrl+l":
+			return m.handleClearScreen()
 		}
 	}
 
@@ -309,6 +334,24 @@ func (m appModel) attemptExplanation(msg attemptExplanationMsg) (tea.Model, tea.
 			zap.String("explanation", explanation),
 		)
 		return setExplanationMsg{stateId: msg.stateId, explanation: explanation}
+	})
+}
+
+func (m appModel) handleClearScreen() (tea.Model, tea.Cmd) {
+	// Log the current state before clearing
+	m.logger.Debug("gline handleClearScreen called",
+		zap.String("currentInput", m.textInput.Value()),
+		zap.String("explanation", m.explanation),
+		zap.Bool("hasExplanation", m.explanation != ""))
+
+	// Use Bubble Tea's built-in screen clearing command for proper rendering pipeline integration
+	// This ensures that lipgloss-styled components like info boxes render correctly after clearing
+	m.logger.Debug("gline using tea.ClearScreen for proper rendering pipeline integration")
+
+	// Return the model unchanged with the ClearScreen command
+	// Bubble Tea will handle the screen clear and automatic re-render
+	return m, tea.Cmd(func() tea.Msg {
+		return tea.ClearScreen()
 	})
 }
 
