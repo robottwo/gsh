@@ -7,7 +7,6 @@ const (
 	RESET_CURSOR_COLUMN  = ESC + "[G"
 	CLEAR_REMAINING_LINE = ESC + "[K"
 	CLEAR_LINE           = RESET_CURSOR_COLUMN + ESC + "[2K"
-	CLEAR_SCREEN         = RESET_CURSOR + ESC + "[2J"
 	CLEAR_AFTER_CURSOR   = ESC + "[J"
 	SAVE_CURSOR          = ESC + "[s"
 	RESTORE_CURSOR       = ESC + "[u"

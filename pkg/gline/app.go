@@ -3,7 +3,6 @@ package gline
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -343,23 +342,21 @@ func (m appModel) attemptExplanation(msg attemptExplanationMsg) (tea.Model, tea.
 }
 
 func (m appModel) handleClearScreen() (tea.Model, tea.Cmd) {
-	// Try to execute /usr/bin/clear first
-	clearCmd := exec.Command("/usr/bin/clear")
-	clearCmd.Stdout = os.Stdout
-	clearCmd.Stderr = os.Stderr
+	// Log the current state before clearing
+	m.logger.Debug("gline handleClearScreen called",
+		zap.String("currentInput", m.textInput.Value()),
+		zap.String("explanation", m.explanation),
+		zap.Bool("hasExplanation", m.explanation != ""))
 
-	err := clearCmd.Run()
-	if err != nil {
-		// If /usr/bin/clear fails, fall back to ANSI escape sequences
-		fmt.Print(CLEAR_SCREEN)
-	}
+	// Use Bubble Tea's built-in screen clearing command for proper rendering pipeline integration
+	// This ensures that lipgloss-styled components like info boxes render correctly after clearing
+	m.logger.Debug("gline using tea.ClearScreen for proper rendering pipeline integration")
 
-	// After clearing the screen, we need to re-print the current input line
-	// We can do this by re-rendering the view and printing it
-	fmt.Print(m.View())
-
-	// Return the model unchanged
-	return m, nil
+	// Return the model unchanged with the ClearScreen command
+	// Bubble Tea will handle the screen clear and automatic re-render
+	return m, tea.Cmd(func() tea.Msg {
+		return tea.ClearScreen()
+	})
 }
 
 func (m appModel) setExplanation(msg setExplanationMsg) (tea.Model, tea.Cmd) {
