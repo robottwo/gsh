@@ -161,13 +161,9 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			// Handle Ctrl-C: show abandoned command with ^C and move to new line
 			currentInput := m.textInput.Value()
-			if currentInput != "" {
-				// Print the current input with "^C" appended, then move to next line
-				fmt.Printf("%s^C\n", currentInput)
-			} else {
-				// Even if empty, show "^C" on a new line
-				fmt.Println("^C")
-			}
+			// Print the current input with "^C" appended, then move to next line
+			// This works for both empty and non-empty input
+			fmt.Printf("%s^C\n", currentInput)
 
 			// Flush output to ensure it's displayed before framework cleanup
 			os.Stdout.Sync()
