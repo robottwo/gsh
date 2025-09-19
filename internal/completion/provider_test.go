@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -29,6 +30,9 @@ var mockGetFileCompletions fileCompleter = func(prefix, currentDirectory string)
 		return []string{"foo/bar/baz", "foo/bar/bin"}
 	case "other/path/te":
 		return []string{"other/path/test.txt", "other/path/temp.txt"}
+	case "/bin/":
+		// Mock some common executables for testing, independent of actual system
+		return []string{"/bin/bash", "/bin/cat", "/bin/ls", "/bin/sh"}
 	default:
 		// No match found
 		return []string{}
@@ -50,12 +54,61 @@ func (m *mockCompletionManager) ExecuteCompletion(ctx context.Context, runner *i
 	return callArgs.Get(0).([]string), callArgs.Error(1)
 }
 
+// Mock osReadDir for testing
+var mockOsReadDir = func(name string) ([]os.DirEntry, error) {
+	switch name {
+	case "/bin", "/bin/":
+		// Return mock directory entries for /bin
+		return []os.DirEntry{
+			&mockDirEntry{name: "bash", isDir: false, mode: 0755},
+			&mockDirEntry{name: "cat", isDir: false, mode: 0755},
+			&mockDirEntry{name: "ls", isDir: false, mode: 0755},
+			&mockDirEntry{name: "sh", isDir: false, mode: 0755},
+		}, nil
+	default:
+		// For PATH directories that might contain "test" commands, return empty to avoid system dependencies
+		return []os.DirEntry{}, nil
+	}
+}
+
+// mockDirEntry implements os.DirEntry for testing
+type mockDirEntry struct {
+	name  string
+	isDir bool
+	mode  os.FileMode
+}
+
+func (m *mockDirEntry) Name() string               { return m.name }
+func (m *mockDirEntry) IsDir() bool                { return m.isDir }
+func (m *mockDirEntry) Type() os.FileMode          { return m.mode }
+func (m *mockDirEntry) Info() (os.FileInfo, error) { return &mockFileInfo{m.name, m.mode}, nil }
+
+// mockFileInfo implements os.FileInfo for testing
+type mockFileInfo struct {
+	name string
+	mode os.FileMode
+}
+
+func (m *mockFileInfo) Name() string       { return m.name }
+func (m *mockFileInfo) Size() int64        { return 0 }
+func (m *mockFileInfo) Mode() os.FileMode  { return m.mode }
+func (m *mockFileInfo) ModTime() time.Time { return time.Time{} }
+func (m *mockFileInfo) IsDir() bool        { return false }
+func (m *mockFileInfo) Sys() interface{}   { return nil }
+
 func TestGetCompletions(t *testing.T) {
 	// Replace getFileCompletions with mock for testing
 	origGetFileCompletions := getFileCompletions
 	getFileCompletions = mockGetFileCompletions
 	defer func() {
 		getFileCompletions = origGetFileCompletions
+	}()
+
+	// Replace osReadDir with mock for testing
+	origOsReadDir := osReadDir
+	osReadDir = mockOsReadDir
+	defer func() {
+		osReadDir = origOsReadDir
 	}()
 
 	// Set up environment for macro testing
@@ -147,7 +200,7 @@ func TestGetCompletions(t *testing.T) {
 			setup: func() {
 				manager.On("GetSpec", "vim").Return(CompletionSpec{}, false)
 			},
-			expected: []string{"/usr/local/bin", "/usr/local/bin/"},
+			expected: []string{"/usr/local/bin", "/usr/local/bin/"}, // Mocked response, not dependent on actual filesystem
 		},
 		{
 			name: "file completion with spaces in path",
@@ -248,7 +301,7 @@ func TestGetCompletions(t *testing.T) {
 				// Mock GetSpec to return no completion spec for path-based commands
 				manager.On("GetSpec", "/bin/").Return(CompletionSpec{}, false)
 			},
-			expected: []string{"/bin/[", "/bin/bash", "/bin/cat", "/bin/chmod", "/bin/cp", "/bin/csh", "/bin/dash", "/bin/date", "/bin/dd", "/bin/df", "/bin/echo", "/bin/ed", "/bin/expr", "/bin/hostname", "/bin/kill", "/bin/ksh", "/bin/launchctl", "/bin/link", "/bin/ln", "/bin/ls", "/bin/mkdir", "/bin/mv", "/bin/pax", "/bin/ps", "/bin/pwd", "/bin/realpath", "/bin/rm", "/bin/rmdir", "/bin/sh", "/bin/sleep", "/bin/stty", "/bin/sync", "/bin/tcsh", "/bin/test", "/bin/unlink", "/bin/wait4path", "/bin/zsh"}, // Actual executable files in /bin directory
+			expected: []string{"/bin/bash", "/bin/cat", "/bin/ls", "/bin/sh"}, // Mocked executables, independent of actual system
 		},
 		{
 			name: "alias completion with matching prefix",
@@ -261,7 +314,7 @@ func TestGetCompletions(t *testing.T) {
 				// Set up aliases using reflection (simulating aliases in the runner)
 				setupTestAliases(runner)
 			},
-			expected: []string{"test", "test-yaml", "test-yaml5.34", "test123", "testfoo"}, // Includes both system commands and aliases
+			expected: []string{"test123", "testfoo"}, // Only includes test aliases, not system commands
 		},
 		{
 			name: "alias completion with partial match",
@@ -287,7 +340,7 @@ func TestGetCompletions(t *testing.T) {
 				// Set up aliases using reflection
 				setupTestAliases(runner)
 			},
-			expected: []string{}, // No system commands start with "nonexistent"
+			expected: []string{}, // No aliases or system commands start with "nonexistent"
 		},
 	}
 

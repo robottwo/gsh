@@ -26,6 +26,12 @@ var userConfirmation = func(logger *zap.Logger, question string, explanation str
 		return "no"
 	}
 
+	// Handle Ctrl+C case: gline returns empty string when Ctrl+C is pressed
+	if line == "" {
+		logger.Debug("User pressed Ctrl+C (gline returned empty string), treating as 'n' response")
+		return "n"
+	}
+
 	lowerLine := strings.ToLower(line)
 
 	if lowerLine == "y" || lowerLine == "yes" {

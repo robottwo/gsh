@@ -15,6 +15,9 @@ import (
 	"mvdan.cc/sh/v3/interp"
 )
 
+// Function variables for mocking in tests
+var osReadDir = os.ReadDir
+
 // ShellCompletionProvider implements shellinput.CompletionProvider using the shell's CompletionManager
 type ShellCompletionProvider struct {
 	CompletionManager CompletionManagerInterface
@@ -315,7 +318,7 @@ func (p *ShellCompletionProvider) getExecutableCompletions(pathPrefix string) []
 	}
 
 	// Read directory contents
-	entries, err := os.ReadDir(resolvedDir)
+	entries, err := osReadDir(resolvedDir)
 	if err != nil {
 		return []string{}
 	}
@@ -367,7 +370,7 @@ func (p *ShellCompletionProvider) getAvailableCommands(prefix string) []string {
 
 		// Search each directory in PATH
 		for _, dir := range pathDirs {
-			entries, err := os.ReadDir(dir)
+			entries, err := osReadDir(dir)
 			if err != nil {
 				continue // Skip directories we can't read
 			}
