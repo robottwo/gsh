@@ -211,15 +211,12 @@ func (m appModel) View() string {
 		s += m.completionStyle.Render(completionBox)
 	}
 
-	// Add help box if active
+	// Add explanation (either from help box or prediction explanation)
 	helpBox := m.textInput.HelpBoxView()
 	if helpBox != "" {
 		s += "\n"
 		s += m.explanationStyle.Render(helpBox)
-	}
-
-	// Add explanation if present
-	if m.explanation != "" {
+	} else if m.explanation != "" {
 		s += "\n"
 		s += m.explanationStyle.Render(m.explanation)
 	}
