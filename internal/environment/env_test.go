@@ -29,7 +29,7 @@ func TestAppendToAuthorizedCommands(t *testing.T) {
 	}()
 
 	// Test appending a command
-	err := AppendToAuthorizedCommands("ls.*")
+	err := AppendToAuthorizedCommands("fakecommand.*")
 	assert.NoError(t, err)
 
 	// Check if file was created
@@ -39,16 +39,16 @@ func TestAppendToAuthorizedCommands(t *testing.T) {
 	// Check file contents
 	content, err := os.ReadFile(authorizedCommandsFile)
 	assert.NoError(t, err)
-	assert.Equal(t, "ls.*\n", string(content))
+	assert.Equal(t, "fakecommand.*\n", string(content))
 
 	// Test appending another command
-	err = AppendToAuthorizedCommands("git.*")
+	err = AppendToAuthorizedCommands("anotherfake.*")
 	assert.NoError(t, err)
 
 	// Check file contents again
 	content, err = os.ReadFile(authorizedCommandsFile)
 	assert.NoError(t, err)
-	assert.Equal(t, "ls.*\ngit.*\n", string(content))
+	assert.Equal(t, "fakecommand.*\nanotherfake.*\n", string(content))
 }
 
 func TestAppendToAuthorizedCommandsSecurePermissions(t *testing.T) {
@@ -69,7 +69,7 @@ func TestAppendToAuthorizedCommandsSecurePermissions(t *testing.T) {
 
 	t.Run("New directory and file have secure permissions", func(t *testing.T) {
 		// Test appending a command to a new file
-		err := AppendToAuthorizedCommands("ls.*")
+		err := AppendToAuthorizedCommands("fakecommand.*")
 		assert.NoError(t, err)
 
 		// Check directory permissions
@@ -178,16 +178,16 @@ func TestLoadAuthorizedCommandsFromFile(t *testing.T) {
 	err = os.MkdirAll(tempConfigDir, 0700)
 	assert.NoError(t, err)
 
-	err = AppendToAuthorizedCommands("ls.*")
+	err = AppendToAuthorizedCommands("fakecommand.*")
 	assert.NoError(t, err)
 
-	err = AppendToAuthorizedCommands("git.*")
+	err = AppendToAuthorizedCommands("anotherfake.*")
 	assert.NoError(t, err)
 
 	// Test loading patterns
 	patterns, err = LoadAuthorizedCommandsFromFile()
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"ls.*", "git.*"}, patterns)
+	assert.Equal(t, []string{"fakecommand.*", "anotherfake.*"}, patterns)
 }
 
 func TestGetApprovedBashCommandRegex(t *testing.T) {
@@ -224,15 +224,15 @@ func TestGetApprovedBashCommandRegex(t *testing.T) {
 	err = os.MkdirAll(tempConfigDir, 0700)
 	assert.NoError(t, err)
 
-	err = AppendToAuthorizedCommands("ls.*")
+	err = AppendToAuthorizedCommands("fakecommand.*")
 	assert.NoError(t, err)
 
-	err = AppendToAuthorizedCommands("git.*")
+	err = AppendToAuthorizedCommands("anotherfake.*")
 	assert.NoError(t, err)
 
 	// Test with file patterns only
 	patterns = GetApprovedBashCommandRegex(runner, logger)
-	assert.Equal(t, []string{"ls.*", "git.*"}, patterns)
+	assert.Equal(t, []string{"fakecommand.*", "anotherfake.*"}, patterns)
 }
 
 func TestGetApprovedBashCommandRegexWithEnvironmentPatterns(t *testing.T) {
@@ -269,24 +269,24 @@ func TestGetApprovedBashCommandRegexWithEnvironmentPatterns(t *testing.T) {
 	// Set environment variable with JSON array
 	runner.Vars["GSH_AGENT_APPROVED_BASH_COMMAND_REGEX"] = expand.Variable{
 		Kind: expand.String,
-		Str:  "[\"^echo.*\", \"^pwd.*\"]",
+		Str:  "[\"^fakecmd1.*\", \"^fakecmd2.*\"]",
 	}
 
 	// Test with environment patterns only
 	patterns := GetApprovedBashCommandRegex(runner, logger)
-	expected := []string{"^echo.*", "^pwd.*"}
+	expected := []string{"^fakecmd1.*", "^fakecmd2.*"}
 	assert.Equal(t, expected, patterns)
 
 	// Add file patterns
 	err = os.MkdirAll(tempConfigDir, 0700)
 	assert.NoError(t, err)
 
-	err = AppendToAuthorizedCommands("ls.*")
+	err = AppendToAuthorizedCommands("fakecommand.*")
 	assert.NoError(t, err)
 
 	// Test with both environment and file patterns
 	patterns = GetApprovedBashCommandRegex(runner, logger)
-	expected = []string{"^echo.*", "^pwd.*", "ls.*"}
+	expected = []string{"^fakecmd1.*", "^fakecmd2.*", "fakecommand.*"}
 	assert.Equal(t, expected, patterns)
 }
 
@@ -300,13 +300,13 @@ func TestFilterDangerousPatterns(t *testing.T) {
 	}{
 		{
 			name:     "safe patterns only",
-			patterns: []string{"^ls.*", "^git.*", "^echo.*"},
-			expected: []string{"^ls.*", "^git.*", "^echo.*"},
+			patterns: []string{"^fakecommand.*", "^anotherfake.*", "^fakecmd1.*"},
+			expected: []string{"^fakecommand.*", "^anotherfake.*", "^fakecmd1.*"},
 		},
 		{
 			name:     "filter dangerous patterns",
-			patterns: []string{"^ls.*", ".*", "^git.*", ".+", "^echo.*"},
-			expected: []string{"^ls.*", "^git.*", "^echo.*"},
+			patterns: []string{"^fakecommand.*", ".*", "^anotherfake.*", ".+", "^fakecmd1.*"},
+			expected: []string{"^fakecommand.*", "^anotherfake.*", "^fakecmd1.*"},
 		},
 		{
 			name:     "all dangerous patterns",
@@ -382,33 +382,36 @@ func TestGetApprovedBashCommandRegexCaching(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	defer logger.Sync()
 
-	// Create a test runner
-	env := expand.ListEnviron(os.Environ()...)
-	runner, err := interp.New(interp.Env(env))
+	// Create a test runner with isolated environment (no system env vars)
+	runner, err := interp.New()
 	assert.NoError(t, err)
+	runner.Vars = make(map[string]expand.Variable)
 
 	// Create file with patterns
 	err = os.MkdirAll(tempConfigDir, 0700)
 	assert.NoError(t, err)
 
-	err = AppendToAuthorizedCommands("ls.*")
+	err = AppendToAuthorizedCommands("testcmd1.*")
 	assert.NoError(t, err)
 
 	// First call should load from file
 	patterns1 := GetApprovedBashCommandRegex(runner, logger)
-	assert.Equal(t, []string{"ls.*"}, patterns1)
+	assert.Equal(t, []string{"testcmd1.*"}, patterns1)
 
 	// Second call should use cache (no file modification)
 	patterns2 := GetApprovedBashCommandRegex(runner, logger)
-	assert.Equal(t, []string{"ls.*"}, patterns2)
+	assert.Equal(t, []string{"testcmd1.*"}, patterns2)
 
 	// Modify file
-	err = AppendToAuthorizedCommands("git.*")
+	err = AppendToAuthorizedCommands("testcmd2.*")
 	assert.NoError(t, err)
+
+	// Force cache reset to ensure reload (needed for CI environments with low file time resolution)
+	ResetCacheForTesting()
 
 	// Third call should reload from file due to modification
 	patterns3 := GetApprovedBashCommandRegex(runner, logger)
-	assert.Equal(t, []string{"ls.*", "git.*"}, patterns3)
+	assert.Equal(t, []string{"testcmd1.*", "testcmd2.*"}, patterns3)
 }
 
 func TestWriteAuthorizedCommandsToFile(t *testing.T) {
@@ -428,14 +431,14 @@ func TestWriteAuthorizedCommandsToFile(t *testing.T) {
 	}()
 
 	// Test writing patterns
-	patterns := []string{"ls.*", "git.*", "ls.*", "echo.*"} // Include duplicate
+	patterns := []string{"fakecommand.*", "anotherfake.*", "fakecommand.*", "thirdfake.*"} // Include duplicate
 	err := WriteAuthorizedCommandsToFile(patterns)
 	assert.NoError(t, err)
 
 	// Verify file contents
 	content, err := os.ReadFile(authorizedCommandsFile)
 	assert.NoError(t, err)
-	expected := "ls.*\ngit.*\necho.*\n" // Duplicates should be removed
+	expected := "fakecommand.*\nanotherfake.*\nthirdfake.*\n" // Duplicates should be removed
 	assert.Equal(t, expected, string(content))
 
 	// Verify file permissions
@@ -453,14 +456,14 @@ func TestWriteAuthorizedCommandsToFile(t *testing.T) {
 	assert.Equal(t, "", string(content))
 
 	// Test writing patterns with whitespace
-	patterns = []string{" ls.* ", "\tgit.*\n", "", " ", "echo.*"}
+	patterns = []string{" fakecommand.* ", "\tanotherfake.*\n", "", " ", "thirdfake.*"}
 	err = WriteAuthorizedCommandsToFile(patterns)
 	assert.NoError(t, err)
 
 	// Verify whitespace is trimmed and empty strings are filtered
 	content, err = os.ReadFile(authorizedCommandsFile)
 	assert.NoError(t, err)
-	expected = "ls.*\ngit.*\necho.*\n"
+	expected = "fakecommand.*\nanotherfake.*\nthirdfake.*\n"
 	assert.Equal(t, expected, string(content))
 }
 
@@ -481,7 +484,7 @@ func TestIsCommandAuthorized(t *testing.T) {
 	}()
 
 	// Test with no authorized commands file
-	authorized, err := IsCommandAuthorized("ls -la")
+	authorized, err := IsCommandAuthorized("fakecommand -la")
 	assert.NoError(t, err)
 	assert.False(t, authorized)
 
@@ -489,20 +492,20 @@ func TestIsCommandAuthorized(t *testing.T) {
 	err = os.MkdirAll(tempConfigDir, 0700)
 	assert.NoError(t, err)
 
-	patterns := []string{"^ls.*", "^git status.*", "^echo.*"}
+	patterns := []string{"^fakecommand.*", "^anotherfake status.*", "^fakecmd1.*"}
 	err = WriteAuthorizedCommandsToFile(patterns)
 	assert.NoError(t, err)
 
 	// Test matching commands
-	authorized, err = IsCommandAuthorized("ls -la")
+	authorized, err = IsCommandAuthorized("fakecommand -la")
 	assert.NoError(t, err)
 	assert.True(t, authorized)
 
-	authorized, err = IsCommandAuthorized("git status --short")
+	authorized, err = IsCommandAuthorized("anotherfake status --short")
 	assert.NoError(t, err)
 	assert.True(t, authorized)
 
-	authorized, err = IsCommandAuthorized("echo hello")
+	authorized, err = IsCommandAuthorized("fakecmd1 hello")
 	assert.NoError(t, err)
 	assert.True(t, authorized)
 
@@ -511,7 +514,7 @@ func TestIsCommandAuthorized(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, authorized)
 
-	authorized, err = IsCommandAuthorized("git commit")
+	authorized, err = IsCommandAuthorized("anotherfake commit")
 	assert.NoError(t, err)
 	assert.False(t, authorized)
 }
@@ -536,12 +539,12 @@ func TestIsCommandAuthorizedInvalidRegex(t *testing.T) {
 	err := os.MkdirAll(tempConfigDir, 0700)
 	assert.NoError(t, err)
 
-	patterns := []string{"[invalid regex", "^ls.*", "*invalid"}
+	patterns := []string{"[invalid regex", "^fakecommand.*", "*invalid"}
 	err = WriteAuthorizedCommandsToFile(patterns)
 	assert.NoError(t, err)
 
 	// Should still match valid patterns even with invalid ones present
-	authorized, err := IsCommandAuthorized("ls -la")
+	authorized, err := IsCommandAuthorized("fakecommand -la")
 	assert.NoError(t, err)
 	assert.True(t, authorized)
 
@@ -568,7 +571,7 @@ func TestIsCommandPatternAuthorized(t *testing.T) {
 	}()
 
 	// Test with no authorized commands file
-	authorized, err := IsCommandPatternAuthorized("^ls.*")
+	authorized, err := IsCommandPatternAuthorized("^fakecommand.*")
 	assert.NoError(t, err)
 	assert.False(t, authorized)
 
@@ -576,29 +579,29 @@ func TestIsCommandPatternAuthorized(t *testing.T) {
 	err = os.MkdirAll(tempConfigDir, 0700)
 	assert.NoError(t, err)
 
-	patterns := []string{"^ls.*", "^git status.*", "^echo.*"}
+	patterns := []string{"^fakecommand.*", "^anotherfake status.*", "^fakecmd1.*"}
 	err = WriteAuthorizedCommandsToFile(patterns)
 	assert.NoError(t, err)
 
 	// Test exact pattern matches
-	authorized, err = IsCommandPatternAuthorized("^ls.*")
+	authorized, err = IsCommandPatternAuthorized("^fakecommand.*")
 	assert.NoError(t, err)
 	assert.True(t, authorized)
 
-	authorized, err = IsCommandPatternAuthorized("^git status.*")
+	authorized, err = IsCommandPatternAuthorized("^anotherfake status.*")
 	assert.NoError(t, err)
 	assert.True(t, authorized)
 
 	// Test non-exact matches (should return false)
-	authorized, err = IsCommandPatternAuthorized("^ls$")
+	authorized, err = IsCommandPatternAuthorized("^fakecommand$")
 	assert.NoError(t, err)
 	assert.False(t, authorized)
 
-	authorized, err = IsCommandPatternAuthorized("ls.*")
+	authorized, err = IsCommandPatternAuthorized("fakecommand.*")
 	assert.NoError(t, err)
 	assert.False(t, authorized)
 
-	authorized, err = IsCommandPatternAuthorized("^git.*")
+	authorized, err = IsCommandPatternAuthorized("^anotherfake.*")
 	assert.NoError(t, err)
 	assert.False(t, authorized)
 }
