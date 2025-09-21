@@ -33,6 +33,7 @@ type appModel struct {
 	appState      appState
 
 	explanationStyle lipgloss.Style
+	completionStyle  lipgloss.Style
 }
 
 type attemptPredictionMsg struct {
@@ -106,6 +107,9 @@ func initialModel(
 		explanationStyle: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("12")),
+		completionStyle: lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("10")),
 	}
 }
 
@@ -123,6 +127,7 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.textInput.Width = msg.Width
 		m.explanationStyle = m.explanationStyle.Width(max(1, msg.Width-2))
+		m.completionStyle = m.completionStyle.Width(max(1, msg.Width-2))
 		return m, nil
 
 	case terminateMsg:
@@ -159,7 +164,7 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Sequence(terminate, tea.Quit)
 
 		case "ctrl+c":
-			// Handle Ctrl-C: show abandoned command with ^C and move to new line
+			// Handle Ctrl-C: cancel current line, preserve input with "^C" appended, and present fresh prompt
 			currentInput := m.textInput.Value()
 			// Print the current input with "^C" appended, then move to next line
 			// This works for both empty and non-empty input
@@ -198,7 +203,20 @@ func (m appModel) View() string {
 
 	// Render normal state
 	s := m.textInput.View()
-	if m.explanation != "" {
+
+	// Add completion box if active
+	completionBox := m.textInput.CompletionBoxView()
+	if completionBox != "" {
+		s += "\n"
+		s += m.completionStyle.Render(completionBox)
+	}
+
+	// Add explanation (either from help box or prediction explanation)
+	helpBox := m.textInput.HelpBoxView()
+	if helpBox != "" {
+		s += "\n"
+		s += m.explanationStyle.Render(helpBox)
+	} else if m.explanation != "" {
 		s += "\n"
 		s += m.explanationStyle.Render(m.explanation)
 	}
