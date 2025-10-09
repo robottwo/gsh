@@ -106,9 +106,6 @@ func previewAndConfirm(runner *interp.Runner, logger *zap.Logger, path string, n
 	confirmResponse := userConfirmation(logger, "gsh: Do I have your permission to make the edit proposed above?", "")
 	if confirmResponse == "n" {
 		return "User declined this request"
-	} else if confirmResponse == "manage" {
-		// User chose "manage" - proceed with the operation
-		// Note: File editing doesn't use the prefix menu system like bash commands
 	} else if confirmResponse == "always" {
 		// Legacy support for "always" - proceed with the operation
 	} else if confirmResponse != "y" {

@@ -268,18 +268,8 @@ func TestCreateFileToolUserDeclines(t *testing.T) {
 }
 
 func TestCreateFileToolManagePermissions(t *testing.T) {
-	// Create a temporary config directory for testing
-	tempConfigDir := filepath.Join(os.TempDir(), "gsh_test_createfile_manage")
-	tempAuthorizedFile := filepath.Join(tempConfigDir, "authorized_commands")
-
-	// Override the environment variables for testing
-	environment.SetConfigDirForTesting(tempConfigDir)
-	environment.SetAuthorizedCommandsFileForTesting(tempAuthorizedFile)
-	defer func() {
-		os.RemoveAll(tempConfigDir)
-		environment.ResetCacheForTesting()
-	}()
-
+	// Test that "manage" response is treated as invalid (declined) for createfile
+	// The manage menu should only be available for bash commands, not file operations
 	logger := zap.NewNop()
 	runner, _ := interp.New()
 
@@ -289,30 +279,14 @@ func TestCreateFileToolManagePermissions(t *testing.T) {
 	}
 	defer func() { userConfirmation = origUserConfirmation }()
 
-	// Create temp file for testing
-	tempFile, err := os.CreateTemp("", "gsh_test_createfile_manage")
-	require.NoError(t, err)
-	defer os.Remove(tempFile.Name())
-
 	params := map[string]any{
-		"path":    tempFile.Name(),
+		"path":    "/test/path.txt",
 		"content": "test content for manage",
 	}
 
-	err = os.MkdirAll(tempConfigDir, 0700)
-	require.NoError(t, err)
-
 	result := CreateFileTool(runner, logger, params)
-	assert.Contains(t, result, "successfully")
-
-	// Verify pattern was added to authorized commands
-	patterns, err := environment.LoadAuthorizedCommandsFromFile()
-	assert.NoError(t, err)
-	assert.Len(t, patterns, 1)
-
-	// The pattern should match the file operation format
-	expectedPattern := GenerateFileOperationRegex(tempFile.Name(), "create_file")
-	assert.Contains(t, patterns, expectedPattern)
+	// "manage" should be treated as an invalid response and declined
+	assert.Contains(t, result, "User declined this request: manage")
 }
 
 func TestCreateFileToolLegacyAlways(t *testing.T) {
