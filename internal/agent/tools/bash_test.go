@@ -28,3 +28,21 @@ func TestBashToolDefinition(t *testing.T) {
 	assert.Equal(t, jsonschema.DataType("string"), parameters.Properties["command"].Type)
 	assert.Equal(t, []string{"reason", "command"}, parameters.Required)
 }
+func TestGenerateCommandRegex(t *testing.T) {
+	// Test regular commands
+	assert.Equal(t, "^ls.*", GenerateCommandRegex("ls -la /tmp"))
+	assert.Equal(t, "^pwd.*", GenerateCommandRegex("pwd"))
+	assert.Equal(t, "^cat.*", GenerateCommandRegex("cat file.txt"))
+
+	// Test special commands with subcommands
+	assert.Equal(t, "^git status.*", GenerateCommandRegex("git status"))
+	assert.Equal(t, "^git commit.*", GenerateCommandRegex("git commit -m \"message\""))
+	assert.Equal(t, "^npm install.*", GenerateCommandRegex("npm install package"))
+	assert.Equal(t, "^npm run.*", GenerateCommandRegex("npm run test"))
+	assert.Equal(t, "^yarn add.*", GenerateCommandRegex("yarn add package"))
+	assert.Equal(t, "^docker run.*", GenerateCommandRegex("docker run image"))
+	assert.Equal(t, "^kubectl get.*", GenerateCommandRegex("kubectl get pods"))
+
+	// Test edge cases
+	assert.Equal(t, "^$", GenerateCommandRegex(""))
+}
