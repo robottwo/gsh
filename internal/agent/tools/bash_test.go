@@ -350,6 +350,79 @@ func TestGenerateCommandRegexWithSpecialCharacters(t *testing.T) {
 	}
 }
 
+func TestGenerateCommandRegexWithNewCommands(t *testing.T) {
+	// Test that the heuristic-based approach works for commands
+	// that weren't in the original hardcoded list
+	tests := []struct {
+		name     string
+		command  string
+		expected string
+	}{
+		{
+			name:     "cargo build",
+			command:  "cargo build --release",
+			expected: "^cargo build.*",
+		},
+		{
+			name:     "brew install",
+			command:  "brew install package",
+			expected: "^brew install.*",
+		},
+		{
+			name:     "apt-get update",
+			command:  "apt-get update",
+			expected: "^apt-get update.*",
+		},
+		{
+			name:     "systemctl start",
+			command:  "systemctl start nginx",
+			expected: "^systemctl start.*",
+		},
+		{
+			name:     "go test",
+			command:  "go test ./...",
+			expected: "^go test.*",
+		},
+		{
+			name:     "terraform apply",
+			command:  "terraform apply -auto-approve",
+			expected: "^terraform apply.*",
+		},
+		{
+			name:     "helm install",
+			command:  "helm install myapp ./chart",
+			expected: "^helm install.*",
+		},
+		{
+			name:     "podman run",
+			command:  "podman run -d nginx",
+			expected: "^podman run.*",
+		},
+		{
+			name:     "command with flag first",
+			command:  "ls -la /tmp",
+			expected: "^ls.*", // Flag comes first, so no subcommand
+		},
+		{
+			name:     "command with path argument",
+			command:  "cd /usr/local/bin",
+			expected: "^cd.*", // Path is not a subcommand
+		},
+		{
+			name:     "command with numeric argument",
+			command:  "sleep 5",
+			expected: "^sleep.*", // Number is not a subcommand
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := GenerateCommandRegex(tt.command)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestGenerateCommandRegexEdgeCases(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -374,7 +447,7 @@ func TestGenerateCommandRegexEdgeCases(t *testing.T) {
 		{
 			name:     "command starting with number",
 			command:  "7z extract file.7z",
-			expected: "^7z.*",
+			expected: "^7z extract.*", // "extract" is correctly identified as a subcommand
 		},
 	}
 

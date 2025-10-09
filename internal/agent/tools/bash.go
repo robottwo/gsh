@@ -50,27 +50,60 @@ func GenerateCommandRegex(command string) string {
 		return "^$"
 	}
 
-	// For most commands, we'll use the first part as the base
-	// For certain commands like git, we might want to include the first two parts
 	baseCommand := parts[0]
 
-	// Special handling for commands that have meaningful subcommands
-	// like git, npm, etc.
-	specialCommands := map[string]bool{
-		"git":     true,
-		"npm":     true,
-		"yarn":    true,
-		"docker":  true,
-		"kubectl": true,
-	}
-
-	if specialCommands[baseCommand] && len(parts) > 1 {
-		// For special commands, include the first two parts
-		return "^" + regexp.QuoteMeta(baseCommand+" "+parts[1]) + ".*"
-	} else {
-		// For regular commands, just use the base command
+	// If there's only one part, just use the base command
+	if len(parts) == 1 {
 		return "^" + regexp.QuoteMeta(baseCommand) + ".*"
 	}
+
+	// Check if the second part looks like a subcommand (not a flag)
+	// Subcommands typically:
+	// - Don't start with a dash (-)
+	// - Are alphabetic (not paths, numbers, or special chars)
+	// - Are relatively short (< 20 chars to avoid matching full arguments)
+	secondPart := parts[1]
+	if hasSubcommand(secondPart) {
+		// Include the subcommand in the pattern
+		return "^" + regexp.QuoteMeta(baseCommand+" "+secondPart) + ".*"
+	}
+
+	// For regular commands with flags/args, just use the base command
+	return "^" + regexp.QuoteMeta(baseCommand) + ".*"
+}
+
+// hasSubcommand determines if a string looks like a subcommand rather than a flag or argument
+func hasSubcommand(s string) bool {
+	// Empty string is not a subcommand
+	if s == "" {
+		return false
+	}
+
+	// Flags start with - or --
+	if strings.HasPrefix(s, "-") {
+		return false
+	}
+
+	// Subcommands should be reasonably short (avoid matching full file paths or long arguments)
+	if len(s) > 20 {
+		return false
+	}
+
+	// Subcommands should be primarily alphabetic (allow hyphens for commands like "cache-clean")
+	// but not contain special shell characters or path separators
+	for _, ch := range s {
+		if !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '-' || ch == '_' || (ch >= '0' && ch <= '9')) {
+			return false
+		}
+	}
+
+	// Must start with a letter (not a number)
+	firstChar := rune(s[0])
+	if !((firstChar >= 'a' && firstChar <= 'z') || (firstChar >= 'A' && firstChar <= 'Z')) {
+		return false
+	}
+
+	return true
 }
 
 // GenerateSpecificCommandRegex creates a more specific regex pattern for a given command prefix.
@@ -122,26 +155,21 @@ func GeneratePreselectionPattern(prefix string) string {
 
 	baseCommand := parts[0]
 
-	// Special handling for commands that have meaningful subcommands
-	specialCommands := map[string]bool{
-		"git":     true,
-		"npm":     true,
-		"yarn":    true,
-		"docker":  true,
-		"kubectl": true,
+	// Single-word commands use the base pattern
+	if len(parts) == 1 {
+		return "^" + regexp.QuoteMeta(baseCommand) + ".*"
 	}
 
-	if specialCommands[baseCommand] && len(parts) > 1 {
-		// For special commands, include the subcommand in the pattern
-		return "^" + regexp.QuoteMeta(baseCommand+" "+parts[1]) + ".*"
-	} else if len(parts) == 1 {
-		// For single-word commands, use the base pattern
-		return "^" + regexp.QuoteMeta(baseCommand) + ".*"
-	} else {
-		// For multi-word regular commands, use the full prefix
-		// This ensures "awk -F'|'" generates a different pattern than "awk"
-		return "^" + regexp.QuoteMeta(prefix) + ".*"
+	// Check if the second part looks like a subcommand
+	secondPart := parts[1]
+	if hasSubcommand(secondPart) {
+		// For commands with subcommands, include the subcommand in the pattern
+		return "^" + regexp.QuoteMeta(baseCommand+" "+secondPart) + ".*"
 	}
+
+	// For multi-word regular commands (with flags/args), use the full prefix
+	// This ensures "awk -F'|'" generates a different pattern than "awk"
+	return "^" + regexp.QuoteMeta(prefix) + ".*"
 }
 
 func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger, params map[string]any) string {

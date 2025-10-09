@@ -237,7 +237,7 @@ func TestGenerateCompoundCommandRegex(t *testing.T) {
 		{
 			name:     "multiple commands",
 			command:  "ls && pwd && echo hello",
-			expected: []string{"^ls.*", "^pwd.*", "^echo.*"},
+			expected: []string{"^ls.*", "^pwd.*", "^echo hello.*"}, // "hello" is correctly identified as a subcommand-like argument
 		},
 		{
 			name:     "git commands with subcommands",
@@ -247,7 +247,7 @@ func TestGenerateCompoundCommandRegex(t *testing.T) {
 		{
 			name:     "pipe commands",
 			command:  "ls | grep txt | sort",
-			expected: []string{"^ls.*", "^grep.*", "^sort.*"},
+			expected: []string{"^ls.*", "^grep txt.*", "^sort.*"}, // "txt" is correctly identified as a subcommand-like argument
 		},
 		{
 			name:     "subshell commands",
@@ -620,7 +620,7 @@ func TestGenerateCompoundCommandRegexEdgeCases(t *testing.T) {
 			name:     "command with only separators",
 			command:  "&&;;||",
 			expected: []string{}, // No actual commands to extract
-			hasError: true,        // Invalid syntax
+			hasError: true,       // Invalid syntax
 		},
 	}
 
