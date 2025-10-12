@@ -225,13 +225,13 @@ func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, log
 		}
 
 		// Process the menu response
-		if menuResponse == "n" {
+		if strings.ToLower(menuResponse) == "n" {
 			return failedToolResponse("User declined this request")
-		} else if menuResponse == "m" {
+		} else if strings.ToLower(menuResponse) == "m" || strings.ToLower(menuResponse) == "manage" {
 			// User selected specific permissions - the permissions menu has already saved
 			// the enabled permissions to authorized_commands, so we just continue
 			logger.Info("Permissions have been saved by the permissions menu")
-		} else if menuResponse != "y" {
+		} else if strings.ToLower(menuResponse) != "y" {
 			return failedToolResponse(fmt.Sprintf("User declined this request: %s", menuResponse))
 		}
 		// If menuResponse == "y", continue with execution
