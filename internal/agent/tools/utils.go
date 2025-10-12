@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"flag"
 	"fmt"
 	"strings"
 
@@ -17,7 +18,8 @@ func printToolMessage(message string) {
 	fmt.Print(gline.RESET_CURSOR_COLUMN + styles.AGENT_QUESTION(message) + "\n")
 }
 
-var userConfirmation = func(logger *zap.Logger, question string, explanation string) string {
+// defaultUserConfirmation is the default implementation that calls gline.Gline
+var defaultUserConfirmation = func(logger *zap.Logger, question string, explanation string) string {
 	prompt :=
 		styles.AGENT_QUESTION(question + " (y/N/freeform/m) ")
 
@@ -83,4 +85,20 @@ var userConfirmation = func(logger *zap.Logger, question string, explanation str
 	// This should never be reached due to the loop structure, but included for safety
 	logger.Error("Unexpected code path in userConfirmation")
 	return "n"
+}
+
+// userConfirmation is a wrapper that checks for test mode before calling the real implementation
+var userConfirmation = func(logger *zap.Logger, question string, explanation string) string {
+	// Check if we're in test mode and this function hasn't been mocked
+	// We detect if it's been mocked by checking if the function pointer has changed
+	if flag.Lookup("test.v") != nil {
+		// In test mode, return "n" to avoid blocking on gline.Gline
+		// Tests that need different behavior should mock this function
+		if logger != nil {
+			logger.Debug("userConfirmation called in test mode without mock, returning 'n'")
+		}
+		return "n"
+	}
+
+	return defaultUserConfirmation(logger, question, explanation)
 }

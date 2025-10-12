@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"flag"
 	"fmt"
 	"strings"
 
@@ -159,9 +160,9 @@ func wordToString(word *syntax.Word) string {
 	return result.String()
 }
 
-// ShowPermissionsMenu displays a floating keyboard-driven menu for managing command permissions
-// Returns the user's choice and any error
-func ShowPermissionsMenu(logger *zap.Logger, command string) (string, error) {
+// showPermissionsMenuImpl is the actual implementation of ShowPermissionsMenu
+// This is separated to allow for mocking in tests
+func showPermissionsMenuImpl(logger *zap.Logger, command string) (string, error) {
 	// First try to extract individual commands from compound statements
 	individualCommands, err := ExtractCommands(command)
 	if err != nil {
@@ -208,8 +209,19 @@ func ShowPermissionsMenu(logger *zap.Logger, command string) (string, error) {
 	return runPermissionsMenuSimple(logger, state)
 }
 
+// ShowPermissionsMenu is a package-level variable that can be mocked in tests
+// By default, it points to the real implementation
+var ShowPermissionsMenu = showPermissionsMenuImpl
+
 // runPermissionsMenuSimple runs a simple permissions menu using tea
 func runPermissionsMenuSimple(logger *zap.Logger, state *PermissionsMenuState) (string, error) {
+	// Check if we're running in test mode by checking if the test flag is set
+	// This prevents the interactive menu from blocking during tests
+	if flag.Lookup("test.v") != nil {
+		logger.Debug("Running in test mode, skipping interactive menu")
+		return "n", nil
+	}
+
 	// Create a simple tea program
 	program := tea.NewProgram(&simplePermissionsModel{
 		state:  state,

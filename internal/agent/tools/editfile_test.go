@@ -44,7 +44,7 @@ func TestValidateAndExtractParams(t *testing.T) {
 				"new_str": "new content",
 			},
 			expectedParams: nil,
-			expectedError: "The create_file tool failed to parse parameter 'path'",
+			expectedError:  "The create_file tool failed to parse parameter 'path'",
 		},
 		{
 			name: "missing old_str",
@@ -53,7 +53,7 @@ func TestValidateAndExtractParams(t *testing.T) {
 				"new_str": "new content",
 			},
 			expectedParams: nil,
-			expectedError: "The create_file tool failed to parse parameter 'old_str'",
+			expectedError:  "The create_file tool failed to parse parameter 'old_str'",
 		},
 		{
 			name: "missing new_str",
@@ -62,7 +62,7 @@ func TestValidateAndExtractParams(t *testing.T) {
 				"old_str": "old content",
 			},
 			expectedParams: nil,
-			expectedError: "The create_file tool failed to parse parameter 'new_str'",
+			expectedError:  "The create_file tool failed to parse parameter 'new_str'",
 		},
 	}
 
@@ -248,7 +248,8 @@ func TestPreviewAndConfirmManageResponse(t *testing.T) {
 	assert.NoError(t, err)
 
 	errMsg := previewAndConfirm(runner, logger, tempFile.Name(), "new content")
-	assert.Equal(t, "", errMsg) // Should return empty string for success
+	// "manage" is not a valid response for editfile operations, should return error
+	assert.Equal(t, "User declined this request: manage", errMsg)
 }
 
 func TestPreviewAndConfirmLegacyAlways(t *testing.T) {

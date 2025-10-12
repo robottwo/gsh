@@ -165,17 +165,17 @@ func TestCompoundCommandRegexGeneration(t *testing.T) {
 		{
 			name:     "compound command with semicolon",
 			command:  "ls; pwd; echo hello",
-			expected: []string{"^ls.*", "^pwd.*", "^echo.*"},
+			expected: []string{"^ls.*", "^pwd.*", "^echo hello.*"},
 		},
 		{
 			name:     "compound command with AND",
 			command:  "ls && pwd && echo done",
-			expected: []string{"^ls.*", "^pwd.*", "^echo.*"},
+			expected: []string{"^ls.*", "^pwd.*", "^echo done.*"},
 		},
 		{
 			name:     "compound command with pipes",
 			command:  "ls | grep txt | sort",
-			expected: []string{"^ls.*", "^grep.*", "^sort.*"},
+			expected: []string{"^ls.*", "^grep txt.*", "^sort.*"},
 		},
 		{
 			name:     "subshell command",

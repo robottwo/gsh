@@ -63,7 +63,7 @@ func GenerateCommandRegex(command string) string {
 	// - Are alphabetic (not paths, numbers, or special chars)
 	// - Are relatively short (< 20 chars to avoid matching full arguments)
 	secondPart := parts[1]
-	if hasSubcommand(secondPart) {
+	if hasSubcommand(baseCommand, secondPart) {
 		// Include the subcommand in the pattern
 		return "^" + regexp.QuoteMeta(baseCommand+" "+secondPart) + ".*"
 	}
@@ -72,8 +72,10 @@ func GenerateCommandRegex(command string) string {
 	return "^" + regexp.QuoteMeta(baseCommand) + ".*"
 }
 
-// hasSubcommand determines if a string looks like a subcommand rather than a flag or argument
-func hasSubcommand(s string) bool {
+// hasSubcommand determines if a string looks like a subcommand or argument that should be included in the regex pattern.
+// For security purposes, we want to include the first non-flag argument in the pattern to make it more specific.
+// This applies to all commands, whether they have traditional "subcommands" (like git, npm) or just arguments (like echo, grep).
+func hasSubcommand(baseCommand, s string) bool {
 	// Empty string is not a subcommand
 	if s == "" {
 		return false
@@ -84,12 +86,12 @@ func hasSubcommand(s string) bool {
 		return false
 	}
 
-	// Subcommands should be reasonably short (avoid matching full file paths or long arguments)
+	// Arguments should be reasonably short (avoid matching full file paths or long arguments)
 	if len(s) > 20 {
 		return false
 	}
 
-	// Subcommands should be primarily alphabetic (allow hyphens for commands like "cache-clean")
+	// Arguments should be primarily alphabetic (allow hyphens for commands like "cache-clean")
 	// but not contain special shell characters or path separators
 	for _, ch := range s {
 		if !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '-' || ch == '_' || (ch >= '0' && ch <= '9')) {
@@ -162,7 +164,7 @@ func GeneratePreselectionPattern(prefix string) string {
 
 	// Check if the second part looks like a subcommand
 	secondPart := parts[1]
-	if hasSubcommand(secondPart) {
+	if hasSubcommand(baseCommand, secondPart) {
 		// For commands with subcommands, include the subcommand in the pattern
 		return "^" + regexp.QuoteMeta(baseCommand+" "+secondPart) + ".*"
 	}
