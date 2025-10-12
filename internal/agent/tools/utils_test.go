@@ -159,7 +159,7 @@ func TestUserConfirmationFunction(t *testing.T) {
 					return "n" // Simulate Ctrl+C handling
 				}
 				if tt.mockError != nil {
-					// Simulate retry logic for non-Ctrl+C errors
+					// Return "n" for any error
 					return "n"
 				}
 
@@ -187,39 +187,6 @@ func TestUserConfirmationFunction(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
-}
-
-func TestUserConfirmationRetryLogic(t *testing.T) {
-	logger := zap.NewNop()
-
-	// Test retry behavior with transient errors
-	originalUserConfirmation := userConfirmation
-	defer func() {
-		userConfirmation = originalUserConfirmation
-	}()
-
-	callCount := 0
-	userConfirmation = func(logger *zap.Logger, question string, explanation string) string {
-		// Create a mock that simulates the actual retry logic
-		maxRetries := 3
-		for attempt := 0; attempt < maxRetries; attempt++ {
-			callCount++
-
-			// Simulate first two attempts failing with transient error
-			if attempt < 2 {
-				// Simulate transient error (not Ctrl+C)
-				continue
-			}
-
-			// Third attempt succeeds
-			return "y"
-		}
-		return "n"
-	}
-
-	result := userConfirmation(logger, "test question", "test explanation")
-	assert.Equal(t, "y", result)
-	// The mock tracks that retries happened
 }
 
 func TestUserConfirmationVariousInputs(t *testing.T) {
@@ -329,16 +296,7 @@ func TestActualUserConfirmationWithErrors(t *testing.T) {
 
 	// Create a mock that simulates the actual function's error handling
 	mockUserConfirmation := func(logger *zap.Logger, question string, explanation string) string {
-		// Simulate the retry logic with a generic error (not Ctrl+C)
-		maxRetries := 3
-		for attempt := 0; attempt < maxRetries; attempt++ {
-			// Simulate an error that would trigger retry
-			if attempt < maxRetries-1 {
-				continue // Simulate retry
-			}
-			// Final attempt also fails - return default "n"
-			return "n"
-		}
+		// Simulate error - return default "n"
 		return "n"
 	}
 

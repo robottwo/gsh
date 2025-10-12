@@ -104,17 +104,17 @@ func TestUserConfirmationErrorHandling(t *testing.T) {
 		}
 	})
 
-	// Test case 2: Other errors should return "n" after retries (simulating retry failure)
-	t.Run("Other errors return n after retries", func(t *testing.T) {
+	// Test case 2: Other errors should return "n"
+	t.Run("Other errors return n", func(t *testing.T) {
 		otherError := errors.New("some other gline error")
 		userConfirmation = func(logger *zap.Logger, question string, explanation string) string {
-			// Simulate the retry logic failing after all attempts
+			// Simulate error handling
 			err := otherError
 			if err != nil {
 				if err == gline.ErrInterrupted {
 					return "n"
 				}
-				// This simulates the final fallback after all retries failed
+				// Return default "n" for any error
 				return "n"
 			}
 			return ""
@@ -122,7 +122,7 @@ func TestUserConfirmationErrorHandling(t *testing.T) {
 
 		result := userConfirmation(logger, "Test question", "Test explanation")
 		if result != "n" {
-			t.Errorf("Expected 'n' for other errors after retries, got '%s'", result)
+			t.Errorf("Expected 'n' for other errors, got '%s'", result)
 		}
 	})
 
