@@ -57,6 +57,12 @@ func getDefaultDirectories(runner *interp.Runner) []string {
 		directories = append(directories, rooModesDirs...)
 	}
 
+	// Scan for Roo YAML mode files (.roo/modes/)
+	rooModesDir := filepath.Join(pwd, ".roo", "modes")
+	if _, err := os.Stat(rooModesDir); err == nil {
+		directories = append(directories, rooModesDir)
+	}
+
 	// User-level configurations (lower priority)
 	directories = append(directories, filepath.Join(homeDir, ".claude", "agents"))
 
@@ -70,6 +76,12 @@ func getDefaultDirectories(runner *interp.Runner) []string {
 	userRooBaseDir := filepath.Join(homeDir, ".roo")
 	if userRooModesDirs := getRooModesDirectories(userRooBaseDir); len(userRooModesDirs) > 0 {
 		directories = append(directories, userRooModesDirs...)
+	}
+
+	// User-level Roo YAML mode files (.roo/modes/)
+	userRooModesDir := filepath.Join(homeDir, ".roo", "modes")
+	if _, err := os.Stat(userRooModesDir); err == nil {
+		directories = append(directories, userRooModesDir)
 	}
 
 	return directories
@@ -393,7 +405,7 @@ func (m *SubagentManager) FindSubagentByName(name string) (*Subagent, bool) {
 	// Finally try partial name match
 	for _, subagent := range m.subagents {
 		if strings.Contains(strings.ToLower(subagent.Name), name) ||
-		   strings.Contains(strings.ToLower(subagent.ID), name) {
+			strings.Contains(strings.ToLower(subagent.ID), name) {
 			return subagent, true
 		}
 	}
