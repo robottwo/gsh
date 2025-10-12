@@ -106,8 +106,6 @@ func previewAndConfirm(runner *interp.Runner, logger *zap.Logger, path string, n
 	confirmResponse := userConfirmation(logger, "gsh: Do I have your permission to make the edit proposed above?", "")
 	if confirmResponse == "n" {
 		return "User declined this request"
-	} else if confirmResponse == "always" {
-		// Legacy support for "always" - proceed with the operation
 	} else if confirmResponse != "y" {
 		return fmt.Sprintf("User declined this request: %s", confirmResponse)
 	}

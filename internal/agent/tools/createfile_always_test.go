@@ -12,62 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"mvdan.cc/sh/v3/expand"
 	"mvdan.cc/sh/v3/interp"
 )
 
 // TestCreateFileAlwaysWorkflow tests the complete 'always' workflow for file creation
 func TestCreateFileAlwaysWorkflow(t *testing.T) {
-	// Create a temporary config directory for testing
-	tempConfigDir := filepath.Join(os.TempDir(), fmt.Sprintf("gsh_test_createfile_always_%d", time.Now().UnixNano()))
-	tempAuthorizedFile := filepath.Join(tempConfigDir, "authorized_commands")
-
-	// Save original values
-	oldConfigDir := environment.GetConfigDirForTesting()
-	oldAuthorizedFile := environment.GetAuthorizedCommandsFileForTesting()
-
-	// Override the global variables for testing
-	environment.SetConfigDirForTesting(tempConfigDir)
-	environment.SetAuthorizedCommandsFileForTesting(tempAuthorizedFile)
-	defer func() {
-		environment.SetConfigDirForTesting(oldConfigDir)
-		environment.SetAuthorizedCommandsFileForTesting(oldAuthorizedFile)
-		os.RemoveAll(tempConfigDir)
-		environment.ResetCacheForTesting()
-	}()
-
-	// Create logger
-	logger, _ := zap.NewDevelopment()
-	defer logger.Sync()
-
-	// Create a test runner
-	env := expand.ListEnviron(os.Environ()...)
-	runner, err := interp.New(interp.Env(env))
-	require.NoError(t, err)
-
-	t.Run("Files with Extensions", func(t *testing.T) {
-		testFilesWithExtensions(t, runner, logger, tempConfigDir, tempAuthorizedFile)
-	})
-
-	t.Run("Files without Extensions", func(t *testing.T) {
-		testFilesWithoutExtensions(t, runner, logger, tempConfigDir, tempAuthorizedFile)
-	})
-
-	t.Run("Files in Different Directories", func(t *testing.T) {
-		testFilesInDifferentDirectories(t, runner, logger, tempConfigDir, tempAuthorizedFile)
-	})
-
-	t.Run("Files with Multiple Dots", func(t *testing.T) {
-		testFilesWithMultipleDots(t, runner, logger, tempConfigDir, tempAuthorizedFile)
-	})
-
-	t.Run("Pattern Matching Logic", func(t *testing.T) {
-		testPatternMatchingLogic(t, runner, logger, tempConfigDir, tempAuthorizedFile)
-	})
-
-	t.Run("Integration with Existing Patterns", func(t *testing.T) {
-		testIntegrationWithExistingPatterns(t, runner, logger, tempConfigDir, tempAuthorizedFile)
-	})
+	// This test is no longer relevant since we removed the "always" feature
+	t.Skip("Test skipped: 'always' feature has been removed")
 }
 
 func testFilesWithExtensions(t *testing.T, runner *interp.Runner, logger *zap.Logger, tempConfigDir, tempAuthorizedFile string) {

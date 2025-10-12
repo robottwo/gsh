@@ -11,9 +11,9 @@ import (
 
 func TestFailedToolResponse(t *testing.T) {
 	tests := []struct {
-		name          string
-		errorMessage  string
-		expected      string
+		name         string
+		errorMessage string
+		expected     string
 	}{
 		{
 			name:         "simple error",
@@ -112,25 +112,13 @@ func TestUserConfirmationFunction(t *testing.T) {
 			name:         "manage response",
 			mockResponse: "m",
 			mockError:    nil,
-			expected:     "manage",
+			expected:     "m",
 		},
 		{
 			name:         "Manage response",
 			mockResponse: "Manage",
 			mockError:    nil,
-			expected:     "manage",
-		},
-		{
-			name:         "always response (legacy)",
-			mockResponse: "a",
-			mockError:    nil,
-			expected:     "always",
-		},
-		{
-			name:         "Always response (legacy)",
-			mockResponse: "Always",
-			mockError:    nil,
-			expected:     "always",
+			expected:     "m",
 		},
 		{
 			name:         "empty response defaults to no",
@@ -190,10 +178,7 @@ func TestUserConfirmationFunction(t *testing.T) {
 					return "n"
 				}
 				if lowerLine == "m" || lowerLine == "manage" {
-					return "manage"
-				}
-				if lowerLine == "a" || lowerLine == "always" {
-					return "always"
+					return "m"
 				}
 				return line
 			}
@@ -237,7 +222,6 @@ func TestUserConfirmationRetryLogic(t *testing.T) {
 	// The mock tracks that retries happened
 }
 
-
 func TestUserConfirmationVariousInputs(t *testing.T) {
 	logger := zap.NewNop()
 
@@ -257,12 +241,9 @@ func TestUserConfirmationVariousInputs(t *testing.T) {
 		{"mixed_case_no", "No", "n"},
 		{"spaces_around_yes", " yes ", "y"},
 		{"spaces_around_no", " no ", "n"},
-		{"single_char_manage", "m", "manage"},
-		{"full_word_manage", "manage", "manage"},
-		{"uppercase_manage", "MANAGE", "manage"},
-		{"single_char_always", "a", "always"},
-		{"full_word_always", "always", "always"},
-		{"uppercase_always", "ALWAYS", "always"},
+		{"single_char_manage", "m", "m"},
+		{"full_word_manage", "manage", "m"},
+		{"uppercase_manage", "MANAGE", "m"},
 		{"numeric_input", "123", "123"},
 		{"special_chars", "!@#$", "!@#$"},
 		{"long_freeform", "this is a long freeform response", "this is a long freeform response"},
@@ -286,10 +267,7 @@ func TestUserConfirmationVariousInputs(t *testing.T) {
 					return "n"
 				}
 				if lowerLine == "m" || lowerLine == "manage" {
-					return "manage"
-				}
-				if lowerLine == "a" || lowerLine == "always" {
-					return "always"
+					return "m"
 				}
 				return line
 			}

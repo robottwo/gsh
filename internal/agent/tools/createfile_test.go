@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/atinylittleshell/gsh/internal/environment"
 	openai "github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
 	"github.com/stretchr/testify/assert"
@@ -290,50 +289,8 @@ func TestCreateFileToolManagePermissions(t *testing.T) {
 }
 
 func TestCreateFileToolLegacyAlways(t *testing.T) {
-	// Create a temporary config directory for testing
-	tempConfigDir := filepath.Join(os.TempDir(), "gsh_test_createfile_always")
-	tempAuthorizedFile := filepath.Join(tempConfigDir, "authorized_commands")
-
-	// Override the environment variables for testing
-	environment.SetConfigDirForTesting(tempConfigDir)
-	environment.SetAuthorizedCommandsFileForTesting(tempAuthorizedFile)
-	defer func() {
-		os.RemoveAll(tempConfigDir)
-		environment.ResetCacheForTesting()
-	}()
-
-	logger := zap.NewNop()
-	runner, _ := interp.New()
-
-	origUserConfirmation := userConfirmation
-	userConfirmation = func(logger *zap.Logger, question string, explanation string) string {
-		return "always"
-	}
-	defer func() { userConfirmation = origUserConfirmation }()
-
-	// Create temp file for testing
-	tempFile, err := os.CreateTemp("", "gsh_test_createfile_always")
-	require.NoError(t, err)
-	defer os.Remove(tempFile.Name())
-
-	params := map[string]any{
-		"path":    tempFile.Name(),
-		"content": "test content for always",
-	}
-
-	err = os.MkdirAll(tempConfigDir, 0700)
-	require.NoError(t, err)
-
-	result := CreateFileTool(runner, logger, params)
-	assert.Contains(t, result, "successfully")
-
-	// Verify pattern was added to authorized commands
-	patterns, err := environment.LoadAuthorizedCommandsFromFile()
-	assert.NoError(t, err)
-	assert.Len(t, patterns, 1)
-
-	expectedPattern := GenerateFileOperationRegex(tempFile.Name(), "create_file")
-	assert.Contains(t, patterns, expectedPattern)
+	// This test is no longer relevant since we removed the "always" feature
+	t.Skip("Test skipped: 'always' feature has been removed")
 }
 
 func TestCreateFileToolFreeformResponse(t *testing.T) {

@@ -60,94 +60,9 @@ func TestIntegration(t *testing.T) {
 		os.RemoveAll(tempConfigDir)
 	}()
 
-	// Create logger
-	logger, _ := zap.NewDevelopment()
-	defer logger.Sync()
-
-	// Create a test runner
-	env := expand.ListEnviron(os.Environ()...)
-	runner, err := interp.New(interp.Env(env))
-	assert.NoError(t, err)
-
-	// Create a mock history manager
-	historyManager, _ := history.NewHistoryManager(":memory:")
-
-	tests := []struct {
-		name           string
-		command        string
-		reason         string
-		userResponse   string
-		expectedOutput string
-		expectedRegex  string
-	}{
-		{
-			name:           "ls command with always allow",
-			command:        "ls -la /tmp",
-			reason:         "List directory contents",
-			userResponse:   "always",
-			expectedOutput: "",
-			expectedRegex:  "^ls.*",
-		},
-		{
-			name:           "git command with always allow",
-			command:        "git status",
-			reason:         "Check git status",
-			userResponse:   "always",
-			expectedOutput: "",
-			expectedRegex:  "^git status.*",
-		},
-		{
-			name:           "npm command with always allow",
-			command:        "npm install package",
-			reason:         "Install npm package",
-			userResponse:   "always",
-			expectedOutput: "",
-			expectedRegex:  "^npm install.*",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Reset call count for each test
-			mockPrompter := &MockPrompter{
-				responses: []string{tt.userResponse},
-			}
-			oldUserConfirmation := userConfirmation
-			userConfirmation = func(logger *zap.Logger, question string, explanation string) string {
-				response, _ := mockPrompter.Prompt("", []string{}, explanation, nil, nil, nil, logger, gline.NewOptions())
-				return response
-			}
-			defer func() {
-				userConfirmation = oldUserConfirmation
-			}()
-
-			// Run the bash tool
-			params := map[string]any{
-				"reason":  tt.reason,
-				"command": tt.command,
-			}
-			result := BashTool(runner, historyManager, logger, params)
-
-			// Verify the command executed (not declined)
-			assert.NotContains(t, result, "<gsh_tool_call_error>User declined this request</gsh_tool_call_error>")
-
-			// Verify the regex pattern was saved to file
-			patterns, err := environment.LoadAuthorizedCommandsFromFile()
-			assert.NoError(t, err)
-			assert.Contains(t, patterns, tt.expectedRegex)
-
-			// Verify the directory and file were created
-			_, err = os.Stat(tempConfigDir)
-			assert.NoError(t, err)
-			_, err = os.Stat(tempAuthorizedFile)
-			assert.NoError(t, err)
-
-			// Verify the file contains the expected pattern
-			content, err := os.ReadFile(tempAuthorizedFile)
-			assert.NoError(t, err)
-			assert.Contains(t, string(content), tt.expectedRegex+"\n")
-		})
-	}
+	// This test is no longer relevant since we removed the "always" feature
+	// Commands must now be pre-approved through the permissions menu (manage option)
+	t.Skip("Test skipped: 'always' feature has been removed")
 }
 
 // TestPreApproval tests that commands matching saved patterns are pre-approved
@@ -522,70 +437,9 @@ func TestBashToolWithPreApprovedCommands(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	defer logger.Sync()
 
-	// Create a test runner
-	env := expand.ListEnviron(os.Environ()...)
-	runner, err := interp.New(interp.Env(env))
-	assert.NoError(t, err)
-
-	// Create a mock history manager
-	historyManager, _ := history.NewHistoryManager(":memory:")
-
-	// First command with "always" - should save pattern
-	mockPrompter1 := &MockPrompter{
-		responses: []string{"always"},
-	}
-	oldUserConfirmation := userConfirmation
-	userConfirmation = func(logger *zap.Logger, question string, explanation string) string {
-		response, _ := mockPrompter1.Prompt("", []string{}, explanation, nil, nil, nil, logger, gline.NewOptions())
-		return response
-	}
-
-	params1 := map[string]any{
-		"reason":  "List files",
-		"command": "ls -la /tmp",
-	}
-	result1 := BashTool(runner, historyManager, logger, params1)
-
-	// Verify first command executed
-	assert.NotContains(t, result1, "<gsh_tool_call_error>User declined this request</gsh_tool_call_error>")
-
-	// Reset cache to ensure we read the updated file
-	environment.ResetCacheForTesting()
-
-	// Verify pattern was saved
-	patterns, err := environment.LoadAuthorizedCommandsFromFile()
-	assert.NoError(t, err)
-	assert.Contains(t, patterns, "^ls.*")
-
-	// Restore original userConfirmation
-	userConfirmation = oldUserConfirmation
-
-	// Reset cache again to ensure the second command reads the updated patterns
-	environment.ResetCacheForTesting()
-
-	// Second command with same pattern - should be pre-approved without prompt
-	mockPrompter2 := &MockPrompter{
-		responses: []string{"n"}, // This should not be used
-	}
-	userConfirmation = func(logger *zap.Logger, question string, explanation string) string {
-		response, _ := mockPrompter2.Prompt("", []string{}, explanation, nil, nil, nil, logger, gline.NewOptions())
-		return response
-	}
-
-	params2 := map[string]any{
-		"reason":  "List files again",
-		"command": "ls -l /home",
-	}
-	result2 := BashTool(runner, historyManager, logger, params2)
-
-	// Verify second command executed
-	assert.NotContains(t, result2, "<gsh_tool_call_error>User declined this request</gsh_tool_call_error>")
-
-	// Verify no prompt was shown (callCount should still be 0)
-	assert.Equal(t, 0, mockPrompter2.callCount)
-
-	// Cleanup
-	userConfirmation = oldUserConfirmation
+	// This test is no longer relevant since we removed the "always" feature
+	// Commands must now be pre-approved through the permissions menu (manage option)
+	t.Skip("Test skipped: 'always' feature has been removed")
 }
 
 // TestGenerateCommandRegexComprehensive tests the regex generation for various commands

@@ -253,27 +253,8 @@ func TestPreviewAndConfirmManageResponse(t *testing.T) {
 }
 
 func TestPreviewAndConfirmLegacyAlways(t *testing.T) {
-	logger := zap.NewNop()
-	runner, _ := interp.New()
-
-	// Mock userConfirmation to return "always"
-	origUserConfirmation := userConfirmation
-	userConfirmation = func(logger *zap.Logger, question string, explanation string) string {
-		return "always"
-	}
-	defer func() { userConfirmation = origUserConfirmation }()
-
-	// Create a temporary file to simulate the existing file
-	tempFile, err := os.CreateTemp("", "test_preview_always")
-	assert.NoError(t, err)
-	defer os.Remove(tempFile.Name())
-
-	// Write some content to it
-	err = os.WriteFile(tempFile.Name(), []byte("original content"), 0644)
-	assert.NoError(t, err)
-
-	errMsg := previewAndConfirm(runner, logger, tempFile.Name(), "new content")
-	assert.Equal(t, "", errMsg) // Should return empty string for success
+	// This test is no longer relevant since we removed the "always" feature
+	t.Skip("Test skipped: 'always' feature has been removed")
 }
 
 func TestPreviewAndConfirmFreeformResponse(t *testing.T) {

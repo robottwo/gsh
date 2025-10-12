@@ -75,13 +75,6 @@ func CreateFileTool(runner *interp.Runner, logger *zap.Logger, params map[string
 	)
 	if confirmResponse == "n" {
 		return failedToolResponse("User declined this request")
-	} else if confirmResponse == "always" {
-		// Legacy support for "always" - treat as "manage"
-		regexPattern := GenerateFileOperationRegex(path, "create_file")
-		err := environment.AppendToAuthorizedCommands(regexPattern)
-		if err != nil {
-			logger.Error("Failed to append file operation pattern to authorized_commands file", zap.Error(err))
-		}
 	} else if confirmResponse != "y" {
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}

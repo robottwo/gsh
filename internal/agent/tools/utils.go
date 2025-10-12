@@ -21,7 +21,7 @@ func printToolMessage(message string) {
 // defaultUserConfirmation is the default implementation that calls gline.Gline
 var defaultUserConfirmation = func(logger *zap.Logger, question string, explanation string) string {
 	prompt :=
-		styles.AGENT_QUESTION(question + " (y/N/freeform/m) ")
+		styles.AGENT_QUESTION(question + " (y/N/manage/freeform) ")
 
 	// Retry logic for transient errors
 	maxRetries := 3
@@ -71,12 +71,7 @@ var defaultUserConfirmation = func(logger *zap.Logger, question string, explanat
 		}
 
 		if lowerLine == "m" || lowerLine == "manage" {
-			return "manage"
-		}
-
-		// Legacy support for "always"
-		if lowerLine == "a" || lowerLine == "always" {
-			return "always"
+			return "m"
 		}
 
 		return line

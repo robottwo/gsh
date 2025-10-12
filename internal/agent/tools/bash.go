@@ -216,8 +216,8 @@ func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, log
 	}
 	if confirmResponse == "n" {
 		return failedToolResponse("User declined this request")
-	} else if confirmResponse == "manage" {
-		// User chose "manage" - show permissions menu for command prefixes
+	} else if confirmResponse == "m" {
+		// User chose "m" (manage) - show permissions menu for command prefixes
 		menuResponse, err := ShowPermissionsMenu(logger, command)
 		if err != nil {
 			logger.Error("Failed to show permissions menu", zap.Error(err))
@@ -227,7 +227,7 @@ func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, log
 		// Process the menu response
 		if menuResponse == "n" {
 			return failedToolResponse("User declined this request")
-		} else if menuResponse == "manage" {
+		} else if menuResponse == "m" {
 			// User selected specific permissions - the permissions menu has already saved
 			// the enabled permissions to authorized_commands, so we just continue
 			logger.Info("Permissions have been saved by the permissions menu")
@@ -235,28 +235,6 @@ func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, log
 			return failedToolResponse(fmt.Sprintf("User declined this request: %s", menuResponse))
 		}
 		// If menuResponse == "y", continue with execution
-	} else if confirmResponse == "always" {
-		// Legacy support for "always" - treat as "manage" for backward compatibility
-		regexPatterns, err := GenerateCompoundCommandRegex(command)
-		if err != nil {
-			logger.Error("Failed to generate regex patterns for compound command", zap.Error(err))
-			// Fall back to single command pattern generation
-			regexPattern := GenerateCommandRegex(command)
-			err = environment.AppendToAuthorizedCommands(regexPattern)
-			if err != nil {
-				logger.Error("Failed to append command to authorized_commands file", zap.Error(err))
-			}
-		} else {
-			// Save all generated patterns
-			for _, pattern := range regexPatterns {
-				err = environment.AppendToAuthorizedCommands(pattern)
-				if err != nil {
-					logger.Error("Failed to append command pattern to authorized_commands file",
-						zap.String("pattern", pattern), zap.Error(err))
-					// Continue with other patterns even if one fails
-				}
-			}
-		}
 	} else if confirmResponse != "y" {
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}

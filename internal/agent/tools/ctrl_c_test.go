@@ -136,10 +136,8 @@ func TestUserConfirmationErrorHandling(t *testing.T) {
 			{"yes", "y"},
 			{"n", "n"},
 			{"no", "n"},
-			{"m", "manage"},
-			{"manage", "manage"},
-			{"a", "always"},
-			{"always", "always"},
+			{"m", "m"},
+			{"manage", "m"},
 			{"", "n"},            // empty input defaults to "n"
 			{"custom", "custom"}, // freeform input
 		}
@@ -164,12 +162,7 @@ func TestUserConfirmationErrorHandling(t *testing.T) {
 				}
 
 				if lowerLine == "m" || lowerLine == "manage" {
-					return "manage"
-				}
-
-				// Legacy support for "always"
-				if lowerLine == "a" || lowerLine == "always" {
-					return "always"
+					return "m"
 				}
 
 				return line
