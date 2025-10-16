@@ -1,6 +1,6 @@
 # Agent
 
-gsh can act as an agent that invokes commands on your behalf. Commands starting with "#" are sent to the agent as a chat message.
+gsh can act as an agent that invokes commands on your behalf. Commands starting with "@" are sent to the agent as a chat message.
 
 ![Agent](../assets/agent.gif)
 
@@ -12,17 +12,17 @@ gsh can even code for you!
 
 You can use chat macros to quickly send frequently used messages to the agent.
 
-A chat macro starts with "#/" followed by the macro name. The default configuration comes with a few chat macros:
+A chat macro starts with "@/" followed by the macro name. The default configuration comes with a few chat macros:
 
 ```bash
 # Summarize git changes
-gsh> #/gitdiff
+gsh> @/gitdiff
 
 # Commit and push changes
-gsh> #/gitpush
+gsh> @/gitpush
 
 # Review changes and get suggestions
-gsh> #/gitreview
+gsh> @/gitreview
 ```
 
 You can customize your own macros by modifying the `GSH_AGENT_MACROS` configuration in your `.gshrc` file.
@@ -91,14 +91,14 @@ The legacy `a` (always) response is still supported for backward compatibility a
 
 ```bash
 # First time running a git status command
-gsh> # check git status
+gsh> @ check git status
 Agent wants to run: git status
 Do I have your permission to run the following command? (y/N/freeform/a) a
 
 # The pattern "^git status.*" is now saved to ~/.config/gsh/authorized_commands
 # Future git status commands will be auto-approved:
 
-gsh> # show git status with short format
+gsh> @ show git status with short format
 Agent wants to run: git status -s
 # This runs automatically without prompting because it matches the saved pattern
 ```
@@ -168,14 +168,14 @@ Command: ls | rm -rf /
 ## Agent Controls
 
 Agent controls are built-in commands that help you manage your interaction with the agent.
-An agent control starts with "#!" followed by the control name.
+An agent control starts with "@!" followed by the control name.
 
 Currently supported controls:
 
 ```bash
 # Reset the current chat session and start fresh
-gsh> #!new
+gsh> @!new
 
 # Show token usage statistics for the current chat session
-gsh> #!tokens
+gsh> @!tokens
 ```
