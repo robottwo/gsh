@@ -38,16 +38,81 @@ make build
 
 ## Key features
 
-- POSIX-compatible shell with AI assistance
-- Generative command suggestions
-- Command explanation
-- Agent with granular permissions and diff previews
-- Specialized Subagents for focused tasks
-- Local or remote LLM support
-- Built-in model evaluation
+
+## Overview
+
+- POSIX-compatible shell with AI enhancements
+- Generative assistance that predicts and explains commands
+- Agent capabilities with permission controls
+- Specialized AI assistants via Subagents
+- Works with local or remote LLMs
+- Built-in model evaluation using your command history
+
+Related docs:
+- Getting started: [GETTING_STARTED.md](GETTING_STARTED.md)
+- Configuration: [CONFIGURATION.md](CONFIGURATION.md)
+- Agent guide: [AGENT.md](AGENT.md)
+- Subagents: [../SUBAGENTS.md](../SUBAGENTS.md)
+
+---
+
+## Generative Command Suggestion
+
+gsh automatically suggests the next command you are likely to run based on your history and context.
+
+![Generative Suggestion](../assets/prediction.gif)
+
+Key points:
+- Suggestions are lightweight and fast
+- Privacy-aware when using local models
+- You stay in control: suggestions are previews until you accept
+
+---
+
+## Command Explanation
+
+gsh can explain the command you are about to run so you can validate effects and options quickly.
+
+![Command Explanation](../assets/explanation.gif)
+
+Benefits:
+- Prevents mistakes
+- Speeds up learning of unfamiliar flags or tools
+- Aids in review before execution
+
+---
+
+## Agent
+
+The Agent can perform tasks for you by executing commands with your approval, previewing file edits, and providing rich summaries.
+
+![Agent](../assets/agent.gif)
+![Agent Coding](../assets/agent_coding.gif)
+
+Highlights:
+- Interactive permission workflow with granular controls
+- Preview of code edits and diffs before applying changes
+- Chat macros for common tasks
+
+Full guide: [AGENT.md](AGENT.md)
+
+---
+
+## Subagents
+
+Specialized assistants focused on particular tasks, tools, or workflows. Subagents improve security and quality by scoping capabilities and expertise.
+
+Capabilities:
+- Directory-aware discovery and auto-reload on `cd`
+- Supports Claude-style and Roo Code-style configurations
+- Intelligent auto-selection based on your prompt
+
+See: [../SUBAGENTS.md](../SUBAGENTS.md)
 
 Details and screenshots:
 - docs/FEATURES.md
+
+--- 
 
 ## Documentation
 
