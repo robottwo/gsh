@@ -134,5 +134,5 @@ These patterns complement any defaults you provide via environment variables.
 
 - Quick start: [GETTING_STARTED.md](GETTING_STARTED.md)
 - Features: [FEATURES.md](FEATURES.md)
-- Agent: [docs/AGENT.md](docs/AGENT.md)
+- Agent: [AGENT.md](AGENT.md)
 - Subagents overview: [SUBAGENTS.md](SUBAGENTS.md)
