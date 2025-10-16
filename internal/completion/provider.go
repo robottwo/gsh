@@ -183,10 +183,7 @@ func (p *ShellCompletionProvider) checkSpecialPrefixes(line string, pos int) []s
 		}
 		return completions
 	} else if strings.HasPrefix(currentWord, "@") && !strings.HasPrefix(currentWord, "@/") && !strings.HasPrefix(currentWord, "@!") {
-		// Subagent completions - only if this is the first non-whitespace on the line
-		if !p.isAtLineStart(line, start) {
-			return nil
-		}
+		// Subagent completions - allow anywhere in the line, not just at the start
 		completions := p.getSubagentCompletions(currentWord)
 
 		// Build the proper prefix and suffix for the current line context

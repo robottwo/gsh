@@ -8,6 +8,16 @@ import (
 	"mvdan.cc/sh/v3/interp"
 )
 
+// gshVariableNames contains the list of GSH-specific environment variables
+// This variable is used to maintain consistency across the codebase
+var gshVariableNames = []string{
+	"GSH_PROMPT", "GSH_APROMPT", "GSH_LOG_LEVEL", "GSH_CLEAN_LOG_FILE",
+	"GSH_MINIMUM_HEIGHT", "GSH_FAST_MODEL_API_KEY", "GSH_FAST_MODEL_BASE_URL",
+	"GSH_FAST_MODEL_ID", "GSH_SLOW_MODEL_API_KEY", "GSH_SLOW_MODEL_BASE_URL",
+	"GSH_SLOW_MODEL_ID", "GSH_CONTEXT_TYPES_FOR_AGENT", "GSH_AGENT_CONTEXT_WINDOW_TOKENS",
+	"GSH_AGENT_APPROVED_BASH_COMMAND_REGEX", "GSH_AGENT_MACROS",
+}
+
 // DynamicEnviron implements expand.Environ to provide a dynamic environment
 // that includes both system environment variables and GSH-specific variables
 type DynamicEnviron struct {
@@ -82,15 +92,7 @@ func SyncVariablesToEnv(runner *interp.Runner) {
 		dynamicEnv = NewDynamicEnviron()
 	}
 
-	gshVars := []string{
-		"GSH_PROMPT", "GSH_APROMPT", "GSH_LOG_LEVEL", "GSH_CLEAN_LOG_FILE",
-		"GSH_MINIMUM_HEIGHT", "GSH_FAST_MODEL_API_KEY", "GSH_FAST_MODEL_BASE_URL",
-		"GSH_FAST_MODEL_ID", "GSH_SLOW_MODEL_API_KEY", "GSH_SLOW_MODEL_BASE_URL",
-		"GSH_SLOW_MODEL_ID", "GSH_CONTEXT_TYPES_FOR_AGENT", "GSH_AGENT_CONTEXT_WINDOW_TOKENS",
-		"GSH_AGENT_APPROVED_BASH_COMMAND_REGEX", "GSH_AGENT_MACROS",
-	}
-
-	for _, varName := range gshVars {
+	for _, varName := range gshVariableNames {
 		if varValue, exists := runner.Vars[varName]; exists {
 			value := varValue.String()
 
@@ -121,15 +123,7 @@ func SyncVariableToEnv(runner *interp.Runner, varName string) {
 
 // IsGSHVariable checks if a variable name is a gsh-specific variable that should be synced
 func IsGSHVariable(name string) bool {
-	gshVars := []string{
-		"GSH_PROMPT", "GSH_APROMPT", "GSH_LOG_LEVEL", "GSH_CLEAN_LOG_FILE",
-		"GSH_MINIMUM_HEIGHT", "GSH_FAST_MODEL_API_KEY", "GSH_FAST_MODEL_BASE_URL",
-		"GSH_FAST_MODEL_ID", "GSH_SLOW_MODEL_API_KEY", "GSH_SLOW_MODEL_BASE_URL",
-		"GSH_SLOW_MODEL_ID", "GSH_CONTEXT_TYPES_FOR_AGENT", "GSH_AGENT_CONTEXT_WINDOW_TOKENS",
-		"GSH_AGENT_APPROVED_BASH_COMMAND_REGEX", "GSH_AGENT_MACROS",
-	}
-
-	for _, gshVar := range gshVars {
+	for _, gshVar := range gshVariableNames {
 		if name == gshVar {
 			return true
 		}

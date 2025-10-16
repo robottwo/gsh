@@ -152,7 +152,10 @@ func TestTypesetNoOptions(t *testing.T) {
 }
 
 func TestTypesetRunnerNotInitialized(t *testing.T) {
-	// Reset global runner to nil
+	// Reset global runner to nil for testing uninitialized state
+	// This direct access to globalRunner is intentionally used here for testing
+	// the error condition when the runner is not initialized. This is the
+	// only place where direct global variable manipulation is necessary.
 	oldRunner := globalRunner
 	globalRunner = nil
 	defer func() {

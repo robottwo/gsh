@@ -33,6 +33,7 @@ var DEFAULT_VARS []byte
 var command = flag.String("c", "", "run a command")
 var loginShell = flag.Bool("l", false, "run as a login shell")
 var rcFile = flag.String("rcfile", "", "use a custom rc file instead of ~/.gshrc")
+var strictConfig = flag.Bool("strict-config", false, "fail fast if configuration files contain errors (like bash 'set -e')")
 
 var helpFlag = flag.Bool("h", false, "display help information")
 var versionFlag = flag.Bool("ver", false, "display build version")
@@ -199,21 +200,16 @@ func initializeRunner(analyticsManager *analytics.AnalyticsManager, historyManag
 	dynamicEnv.UpdateGSHVar("GSH_BUILD_VERSION", BUILD_VERSION)
 	env := expand.Environ(dynamicEnv)
 
-	runner, err := interp.New(
-		interp.Interactive(true),
-		interp.Env(env),
-		interp.StdIO(os.Stdin, os.Stdout, os.Stderr),
-	)
-	if err != nil {
-		panic(err)
-	}
+	var runner *interp.Runner
 
+	// Create interpreter with all necessary configuration in a single call
 	runner, err = interp.New(
 		interp.Interactive(true),
 		interp.Env(env),
 		interp.StdIO(os.Stdin, os.Stdout, os.Stderr),
 		interp.ExecHandlers(
 			bash.NewTypesetCommandHandler(),
+			bash.SetBuiltinHandler(),
 			analytics.NewAnalyticsCommandHandler(analyticsManager),
 			evaluate.NewEvaluateCommandHandler(analyticsManager),
 			history.NewHistoryCommandHandler(historyManager),
@@ -261,9 +257,19 @@ func initializeRunner(analyticsManager *analytics.AnalyticsManager, historyManag
 	for _, configFile := range configFiles {
 		if stat, err := os.Stat(configFile); err == nil && stat.Size() > 0 {
 			if err := bash.RunBashScriptFromFile(context.Background(), runner, configFile); err != nil {
-				fmt.Fprintf(os.Stderr, "failed to load %s: %v\n", configFile, err)
+				// Enhanced error reporting with context
+				fmt.Fprintf(os.Stderr, "Configuration file '%s' contains errors: %v\n", configFile, err)
+
+				if *strictConfig {
+					// In strict mode (like bash 'set -e'), fail fast on configuration errors
+					return nil, fmt.Errorf("aborting due to configuration error in %s: %w", configFile, err)
+				}
+				// In permissive mode (default), continue despite configuration errors
+				// This maintains backward compatibility while providing better visibility
 			}
+			// Configuration loaded successfully in permissive mode
 		}
+		// File not found or empty - this is normal behavior, not an error
 	}
 
 	// Sync gsh variables to system environment so they're visible to 'env' command

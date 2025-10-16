@@ -14,9 +14,18 @@ import (
 var typesetPrintf = fmt.Printf
 
 // Global runner reference that can be set after initialization
+// NOTE: This global variable pattern is intentionally used here due to the constraints
+// of the interp.ExecHandlerFunc signature, which doesn't allow passing additional context.
+// The runner must be available to the handler closure, and since handlers are registered
+// before the runner is created, we use this global state approach.
+//
+// Testability is maintained through SetTypesetRunner() which allows tests to inject
+// mock runners. The tight coupling is a necessary trade-off for the framework integration.
 var globalRunner *interp.Runner
 
 // SetTypesetRunner sets the global runner reference for the typeset command handler
+// This function enables dependency injection for testing purposes, allowing tests
+// to provide their own runner instances without modifying global application state.
 func SetTypesetRunner(runner *interp.Runner) {
 	globalRunner = runner
 }
@@ -124,7 +133,7 @@ func printFunctionDefinitions(runner *interp.Runner) error {
 		}
 
 		// Format: function_name () { body }
-		typesetPrintf("%s () \n{ \n", name)
+		typesetPrintf("%s () {\n", name)
 
 		// Print the function body
 		printFunctionBody(fn)
