@@ -174,6 +174,13 @@ func GeneratePreselectionPattern(prefix string) string {
 	return "^" + regexp.QuoteMeta(prefix) + ".*"
 }
 
+// BashTool executes a single-shell command with interactive permission checks, captures its output, records history, and returns a JSON result.
+// 
+// The params map must contain:
+//   - "reason": a string explaining why the command should run.
+//   - "command": the shell command to execute.
+// 
+// BashTool prints the command to stdout, may prompt the user for permission or show a permissions menu, and records the command and its exit status in history. It returns a JSON-encoded string with keys "stdout", "stderr", and "exitCode". On validation or runtime failures it returns a failed tool response string describing the error.
 func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, logger *zap.Logger, params map[string]any) string {
 	reason, ok := params["reason"].(string)
 	if !ok {

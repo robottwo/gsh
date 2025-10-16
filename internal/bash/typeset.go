@@ -16,12 +16,14 @@ var typesetPrintf = fmt.Printf
 // Global runner reference that can be set after initialization
 var globalRunner *interp.Runner
 
-// SetTypesetRunner sets the global runner reference for the typeset command handler
+// SetTypesetRunner sets the Runner used by the package for handling the `typeset`/`declare` command handler.
+// Passing nil clears the stored runner.
 func SetTypesetRunner(runner *interp.Runner) {
 	globalRunner = runner
 }
 
-// NewTypesetCommandHandler creates a new ExecHandler for the typeset and declare commands
+// NewTypesetCommandHandler returns an exec handler middleware that intercepts the `typeset`, `declare` and `gsh_typeset` commands.
+// If the first argument is one of those command names the returned handler implements typeset behavior using the package runner; otherwise it forwards the call to the next handler. If the package runner has not been initialized the handler returns an error.
 func NewTypesetCommandHandler() func(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
 	return func(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
 		return func(ctx context.Context, args []string) error {
@@ -45,6 +47,15 @@ func NewTypesetCommandHandler() func(next interp.ExecHandlerFunc) interp.ExecHan
 	}
 }
 
+// handleTypesetCommand parses typeset/declare command arguments and invokes
+// the corresponding listing routine.
+//
+// The function recognizes the flags `-f` (list full function definitions),
+// `-F` (list function names only), and `-p` (list variables with attributes).
+// Flags may be combined (for example `-fp`). Option parsing stops at the first
+// non-option argument. If no flag is provided, it defaults to listing variables.
+// Returns an error for any unrecognized flag or any error returned by the
+// selected printing routine.
 func handleTypesetCommand(runner *interp.Runner, args []string) error {
 	// Parse options - skip the command name (args[0])
 	var (
@@ -103,7 +114,9 @@ func handleTypesetCommand(runner *interp.Runner, args []string) error {
 	return nil
 }
 
-// printFunctionDefinitions prints all function definitions in bash-compatible format
+// printFunctionDefinitions prints all function definitions in a bash-compatible format.
+// If runner.Funcs is nil the function does nothing and returns nil.
+// Function names are printed in sorted order; nil function entries are skipped.
 func printFunctionDefinitions(runner *interp.Runner) error {
 	if runner.Funcs == nil {
 		return nil
@@ -135,7 +148,8 @@ func printFunctionDefinitions(runner *interp.Runner) error {
 	return nil
 }
 
-// printFunctionBody prints the statements in a function body
+// printFunctionBody prints the statements of a function body, formatted using the shell syntax printer and indented for typeset output.
+// If fn is nil, it does nothing.
 func printFunctionBody(fn *syntax.Stmt) {
 	if fn == nil {
 		return
@@ -176,7 +190,9 @@ func printFunctionNames(runner *interp.Runner) error {
 	return nil
 }
 
-// printVariables prints all variables with their values in bash-compatible format
+// printVariables prints all variables from the provided runner in Bash-compatible
+// `declare` form, using `-x` for exported variables and `--` for non-exported ones.
+// Values are written quoted. If the runner has no variables, the function does nothing.
 func printVariables(runner *interp.Runner) error {
 	if runner.Vars == nil {
 		return nil

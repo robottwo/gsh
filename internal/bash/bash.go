@@ -10,6 +10,8 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 )
 
+// PreprocessTypesetCommands replaces occurrences of `typeset` and `declare` with `gsh_typeset` for the flags -f, -F, and -p.
+// It also handles simple extra-space variants (for example, "typeset  -f"). The input string is returned with those substitutions applied.
 func PreprocessTypesetCommands(input string) string {
 	// Simple string replacement approach - more reliable than complex regex
 	result := input
@@ -33,6 +35,13 @@ func PreprocessTypesetCommands(input string) string {
 	return result
 }
 
+// RunBashScriptFromReader reads all data from reader, preprocesses typeset/declare
+// variants into gsh_typeset, parses the result as a shell program named by name,
+// and executes it using runner.
+//
+// It returns any read or parse error encountered. Errors produced by executing
+// the parsed program via runner are suppressed (nil is returned) so the caller's
+// script processing can continue even if individual commands fail.
 func RunBashScriptFromReader(ctx context.Context, runner *interp.Runner, reader io.Reader, name string) error {
 	// Read the entire input first
 	content, err := io.ReadAll(reader)
@@ -59,6 +68,8 @@ func RunBashScriptFromReader(ctx context.Context, runner *interp.Runner, reader 
 	return nil
 }
 
+// RunBashScriptFromFile opens the file at filePath and executes its contents as a Bash-like script using the provided runner.
+// It returns an error if opening the file fails or if executing the script (via RunBashScriptFromReader) fails.
 func RunBashScriptFromFile(ctx context.Context, runner *interp.Runner, filePath string) error {
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -68,6 +79,9 @@ func RunBashScriptFromFile(ctx context.Context, runner *interp.Runner, filePath 
 	return RunBashScriptFromReader(ctx, runner, f, filePath)
 }
 
+// RunBashCommandInSubShell runs a single shell command in a subshell and captures its stdout and stderr.
+// 
+// It returns the captured stdout, the captured stderr, and any error encountered while parsing or executing the command.
 func RunBashCommandInSubShell(ctx context.Context, runner *interp.Runner, command string) (string, string, error) {
 	// Pre-process the command to transform typeset/declare commands
 	processedCommand := PreprocessTypesetCommands(command)
@@ -97,6 +111,9 @@ func RunBashCommandInSubShell(ctx context.Context, runner *interp.Runner, comman
 	return outBuf.String(), errBuf.String(), nil
 }
 
+// RunBashCommand runs the given shell command using the provided runner and returns its captured stdout and stderr.
+// It preprocesses common `typeset`/`declare` variants before parsing, executes the first parsed statement, and captures its standard output and standard error.
+// The returned values are the captured stdout, the captured stderr, and an error if parsing or execution fails.
 func RunBashCommand(ctx context.Context, runner *interp.Runner, command string) (string, string, error) {
 	// Pre-process the command to transform typeset/declare commands
 	processedCommand := PreprocessTypesetCommands(command)
