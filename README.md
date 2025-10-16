@@ -48,19 +48,13 @@ make build
 - Works with local or remote LLMs
 - Built-in model evaluation using your command history
 
-Related docs:
-- Getting started: [GETTING_STARTED.md](GETTING_STARTED.md)
-- Configuration: [CONFIGURATION.md](CONFIGURATION.md)
-- Agent guide: [AGENT.md](AGENT.md)
-- Subagents: [../SUBAGENTS.md](../SUBAGENTS.md)
-
 ---
 
 ## Generative Command Suggestion
 
 gsh automatically suggests the next command you are likely to run based on your history and context.
 
-![Generative Suggestion](../assets/prediction.gif)
+![Generative Suggestion](assets/prediction.gif)
 
 Key points:
 - Suggestions are lightweight and fast
@@ -73,7 +67,7 @@ Key points:
 
 gsh can explain the command you are about to run so you can validate effects and options quickly.
 
-![Command Explanation](../assets/explanation.gif)
+![Command Explanation](assets/explanation.gif)
 
 Benefits:
 - Prevents mistakes
@@ -86,15 +80,15 @@ Benefits:
 
 The Agent can perform tasks for you by executing commands with your approval, previewing file edits, and providing rich summaries.
 
-![Agent](../assets/agent.gif)
-![Agent Coding](../assets/agent_coding.gif)
+![Agent](assets/agent.gif)
+![Agent Coding](assets/agent_coding.gif)
 
 Highlights:
 - Interactive permission workflow with granular controls
 - Preview of code edits and diffs before applying changes
 - Chat macros for common tasks
 
-Full guide: [AGENT.md](AGENT.md)
+Full guide: [docs/AGENT.md](docs/AGENT.md)
 
 ---
 
@@ -107,10 +101,12 @@ Capabilities:
 - Supports Claude-style and Roo Code-style configurations
 - Intelligent auto-selection based on your prompt
 
-See: [../SUBAGENTS.md](../SUBAGENTS.md)
+See: [docs/SUBAGENTS.md](docs/SUBAGENTS.md)
 
 Details and screenshots:
-- docs/FEATURES.md
+- [docs/FEATURES.md](docs/FEATURES.md)
+
+--- 
 
 --- 
 
