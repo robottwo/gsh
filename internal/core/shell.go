@@ -25,6 +25,19 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 )
 
+// RunInteractiveShell starts an interactive Read–Eval–Print loop for the shell,
+// handling prompt updates, context retrieval, completions, agent/subagent chat,
+// macros, and command execution until the session exits.
+// 
+// The function initializes context providers, prediction/explanation components,
+// agent and subagent integrations, and a completion provider; installs a SIGINT
+// handler that is ignored; then repeatedly reads user input, dispatches agent
+// or subagent interactions for messages beginning with "@", skips empty input,
+// executes regular shell commands, synchronizes shell variables back to the
+// environment after each command, and breaks the loop when a command indicates
+// the shell should exit.
+// 
+// If reading input from the line editor fails, an error is returned.
 func RunInteractiveShell(
 	ctx context.Context,
 	runner *interp.Runner,
@@ -199,6 +212,8 @@ func RunInteractiveShell(
 	return nil
 }
 
+// executeCommand executes the provided shell input, records it in history, updates timing and exit-code variables, and reports whether the shell should exit.
+// It preprocesses typeset/declare forms, parses the command, runs it via the supplied runner, and records the command duration and exit code in history and as the environment variables GSH_LAST_COMMAND_DURATION_MS and GSH_LAST_COMMAND_EXIT_CODE. The returned boolean is true if the runner signaled an exit; the returned error is a parse or run error, or nil on success.
 func executeCommand(ctx context.Context, input string, historyManager *history.HistoryManager, runner *interp.Runner, logger *zap.Logger) (bool, error) {
 	// Pre-process input to transform typeset/declare -f/-F/-p commands to gsh_typeset
 	input = bash.PreprocessTypesetCommands(input)

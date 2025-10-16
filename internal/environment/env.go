@@ -73,6 +73,10 @@ func GetPwd(runner *interp.Runner) string {
 	return runner.Vars["PWD"].String()
 }
 
+// GetPrompt returns the shell prompt string to display.
+// It invokes the optional GSH_UPDATE_PROMPT function (if present) to refresh environment prompt values,
+// prefixes the prompt with "[dev] " when GSH_BUILD_VERSION equals "dev", and then returns the value of
+// GSH_PROMPT (with any prefix). If the resulting prompt is empty, DEFAULT_PROMPT is returned.
 func GetPrompt(runner *interp.Runner, logger *zap.Logger) string {
 	promptUpdater := runner.Funcs["GSH_UPDATE_PROMPT"]
 	if promptUpdater != nil {
@@ -97,7 +101,8 @@ func GetPrompt(runner *interp.Runner, logger *zap.Logger) string {
 }
 
 // GetAgentPrompt returns the prompt to use when the agent displays commands
-// If GSH_APROMPT is set, it uses that; otherwise falls back to GetPrompt
+// GetAgentPrompt returns the prompt used for agent interactions, preferring the value of the GSH_APROMPT variable.
+// If GSH_APROMPT is empty, it falls back to GetPrompt.
 func GetAgentPrompt(runner *interp.Runner, logger *zap.Logger) string {
 	agentPrompt := runner.Vars["GSH_APROMPT"].String()
 	if agentPrompt != "" {
@@ -107,6 +112,10 @@ func GetAgentPrompt(runner *interp.Runner, logger *zap.Logger) string {
 	return GetPrompt(runner, logger)
 }
 
+// GetAgentContextWindowTokens returns the agent context window size in tokens as specified by
+// the GSH_AGENT_CONTEXT_WINDOW_TOKENS environment variable.
+//
+// If the environment value cannot be parsed as an integer, this function returns 32768.
 func GetAgentContextWindowTokens(runner *interp.Runner, logger *zap.Logger) int {
 	agentContextWindow, err := strconv.ParseInt(
 		runner.Vars["GSH_AGENT_CONTEXT_WINDOW_TOKENS"].String(), 10, 32)

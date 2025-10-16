@@ -16,7 +16,8 @@ type DynamicEnviron struct {
 }
 
 // NewDynamicEnviron creates a new DynamicEnviron that wraps the system environment
-// and adds GSH-specific variables
+// NewDynamicEnviron creates a DynamicEnviron that wraps the current OS environment
+// and an empty set of GSH-specific variables.
 func NewDynamicEnviron() *DynamicEnviron {
 	return &DynamicEnviron{
 		systemEnv: expand.ListEnviron(os.Environ()...),
@@ -72,7 +73,14 @@ func (de *DynamicEnviron) UpdateSystemEnv() {
 }
 
 // SyncVariablesToEnv syncs gsh's internal variables to system environment variables
-// This makes variables like GSH_PROMPT visible to external commands like 'env'
+// SyncVariablesToEnv makes GSH-specific runner variables visible to the OS environment
+// and ensures the runner uses a DynamicEnviron that overlays those variables.
+//
+// If the runner already has a DynamicEnviron it is reused; otherwise a new one is created.
+// For a predefined set of GSH variable names, the function copies any values present in
+// runner.Vars into the process environment and into the DynamicEnviron's GSH variable map.
+// After updating GSH variables it refreshes the DynamicEnviron's view of the system
+// environment and assigns the DynamicEnviron to runner.Env.
 func SyncVariablesToEnv(runner *interp.Runner) {
 	// Check if we already have a DynamicEnviron, if not create one
 	var dynamicEnv *DynamicEnviron
@@ -106,7 +114,9 @@ func SyncVariablesToEnv(runner *interp.Runner) {
 	runner.Env = dynamicEnv
 }
 
-// SyncVariableToEnv syncs a single gsh variable to system environment
+// SyncVariableToEnv synchronizes the named GSH variable from the runner's Vars into the process environment
+// and updates the runner's DynamicEnviron entry for that variable when the runner's Env is a DynamicEnviron.
+// If the variable is not present in runner.Vars, the function does nothing.
 func SyncVariableToEnv(runner *interp.Runner, varName string) {
 	if varValue, exists := runner.Vars[varName]; exists {
 		value := varValue.String()
@@ -119,7 +129,8 @@ func SyncVariableToEnv(runner *interp.Runner, varName string) {
 	}
 }
 
-// IsGSHVariable checks if a variable name is a gsh-specific variable that should be synced
+// IsGSHVariable reports whether the given name is a GSH-specific variable that should be synchronized to the environment.
+// Known GSH variable names and any name beginning with the "GSH_" prefix are considered GSH-specific.
 func IsGSHVariable(name string) bool {
 	gshVars := []string{
 		"GSH_PROMPT", "GSH_APROMPT", "GSH_LOG_LEVEL", "GSH_CLEAN_LOG_FILE",

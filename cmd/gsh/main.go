@@ -184,7 +184,9 @@ func initializeCompletionManager() *completion.CompletionManager {
 	return completion.NewCompletionManager()
 }
 
-// initializeRunner loads the shell configuration files and sets up the interpreter.
+// initializeRunner creates and configures an interp.Runner for the shell, loads default variables and user rc files, and registers command handlers and environment synchronization.
+// 
+// The configured runner uses a dynamic environment with GSH-specific variables (SHELL and GSH_BUILD_VERSION), registers handlers for typeset, analytics, evaluate, history, and completion, and executes the embedded default vars followed by a sequence of rc files. If the global rcFile flag is set, only that file is loaded; otherwise the default per-user files are loaded and, for login shells, /etc/profile and ~/.gsh_profile are prepended. After loading configurations, the function synchronizes GSH variables into the system environment, assigns the runner to the analytics manager, and exposes it to the typeset command handler.
 func initializeRunner(analyticsManager *analytics.AnalyticsManager, historyManager *history.HistoryManager, completionManager *completion.CompletionManager) (*interp.Runner, error) {
 	shellPath, err := os.Executable()
 	if err != nil {
