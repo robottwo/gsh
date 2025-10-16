@@ -20,12 +20,12 @@ var osReadDir = os.ReadDir
 
 // SubagentInfo represents minimal information about a subagent for completion purposes
 type SubagentInfo struct {
-	ID          string
-	Name        string
-	Description string
+	ID           string
+	Name         string
+	Description  string
 	AllowedTools []string
-	FileRegex   string
-	Model       string
+	FileRegex    string
+	Model        string
 }
 
 // SubagentProvider defines the interface for providing subagent information to the completion system
@@ -38,7 +38,7 @@ type SubagentProvider interface {
 type ShellCompletionProvider struct {
 	CompletionManager CompletionManagerInterface
 	Runner            *interp.Runner
-	SubagentProvider  SubagentProvider // Optional, for #@ completions
+	SubagentProvider  SubagentProvider // Optional, for @ completions
 }
 
 // NewShellCompletionProvider creates a new ShellCompletionProvider
@@ -50,7 +50,7 @@ func NewShellCompletionProvider(manager CompletionManagerInterface, runner *inte
 	}
 }
 
-// SetSubagentProvider sets the subagent provider for #@ completions
+// SetSubagentProvider sets the subagent provider for @ completions
 func (p *ShellCompletionProvider) SetSubagentProvider(provider SubagentProvider) {
 	p.SubagentProvider = provider
 }
@@ -141,12 +141,12 @@ func (p *ShellCompletionProvider) checkSpecialPrefixes(line string, pos int) []s
 
 	currentWord := line[start:end]
 
-	// Check if the current word starts with #/, #!, or #@
-	if strings.HasPrefix(currentWord, "#/") {
+	// Check if the current word starts with @/, @!, or @
+	if strings.HasPrefix(currentWord, "@/") {
 		completions := p.getMacroCompletions(currentWord)
 		if len(completions) == 0 {
 			// No macro matches found, fall back to path completion
-			pathPrefix := strings.TrimPrefix(currentWord, "#/")
+			pathPrefix := strings.TrimPrefix(currentWord, "@/")
 			completions := getFileCompletions(pathPrefix, environment.GetPwd(p.Runner))
 
 			// Build the proper prefix for the current line context
@@ -162,11 +162,11 @@ func (p *ShellCompletionProvider) checkSpecialPrefixes(line string, pos int) []s
 			return completions
 		}
 		return completions
-	} else if strings.HasPrefix(currentWord, "#!") {
+	} else if strings.HasPrefix(currentWord, "@!") {
 		completions := p.getBuiltinCommandCompletions(currentWord)
 		if len(completions) == 0 {
 			// No builtin command matches found, fall back to path completion
-			pathPrefix := strings.TrimPrefix(currentWord, "#!")
+			pathPrefix := strings.TrimPrefix(currentWord, "@!")
 			completions := getFileCompletions(pathPrefix, environment.GetPwd(p.Runner))
 
 			// Build the proper prefix for the current line context
@@ -182,8 +182,11 @@ func (p *ShellCompletionProvider) checkSpecialPrefixes(line string, pos int) []s
 			return completions
 		}
 		return completions
-	} else if strings.HasPrefix(currentWord, "#@") {
-		// Subagent completions
+	} else if strings.HasPrefix(currentWord, "@") && !strings.HasPrefix(currentWord, "@/") && !strings.HasPrefix(currentWord, "@!") {
+		// Subagent completions - only if this is the first non-whitespace on the line
+		if !p.isAtLineStart(line, start) {
+			return nil
+		}
 		completions := p.getSubagentCompletions(currentWord)
 
 		// Build the proper prefix and suffix for the current line context
@@ -198,7 +201,7 @@ func (p *ShellCompletionProvider) checkSpecialPrefixes(line string, pos int) []s
 
 		if len(completions) == 0 {
 			// No subagent matches found, fall back to path completion
-			pathPrefix := strings.TrimPrefix(currentWord, "#@")
+			pathPrefix := strings.TrimPrefix(currentWord, "@")
 			completions := getFileCompletions(pathPrefix, environment.GetPwd(p.Runner))
 
 			// Add completions with proper prefix and suffix
@@ -216,7 +219,7 @@ func (p *ShellCompletionProvider) checkSpecialPrefixes(line string, pos int) []s
 	}
 
 	// Also check if we're at the beginning of a potential prefix
-	// Look backwards to see if there's a #/, #!, or #@ that we should complete
+	// Look backwards to see if there's a @/, @!, or @ that we should complete
 	if start > 0 {
 		// Find the start of the word that might contain our prefix
 		wordStart := start
@@ -225,11 +228,11 @@ func (p *ShellCompletionProvider) checkSpecialPrefixes(line string, pos int) []s
 		}
 
 		potentialWord := line[wordStart:end]
-		if strings.HasPrefix(potentialWord, "#/") {
+		if strings.HasPrefix(potentialWord, "@/") {
 			completions := p.getMacroCompletions(potentialWord)
 			if len(completions) == 0 {
 				// No macro matches found, fall back to path completion
-				pathPrefix := strings.TrimPrefix(potentialWord, "#/")
+				pathPrefix := strings.TrimPrefix(potentialWord, "@/")
 				completions := getFileCompletions(pathPrefix, environment.GetPwd(p.Runner))
 
 				// Build the proper prefix for the current line context
@@ -245,11 +248,11 @@ func (p *ShellCompletionProvider) checkSpecialPrefixes(line string, pos int) []s
 				return completions
 			}
 			return completions
-		} else if strings.HasPrefix(potentialWord, "#!") {
+		} else if strings.HasPrefix(potentialWord, "@!") {
 			completions := p.getBuiltinCommandCompletions(potentialWord)
 			if len(completions) == 0 {
 				// No builtin command matches found, fall back to path completion
-				pathPrefix := strings.TrimPrefix(potentialWord, "#!")
+				pathPrefix := strings.TrimPrefix(potentialWord, "@!")
 				completions := getFileCompletions(pathPrefix, environment.GetPwd(p.Runner))
 
 				// Build the proper prefix for the current line context
@@ -265,7 +268,11 @@ func (p *ShellCompletionProvider) checkSpecialPrefixes(line string, pos int) []s
 				return completions
 			}
 			return completions
-		} else if strings.HasPrefix(potentialWord, "#@") {
+		} else if strings.HasPrefix(potentialWord, "@") && !strings.HasPrefix(potentialWord, "@/") && !strings.HasPrefix(potentialWord, "@!") {
+			// Subagent completions - only if this is the first non-whitespace on the line
+			if !p.isAtLineStart(line, wordStart) {
+				return nil
+			}
 			completions := p.getSubagentCompletions(potentialWord)
 
 			// Build the proper prefix and suffix for the current line context
@@ -280,7 +287,7 @@ func (p *ShellCompletionProvider) checkSpecialPrefixes(line string, pos int) []s
 
 			if len(completions) == 0 {
 				// No subagent matches found, fall back to path completion
-				pathPrefix := strings.TrimPrefix(potentialWord, "#@")
+				pathPrefix := strings.TrimPrefix(potentialWord, "@")
 				completions := getFileCompletions(pathPrefix, environment.GetPwd(p.Runner))
 
 				// Add completions with proper prefix and suffix
@@ -299,6 +306,20 @@ func (p *ShellCompletionProvider) checkSpecialPrefixes(line string, pos int) []s
 	}
 
 	return nil
+}
+
+// isAtLineStart checks if the given position is at the start of the line (after whitespace)
+func (p *ShellCompletionProvider) isAtLineStart(line string, pos int) bool {
+	if pos <= 0 {
+		return true
+	}
+	// Check if all characters before this position are whitespace
+	for i := 0; i < pos; i++ {
+		if !unicode.IsSpace(rune(line[i])) {
+			return false
+		}
+	}
+	return true
 }
 
 // getCurrentWordBoundary finds the start and end of the current word at cursor position
@@ -322,7 +343,7 @@ func (p *ShellCompletionProvider) getCurrentWordBoundary(line string, pos int) (
 	return start, end
 }
 
-// getMacroCompletions returns completions for macros starting with #/
+// getMacroCompletions returns completions for macros starting with @/
 func (p *ShellCompletionProvider) getMacroCompletions(prefix string) []string {
 	var macrosStr string
 	if p.Runner != nil {
@@ -342,11 +363,11 @@ func (p *ShellCompletionProvider) getMacroCompletions(prefix string) []string {
 	}
 
 	var completions []string
-	prefixAfterSlash := strings.TrimPrefix(prefix, "#/")
+	prefixAfterSlash := strings.TrimPrefix(prefix, "@/")
 
 	for macroName := range macros {
 		if strings.HasPrefix(macroName, prefixAfterSlash) {
-			completions = append(completions, "#/"+macroName)
+			completions = append(completions, "@/"+macroName)
 		}
 	}
 
@@ -512,7 +533,7 @@ func (p *ShellCompletionProvider) getAliasCompletions(prefix string) []string {
 	return completions
 }
 
-// getBuiltinCommandCompletions returns completions for built-in commands starting with #!
+// getBuiltinCommandCompletions returns completions for built-in commands starting with @!
 func (p *ShellCompletionProvider) getBuiltinCommandCompletions(prefix string) []string {
 	builtinCommands := []string{
 		"new",
@@ -523,11 +544,11 @@ func (p *ShellCompletionProvider) getBuiltinCommandCompletions(prefix string) []
 	}
 
 	var completions []string
-	prefixAfterBang := strings.TrimPrefix(prefix, "#!")
+	prefixAfterBang := strings.TrimPrefix(prefix, "@!")
 
 	for _, cmd := range builtinCommands {
 		if strings.HasPrefix(cmd, prefixAfterBang) {
-			completions = append(completions, "#!"+cmd)
+			completions = append(completions, "@!"+cmd)
 		}
 	}
 
@@ -536,7 +557,7 @@ func (p *ShellCompletionProvider) getBuiltinCommandCompletions(prefix string) []
 	return completions
 }
 
-// getSubagentCompletions returns completions for subagents starting with #@
+// getSubagentCompletions returns completions for subagents starting with @
 func (p *ShellCompletionProvider) getSubagentCompletions(prefix string) []string {
 	// If no subagent provider is available, return no completions
 	if p.SubagentProvider == nil {
@@ -544,7 +565,7 @@ func (p *ShellCompletionProvider) getSubagentCompletions(prefix string) []string
 	}
 
 	var completions []string
-	prefixAfterAt := strings.TrimPrefix(prefix, "#@")
+	prefixAfterAt := strings.TrimPrefix(prefix, "@")
 
 	// Get all available subagents
 	subagents := p.SubagentProvider.GetAllSubagents()
@@ -552,10 +573,10 @@ func (p *ShellCompletionProvider) getSubagentCompletions(prefix string) []string
 	for id, subagent := range subagents {
 		// Match against both ID and name
 		if strings.HasPrefix(id, prefixAfterAt) {
-			completions = append(completions, "#@"+id)
+			completions = append(completions, "@"+id)
 		} else if strings.HasPrefix(strings.ToLower(subagent.Name), strings.ToLower(prefixAfterAt)) {
 			// Also match against display name (case-insensitive)
-			completions = append(completions, "#@"+id)
+			completions = append(completions, "@"+id)
 		}
 	}
 
@@ -564,7 +585,7 @@ func (p *ShellCompletionProvider) getSubagentCompletions(prefix string) []string
 	return completions
 }
 
-// GetHelpInfo returns help information for special commands like #!, #/, and #@
+// GetHelpInfo returns help information for special commands like @!, @/, and @
 func (p *ShellCompletionProvider) GetHelpInfo(line string, pos int) string {
 	// Get the current word being completed
 	start, end := p.getCurrentWordBoundary(line, pos)
@@ -574,21 +595,21 @@ func (p *ShellCompletionProvider) GetHelpInfo(line string, pos int) string {
 
 	currentWord := line[start:end]
 
-	// Check if the current word starts with #! (agent controls)
-	if strings.HasPrefix(currentWord, "#!") {
-		command := strings.TrimPrefix(currentWord, "#!")
+	// Check if the current word starts with @! (agent controls)
+	if strings.HasPrefix(currentWord, "@!") {
+		command := strings.TrimPrefix(currentWord, "@!")
 		return p.getBuiltinCommandHelp(command)
 	}
 
-	// Check if the current word starts with #/ (macros)
-	if strings.HasPrefix(currentWord, "#/") {
-		macroName := strings.TrimPrefix(currentWord, "#/")
+	// Check if the current word starts with @/ (macros)
+	if strings.HasPrefix(currentWord, "@/") {
+		macroName := strings.TrimPrefix(currentWord, "@/")
 		return p.getMacroHelp(macroName)
 	}
 
-	// Check if the current word starts with #@ (subagents)
-	if strings.HasPrefix(currentWord, "#@") {
-		subagentName := strings.TrimPrefix(currentWord, "#@")
+	// Check if the current word starts with @ (subagents)
+	if strings.HasPrefix(currentWord, "@") && !strings.HasPrefix(currentWord, "@/") && !strings.HasPrefix(currentWord, "@!") {
+		subagentName := strings.TrimPrefix(currentWord, "@")
 		return p.getSubagentHelp(subagentName)
 	}
 
@@ -601,14 +622,14 @@ func (p *ShellCompletionProvider) GetHelpInfo(line string, pos int) string {
 		}
 
 		potentialWord := line[wordStart:end]
-		if strings.HasPrefix(potentialWord, "#!") {
-			command := strings.TrimPrefix(potentialWord, "#!")
+		if strings.HasPrefix(potentialWord, "@!") {
+			command := strings.TrimPrefix(potentialWord, "@!")
 			return p.getBuiltinCommandHelp(command)
-		} else if strings.HasPrefix(potentialWord, "#/") {
-			macroName := strings.TrimPrefix(potentialWord, "#/")
+		} else if strings.HasPrefix(potentialWord, "@/") {
+			macroName := strings.TrimPrefix(potentialWord, "@/")
 			return p.getMacroHelp(macroName)
-		} else if strings.HasPrefix(potentialWord, "#@") {
-			subagentName := strings.TrimPrefix(potentialWord, "#@")
+		} else if strings.HasPrefix(potentialWord, "@") && !strings.HasPrefix(potentialWord, "@/") && !strings.HasPrefix(potentialWord, "@!") {
+			subagentName := strings.TrimPrefix(potentialWord, "@")
 			return p.getSubagentHelp(subagentName)
 		}
 	}
@@ -620,24 +641,24 @@ func (p *ShellCompletionProvider) GetHelpInfo(line string, pos int) string {
 func (p *ShellCompletionProvider) getBuiltinCommandHelp(command string) string {
 	switch command {
 	case "new":
-		return "**#!new** - Start a new chat session with the agent\n\nThis command resets the conversation history and starts fresh."
+		return "**@!new** - Start a new chat session with the agent\n\nThis command resets the conversation history and starts fresh."
 	case "tokens":
-		return "**#!tokens** - Display token usage statistics\n\nShows information about token consumption for the current chat session."
+		return "**@!tokens** - Display token usage statistics\n\nShows information about token consumption for the current chat session."
 	case "subagents":
-		return "**#!subagents** - List all available subagents and modes\n\nDisplays all configured Claude-style subagents and Roo Code-style modes with their descriptions and capabilities."
+		return "**@!subagents** - List all available subagents and modes\n\nDisplays all configured Claude-style subagents and Roo Code-style modes with their descriptions and capabilities."
 	case "reload-subagents":
-		return "**#!reload-subagents** - Reload subagent configurations from disk\n\nRefreshes the subagent configurations by rescanning the .claude/agents/ and .roo/modes/ directories."
+		return "**@!reload-subagents** - Reload subagent configurations from disk\n\nRefreshes the subagent configurations by rescanning the .claude/agents/ and .roo/modes/ directories."
 	case "subagent-info":
-		return "**#!subagent-info <name>** - Show detailed information about a subagent\n\nDisplays comprehensive information about a specific subagent including tools, file restrictions, and configuration."
+		return "**@!subagent-info <name>** - Show detailed information about a subagent\n\nDisplays comprehensive information about a specific subagent including tools, file restrictions, and configuration."
 	case "":
-		return "**Agent Controls** - Built-in commands for managing the agent\n\nAvailable commands:\n• **#!new** - Start a new chat session\n• **#!tokens** - Show token usage statistics\n• **#!subagents** - List available subagents\n• **#!reload-subagents** - Reload subagent configurations\n• **#!subagent-info <name>** - Show subagent details"
+		return "**Agent Controls** - Built-in commands for managing the agent\n\nAvailable commands:\n• **@!new** - Start a new chat session\n• **@!tokens** - Show token usage statistics\n• **@!subagents** - List available subagents\n• **@!reload-subagents** - Reload subagent configurations\n• **@!subagent-info <name>** - Show subagent details"
 	default:
 		// Check for partial matches
 		builtinCommands := []string{"new", "tokens", "subagents", "reload-subagents", "subagent-info"}
 		for _, cmd := range builtinCommands {
 			if strings.HasPrefix(cmd, command) {
 				// Partial match, show general help
-				return "**Agent Controls** - Built-in commands for managing the agent\n\nAvailable commands:\n• **#!new** - Start a new chat session\n• **#!tokens** - Show token usage statistics\n• **#!subagents** - List available subagents\n• **#!reload-subagents** - Reload subagent configurations\n• **#!subagent-info <name>** - Show subagent details"
+				return "**Agent Controls** - Built-in commands for managing the agent\n\nAvailable commands:\n• **@!new** - Start a new chat session\n• **@!tokens** - Show token usage statistics\n• **@!subagents** - List available subagents\n• **@!reload-subagents** - Reload subagent configurations\n• **@!subagent-info <name>** - Show subagent details"
 			}
 		}
 		return ""
@@ -670,7 +691,7 @@ func (p *ShellCompletionProvider) getMacroHelp(macroName string) string {
 		// Show general macro help
 		var macroList []string
 		for name := range macros {
-			macroList = append(macroList, "• **#/"+name+"**")
+			macroList = append(macroList, "• **@/"+name+"**")
 		}
 		sort.Strings(macroList)
 
@@ -684,7 +705,7 @@ func (p *ShellCompletionProvider) getMacroHelp(macroName string) string {
 	// Check for exact match first
 	if message, ok := macros[macroName]; ok {
 		if msgStr, ok := message.(string); ok {
-			return fmt.Sprintf("**#/%s** - Chat macro\n\n**Expands to:**\n%s", macroName, msgStr)
+			return fmt.Sprintf("**@/%s** - Chat macro\n\n**Expands to:**\n%s", macroName, msgStr)
 		}
 	}
 
@@ -693,7 +714,7 @@ func (p *ShellCompletionProvider) getMacroHelp(macroName string) string {
 	for name, message := range macros {
 		if strings.HasPrefix(name, macroName) {
 			if msgStr, ok := message.(string); ok {
-				matches = append(matches, fmt.Sprintf("• **#/%s** - %s", name, msgStr))
+				matches = append(matches, fmt.Sprintf("• **@/%s** - %s", name, msgStr))
 			}
 		}
 	}
@@ -711,7 +732,7 @@ func (p *ShellCompletionProvider) getSubagentHelp(subagentName string) string {
 	// If no subagent manager is available, return generic help
 	if p.SubagentProvider == nil {
 		if subagentName == "" {
-			return "**Subagents** - Specialized AI assistants with specific roles\n\nNo subagent manager configured. Use #@<subagent-name> to invoke a subagent."
+			return "**Subagents** - Specialized AI assistants with specific roles\n\nNo subagent manager configured. Use @<subagent-name> to invoke a subagent."
 		}
 		return ""
 	}
@@ -731,7 +752,7 @@ func (p *ShellCompletionProvider) getSubagentHelp(subagentName string) string {
 			if description == "" {
 				description = "No description available"
 			}
-			subagentList = append(subagentList, fmt.Sprintf("• **#@%s** - %s", id, description))
+			subagentList = append(subagentList, fmt.Sprintf("• **@%s** - %s", id, description))
 		}
 		sort.Strings(subagentList)
 
@@ -760,7 +781,7 @@ func (p *ShellCompletionProvider) getSubagentHelp(subagentName string) string {
 			description = "No description available"
 		}
 
-		return fmt.Sprintf("**#@%s** - %s\n\n%s%s%s%s",
+		return fmt.Sprintf("**@%s** - %s\n\n%s%s%s%s",
 			subagentName, subagent.Name, description, toolsStr, fileRegexStr, modelStr)
 	}
 
@@ -772,19 +793,19 @@ func (p *ShellCompletionProvider) getSubagentHelp(subagentName string) string {
 			if description == "" {
 				description = "No description available"
 			}
-			matches = append(matches, fmt.Sprintf("• **#@%s** - %s", id, description))
+			matches = append(matches, fmt.Sprintf("• **@%s** - %s", id, description))
 		}
 	}
 
 	// Also check for matches by name (case-insensitive)
 	for id, subagent := range subagents {
 		if strings.HasPrefix(strings.ToLower(subagent.Name), strings.ToLower(subagentName)) &&
-		   !strings.HasPrefix(id, subagentName) { // Don't duplicate ID matches
+			!strings.HasPrefix(id, subagentName) { // Don't duplicate ID matches
 			description := subagent.Description
 			if description == "" {
 				description = "No description available"
 			}
-			matches = append(matches, fmt.Sprintf("• **#@%s** (%s) - %s", id, subagent.Name, description))
+			matches = append(matches, fmt.Sprintf("• **@%s** (%s) - %s", id, subagent.Name, description))
 		}
 	}
 

@@ -39,25 +39,25 @@ func TestSubagentCompletions(t *testing.T) {
 	// Create mock subagent provider
 	mockProvider := NewMockSubagentProvider()
 	mockProvider.AddSubagent(&SubagentInfo{
-		ID:          "code-reviewer",
-		Name:        "Code Reviewer",
-		Description: "Review code for bugs and best practices",
+		ID:           "code-reviewer",
+		Name:         "Code Reviewer",
+		Description:  "Review code for bugs and best practices",
 		AllowedTools: []string{"view_file", "bash"},
-		Model:       "inherit",
+		Model:        "inherit",
 	})
 	mockProvider.AddSubagent(&SubagentInfo{
-		ID:          "test-writer",
-		Name:        "Test Writer",
-		Description: "Write comprehensive tests",
+		ID:           "test-writer",
+		Name:         "Test Writer",
+		Description:  "Write comprehensive tests",
 		AllowedTools: []string{"create_file", "edit_file"},
-		Model:       "gpt-4",
+		Model:        "gpt-4",
 	})
 	mockProvider.AddSubagent(&SubagentInfo{
-		ID:          "docs-helper",
-		Name:        "Documentation Helper",
-		Description: "Create and maintain documentation",
+		ID:           "docs-helper",
+		Name:         "Documentation Helper",
+		Description:  "Create and maintain documentation",
 		AllowedTools: []string{"create_file", "edit_file", "view_file"},
-		FileRegex:   "\\.(md|txt)$",
+		FileRegex:    "\\.(md|txt)$",
 	})
 
 	provider.SetSubagentProvider(mockProvider)
@@ -69,40 +69,40 @@ func TestSubagentCompletions(t *testing.T) {
 		expected []string
 	}{
 		{
-			name:     "complete all subagents with #@",
-			line:     "#@",
-			pos:      2,
-			expected: []string{"#@code-reviewer", "#@docs-helper", "#@test-writer"},
+			name:     "complete all subagents with @",
+			line:     "@",
+			pos:      1,
+			expected: []string{"@code-reviewer", "@docs-helper", "@test-writer"},
 		},
 		{
 			name:     "complete subagents starting with 'c'",
-			line:     "#@c",
-			pos:      3,
-			expected: []string{"#@code-reviewer"},
+			line:     "@c",
+			pos:      2,
+			expected: []string{"@code-reviewer"},
 		},
 		{
 			name:     "complete subagents starting with 't'",
-			line:     "#@t",
-			pos:      3,
-			expected: []string{"#@test-writer"},
+			line:     "@t",
+			pos:      2,
+			expected: []string{"@test-writer"},
 		},
 		{
 			name:     "complete subagents starting with 'd'",
-			line:     "#@d",
-			pos:      3,
-			expected: []string{"#@docs-helper"},
+			line:     "@d",
+			pos:      2,
+			expected: []string{"@docs-helper"},
 		},
 		{
 			name:     "no completions for non-matching prefix",
-			line:     "#@xyz",
-			pos:      5,
+			line:     "@xyz",
+			pos:      4,
 			expected: []string{},
 		},
 		{
 			name:     "subagent completion in middle of line",
-			line:     "some command #@c and more text",
-			pos:      15,
-			expected: []string{"some command #@code-reviewer and more text"},
+			line:     "some command @c and more text",
+			pos:      14,
+			expected: []string{"some command @code-reviewer and more text"},
 		},
 	}
 
@@ -122,18 +122,18 @@ func TestSubagentHelp(t *testing.T) {
 	// Create mock subagent provider
 	mockProvider := NewMockSubagentProvider()
 	mockProvider.AddSubagent(&SubagentInfo{
-		ID:          "code-reviewer",
-		Name:        "Code Reviewer",
-		Description: "Review code for bugs and best practices",
+		ID:           "code-reviewer",
+		Name:         "Code Reviewer",
+		Description:  "Review code for bugs and best practices",
 		AllowedTools: []string{"view_file", "bash"},
-		Model:       "inherit",
+		Model:        "inherit",
 	})
 	mockProvider.AddSubagent(&SubagentInfo{
-		ID:          "test-writer",
-		Name:        "Test Writer",
-		Description: "Write comprehensive tests",
+		ID:           "test-writer",
+		Name:         "Test Writer",
+		Description:  "Write comprehensive tests",
 		AllowedTools: []string{"create_file", "edit_file"},
-		Model:       "gpt-4",
+		Model:        "gpt-4",
 	})
 
 	provider.SetSubagentProvider(mockProvider)
@@ -145,28 +145,28 @@ func TestSubagentHelp(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "help for #@ empty shows all subagents",
-			line: "#@",
-			pos:  2,
-			expected: "**Subagents** - Specialized AI assistants with specific roles\n\nAvailable subagents:\n• **#@code-reviewer** - Review code for bugs and best practices\n• **#@test-writer** - Write comprehensive tests",
+			name:     "help for @ empty shows all subagents",
+			line:     "@",
+			pos:      1,
+			expected: "**Subagents** - Specialized AI assistants with specific roles\n\nAvailable subagents:\n• **@code-reviewer** - Review code for bugs and best practices\n• **@test-writer** - Write comprehensive tests",
 		},
 		{
-			name: "help for specific subagent",
-			line: "#@code-reviewer",
-			pos:  15,
-			expected: "**#@code-reviewer** - Code Reviewer\n\nReview code for bugs and best practices\n**Tools:** [view_file bash]",
+			name:     "help for specific subagent",
+			line:     "@code-reviewer",
+			pos:      14,
+			expected: "**@code-reviewer** - Code Reviewer\n\nReview code for bugs and best practices\n**Tools:** [view_file bash]",
 		},
 		{
-			name: "help for subagent with model override",
-			line: "#@test-writer",
-			pos:  13,
-			expected: "**#@test-writer** - Test Writer\n\nWrite comprehensive tests\n**Tools:** [create_file edit_file]\n**Model:** gpt-4",
+			name:     "help for subagent with model override",
+			line:     "@test-writer",
+			pos:      12,
+			expected: "**@test-writer** - Test Writer\n\nWrite comprehensive tests\n**Tools:** [create_file edit_file]\n**Model:** gpt-4",
 		},
 		{
-			name: "help for partial match",
-			line: "#@c",
-			pos:  3,
-			expected: "**Subagents** - Matching subagents:\n\n• **#@code-reviewer** - Review code for bugs and best practices",
+			name:     "help for partial match",
+			line:     "@c",
+			pos:      2,
+			expected: "**Subagents** - Matching subagents:\n\n• **@code-reviewer** - Review code for bugs and best practices",
 		},
 	}
 
@@ -185,11 +185,11 @@ func TestSubagentCompletionWithoutProvider(t *testing.T) {
 	// Note: No subagent provider set
 
 	// Should return empty completions when no provider is set
-	result := provider.GetCompletions("#@", 2)
+	result := provider.GetCompletions("@", 1)
 	assert.Equal(t, []string{}, result)
 
 	// Should return generic help when no provider is set
-	help := provider.GetHelpInfo("#@", 2)
-	expected := "**Subagents** - Specialized AI assistants with specific roles\n\nNo subagent manager configured. Use #@<subagent-name> to invoke a subagent."
+	help := provider.GetHelpInfo("@", 1)
+	expected := "**Subagents** - Specialized AI assistants with specific roles\n\nNo subagent manager configured. Use @<subagent-name> to invoke a subagent."
 	assert.Equal(t, expected, help)
 }

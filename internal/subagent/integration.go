@@ -82,7 +82,7 @@ func (si *SubagentIntegration) HandleCommand(chatMessage string) (bool, <-chan s
 func (si *SubagentIntegration) parseSubagentCommand(chatMessage string) (string, string) {
 	chatMessage = strings.TrimSpace(chatMessage)
 
-	// Pattern 1: #@subagent-name prompt (Claude style)
+	// Pattern 1: @subagent-name prompt (Claude style)
 	if strings.HasPrefix(chatMessage, "@") {
 		parts := strings.SplitN(chatMessage[1:], " ", 2)
 		if len(parts) >= 1 {
@@ -95,9 +95,9 @@ func (si *SubagentIntegration) parseSubagentCommand(chatMessage string) (string,
 		}
 	}
 
-	// Pattern 2: #:mode-slug prompt (Roo Code style)
-	if strings.HasPrefix(chatMessage, ":") {
-		parts := strings.SplitN(chatMessage[1:], " ", 2)
+	// Pattern 2: @:mode-slug prompt (Roo Code style)
+	if strings.HasPrefix(chatMessage, "@:") {
+		parts := strings.SplitN(chatMessage[2:], " ", 2)
 		if len(parts) >= 1 {
 			subagentID := parts[0]
 			prompt := ""

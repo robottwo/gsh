@@ -99,22 +99,22 @@ gsh automatically detects when you change directories and rescans for subagent c
 
 ```bash
 # Working in a web project
-~/web-project $ #!subagents
+~/web-project $ @!subagents
 Loaded 2 subagent(s):
   • Frontend Helper (frontend-dev): React/TypeScript development assistant
   • API Tester (api-test): API endpoint testing and validation
 
 # Move to a data science project
 ~/web-project $ cd ~/ml-project
-~/ml-project $ #!subagents
+~/ml-project $ @!subagents
 Loaded 3 subagent(s):
   • Data Analyst (data-viz): Data visualization and analysis expert
   • Model Trainer (ml-model): Machine learning model development
   • Jupyter Helper (notebook): Jupyter notebook assistance
 
 # Tab completion shows current directory's subagents
-~/ml-project $ #@<TAB>
-#@data-viz    #@ml-model    #@notebook
+~/ml-project $ @<TAB>
+@data-viz    @ml-model    @notebook
 
 # Intelligent selection uses current directory's subagents
 ~/ml-project $ # help me visualize this dataset
@@ -125,17 +125,17 @@ Loaded 3 subagent(s):
 
 ```bash
 # Parent directory subagents
-~/my-company $ #!subagents
+~/my-company $ @!subagents
 Loaded 2 subagent(s): company-standards, security-reviewer
 
 # Subdirectory inherits parent + adds specific ones
 ~/my-company $ cd backend-api
-~/my-company/backend-api $ #!subagents
+~/my-company/backend-api $ @!subagents
 Loaded 3 subagent(s): api-helper, company-standards, security-reviewer
 
 # Deeper nesting for specialized contexts
 ~/my-company/backend-api $ cd auth-service
-~/my-company/backend-api/auth-service $ #!subagents
+~/my-company/backend-api/auth-service $ @!subagents
 Loaded 2 subagent(s): auth-specialist, security-reviewer
 ```
 
@@ -161,19 +161,19 @@ The automatic detection enables fluid workflows where your AI assistants adapt t
 
 There are multiple ways to invoke subagents:
 
-1. **Direct invocation (Claude style)**: `#@subagent-name your prompt here`
-2. **Direct invocation (Roo style)**: `#:mode-slug your prompt here`
-3. **Intelligent auto-selection**: `#your natural language request here`
+1. **Direct invocation (Claude style)**: `@subagent-name your prompt here`
+2. **Direct invocation (Roo style)**: `@:mode-slug your prompt here`
+3. **Intelligent auto-selection**: `@ your natural language request here`
 
 ### Examples
 
 ```bash
 # Direct invocation with explicit syntax
-gsh> #@code-reviewer Please review the authentication logic in auth.go
+gsh> @code-reviewer Please review the authentication logic in auth.go
 gsh [code-reviewer]: I'll analyze the authentication logic for potential security issues...
 
 # Roo Code mode invocation
-gsh> #:git-helper Help me resolve this merge conflict
+gsh> @:git-helper Help me resolve this merge conflict
 gsh [🔧 Git Assistant]: Let me guide you through resolving this merge conflict...
 
 # Intelligent auto-selection (NEW)
@@ -214,10 +214,10 @@ This helps you understand what type of expertise is being applied to your reques
 
 New agent controls for managing subagents:
 
-- `#!subagents` - List all subagents available in the current directory
-- `#!reload-subagents` - Refresh configurations from disk (automatic on directory change)
-- `#!subagent-info <name>` - Show detailed information about a subagent
-- `#!reset-<subagent-name>` - Reset chat session for specific subagent
+- `@!subagents` - List all subagents available in the current directory
+- `@!reload-subagents` - Refresh configurations from disk (automatic on directory change)
+- `@!subagent-info <name>` - Show detailed information about a subagent
+- `@!reset-<subagent-name>` - Reset chat session for specific subagent
 
 **Note**: All agent controls automatically reflect the current directory's subagent configuration. When you change directories, these commands will show subagents available in your new location.
 
@@ -225,23 +225,23 @@ New agent controls for managing subagents:
 
 gsh provides comprehensive tab completion for the subagent system:
 
-- **Agent controls**: Type `#!s` + Tab → `#!subagents`, `#!subagent-info`
-- **Subagent invocation**: Type `#@` + Tab → Shows subagents available in current directory
-- **Partial matching**: Type `#@c` + Tab → Shows subagents starting with 'c' in current directory
+- **Agent controls**: Type `@!s` + Tab → `@!subagents`, `@!subagent-info`
+- **Subagent invocation**: Type `@` + Tab → Shows subagents available in current directory
+- **Partial matching**: Type `@c` + Tab → Shows subagents starting with 'c' in current directory
 - **Context preservation**: Works correctly even when completing in the middle of a line
 - **Help information**: Tab completion includes help text for discovery
 - **Directory-aware**: Completions automatically update when you change directories
 
 ```bash
 # Tab completion examples
-gsh> #@<TAB>
-#@code-reviewer    #@docs-writer    #@test-writer
+gsh> @<TAB>
+@code-reviewer    @docs-writer    @test-writer
 
-gsh> #@c<TAB>
-#@code-reviewer
+gsh> @c<TAB>
+@code-reviewer
 
-gsh> some command #@c<TAB> more text
-some command #@code-reviewer more text
+gsh> some command @c<TAB> more text
+some command @code-reviewer more text
 ```
 
 ## Configuration Reference
@@ -327,6 +327,6 @@ If you're coming from Claude Code or Roo Code, you can use your existing subagen
 1. Copy Claude subagents to `.claude/agents/`
 2. Copy Roo Code modes to `.roo/` (as `.yaml` files, `.roomodes` files, or `rules-{slug}/` directories)
 3. Place them in project directories for project-specific assistants or in `~/` for global access
-4. Use `#!subagents` to see what's available (automatically reflects current directory)
+4. Use `@!subagents` to see what's available (automatically reflects current directory)
 
 The subagent system is fully backward compatible with gsh's existing agent functionality. All existing configurations will automatically benefit from directory change detection - no modifications needed.

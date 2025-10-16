@@ -104,7 +104,7 @@ func RunInteractiveShell(
 		}
 
 		// Handle agent chat and macros
-		if strings.HasPrefix(line, "#") {
+		if strings.HasPrefix(line, "@") {
 			chatMessage := strings.TrimSpace(line[1:])
 
 			// Handle agent controls
