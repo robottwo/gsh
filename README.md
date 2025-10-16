@@ -56,7 +56,7 @@ Details and screenshots:
 - Features: [docs/FEATURES.md](docs/FEATURES.md)
 - Agent: [docs/AGENT.md](docs/AGENT.md)
 - Subagents: [docs/SUBAGENTS.md](docs/SUBAGENTS.md)
-- Roadmap: [ROADMAP.md](ROADMAP.md])
+- Roadmap: [ROADMAP.md](ROADMAP.md)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
 
 ## Contributing
