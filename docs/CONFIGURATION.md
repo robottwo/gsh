@@ -132,7 +132,7 @@ These patterns complement any defaults you provide via environment variables.
 
 ## Related Docs
 
-- Quick start: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
+- Quick start: [GETTING_STARTED.md](GETTING_STARTED.md)
 - Features: [docs/FEATURES.md](docs/FEATURES.md)
 - Agent: [docs/AGENT.md](docs/AGENT.md)
 - Subagents overview: [SUBAGENTS.md](SUBAGENTS.md)
