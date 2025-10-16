@@ -51,18 +51,18 @@ Details and screenshots:
 
 ## Documentation
 
-- Getting started: docs/GETTING_STARTED.md
-- Configuration: docs/CONFIGURATION.md
-- Features: docs/FEATURES.md
-- Agent: docs/AGENT.md
-- Subagents: SUBAGENTS.md
-- Roadmap: ROADMAP.md
-- Changelog: CHANGELOG.md
+- Getting started: [docs/GETTING_STARTED.md]
+- Configuration: [docs/CONFIGURATION.md]
+- Features: [docs/FEATURES.md]
+- Agent: [docs/AGENT.md]
+- Subagents: [docs/SUBAGENTS.md]
+- Roadmap: [ROADMAP.md]
+- Changelog: [CHANGELOG.md]
 
 ## Contributing
 
 Contributions are welcome. Please read:
-- CONTRIBUTING.md
+- [CONTRIBUTING.md]
 
 Contribution flow:
 - Open issues and pull requests against this repository
@@ -86,4 +86,4 @@ See CHANGELOG.md for recent updates and ROADMAP.md for planned work.
 
 ## License
 
-MIT License. See LICENSE.
+MIT License. See [LICENSE].
