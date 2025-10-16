@@ -73,7 +73,7 @@ Capabilities:
 - Supports Claude-style and Roo Code-style configurations
 - Intelligent auto-selection based on your prompt
 
-See: [../SUBAGENTS.md](../SUBAGENTS.md)
+See: [SUBAGENTS.md](SUBAGENTS.md)
 
 ---
 
@@ -160,26 +160,6 @@ More in: [AGENT.md](AGENT.md)
 
 ---
 
-## Keybindings
-
-Ergonomic defaults for navigation and editing (non-exhaustive):
-- Character Forward: Right Arrow, Ctrl+F
-- Character Backward: Left Arrow, Ctrl+B
-- Word Forward: Alt+Right Arrow, Ctrl+Right Arrow, Alt+F
-- Word Backward: Alt+Left Arrow, Ctrl+Left Arrow, Alt+B
-- Delete Word Backward: Alt+Backspace, Ctrl+W
-- Delete Word Forward: Alt+Delete, Alt+D
-- Delete After Cursor: Ctrl+K
-- Delete Before Cursor: Ctrl+U
-- Delete Character Backward: Backspace, Ctrl+H
-- Delete Character Forward: Delete, Ctrl+D
-- Line Start: Home, Ctrl+A
-- Line End: End, Ctrl+E
-- Paste: Ctrl+V
-
-Complete usage and shell integration tips: [GETTING_STARTED.md](GETTING_STARTED.md)
-
----
 
 ## Roadmap
 
