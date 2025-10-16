@@ -32,6 +32,7 @@ var DEFAULT_VARS []byte
 
 var command = flag.String("c", "", "run a command")
 var loginShell = flag.Bool("l", false, "run as a login shell")
+var rcFile = flag.String("rcfile", "", "use a custom rc file instead of ~/.gshrc")
 
 var helpFlag = flag.Bool("h", false, "display help information")
 var versionFlag = flag.Bool("ver", false, "display build version")
@@ -189,17 +190,30 @@ func initializeRunner(analyticsManager *analytics.AnalyticsManager, historyManag
 	if err != nil {
 		panic(err)
 	}
-	env := expand.ListEnviron(append(
-		os.Environ(),
-		fmt.Sprintf("SHELL=%s", shellPath),
-		fmt.Sprintf("GSH_BUILD_VERSION=%s", BUILD_VERSION),
-	)...)
+	// Create a dynamic environment that can include GSH variables
+	dynamicEnv := environment.NewDynamicEnviron()
+	// Set initial system environment variables
+	dynamicEnv.UpdateSystemEnv()
+	// Add GSH-specific environment variables
+	dynamicEnv.UpdateGSHVar("SHELL", shellPath)
+	dynamicEnv.UpdateGSHVar("GSH_BUILD_VERSION", BUILD_VERSION)
+	env := expand.Environ(dynamicEnv)
 
 	runner, err := interp.New(
 		interp.Interactive(true),
 		interp.Env(env),
 		interp.StdIO(os.Stdin, os.Stdout, os.Stderr),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	runner, err = interp.New(
+		interp.Interactive(true),
+		interp.Env(env),
+		interp.StdIO(os.Stdin, os.Stdout, os.Stderr),
 		interp.ExecHandlers(
+			bash.NewTypesetCommandHandler(),
 			analytics.NewAnalyticsCommandHandler(analyticsManager),
 			evaluate.NewEvaluateCommandHandler(analyticsManager),
 			history.NewHistoryCommandHandler(historyManager),
@@ -220,21 +234,28 @@ func initializeRunner(analyticsManager *analytics.AnalyticsManager, historyManag
 		panic(err)
 	}
 
-	configFiles := []string{
-		filepath.Join(core.HomeDir(), ".gshrc"),
-		filepath.Join(core.HomeDir(), ".gshenv"),
-	}
+	var configFiles []string
 
-	// Check if this is a login shell
-	if *loginShell || strings.HasPrefix(os.Args[0], "-") {
-		// Prepend .gsh_profile to the list of config files
-		configFiles = append(
-			[]string{
-				"/etc/profile",
-				filepath.Join(core.HomeDir(), ".gsh_profile"),
-			},
-			configFiles...,
-		)
+	// If custom rcfile is provided, use it instead of the default ones
+	if *rcFile != "" {
+		configFiles = []string{*rcFile}
+	} else {
+		configFiles = []string{
+			filepath.Join(core.HomeDir(), ".gshrc"),
+			filepath.Join(core.HomeDir(), ".gshenv"),
+		}
+
+		// Check if this is a login shell
+		if *loginShell || strings.HasPrefix(os.Args[0], "-") {
+			// Prepend .gsh_profile to the list of config files
+			configFiles = append(
+				[]string{
+					"/etc/profile",
+					filepath.Join(core.HomeDir(), ".gsh_profile"),
+				},
+				configFiles...,
+			)
+		}
 	}
 
 	for _, configFile := range configFiles {
@@ -245,7 +266,13 @@ func initializeRunner(analyticsManager *analytics.AnalyticsManager, historyManag
 		}
 	}
 
+	// Sync gsh variables to system environment so they're visible to 'env' command
+	environment.SyncVariablesToEnv(runner)
+
 	analyticsManager.Runner = runner
+
+	// Set the global runner for the typeset command handler
+	bash.SetTypesetRunner(runner)
 
 	return runner, nil
 }

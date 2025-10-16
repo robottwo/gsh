@@ -187,6 +187,9 @@ func RunInteractiveShell(
 			fmt.Fprintf(os.Stderr, "Error executing command: %v\n", err)
 		}
 
+		// Sync any gsh variables that might have been changed during command execution
+		environment.SyncVariablesToEnv(runner)
+
 		if shouldExit {
 			logger.Debug("exiting...")
 			break
@@ -197,6 +200,9 @@ func RunInteractiveShell(
 }
 
 func executeCommand(ctx context.Context, input string, historyManager *history.HistoryManager, runner *interp.Runner, logger *zap.Logger) (bool, error) {
+	// Pre-process input to transform typeset/declare -f/-F/-p commands to gsh_typeset
+	input = bash.PreprocessTypesetCommands(input)
+
 	var prog *syntax.Stmt
 	err := syntax.NewParser().Stmts(strings.NewReader(input), func(stmt *syntax.Stmt) bool {
 		prog = stmt
