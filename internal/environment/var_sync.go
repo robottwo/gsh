@@ -95,10 +95,13 @@ func SyncVariablesToEnv(runner *interp.Runner) {
 	for _, varName := range gshVariableNames {
 		if varValue, exists := runner.Vars[varName]; exists {
 			value := varValue.String()
-
 			os.Setenv(varName, value)
 			dynamicEnv.UpdateGSHVar(varName, value)
+			continue
 		}
+
+		os.Unsetenv(varName)
+		delete(dynamicEnv.gshVars, varName)
 	}
 
 	// Update the system environment in the dynamic environment
@@ -118,7 +121,14 @@ func SyncVariableToEnv(runner *interp.Runner, varName string) {
 		if dynamicEnv, ok := runner.Env.(*DynamicEnviron); ok {
 			dynamicEnv.UpdateGSHVar(varName, value)
 		}
+		return
 	}
+
+	os.Unsetenv(varName)
+	if dynamicEnv, ok := runner.Env.(*DynamicEnviron); ok {
+		delete(dynamicEnv.gshVars, varName)
+	}
+}
 }
 
 // IsGSHVariable checks if a variable name is a gsh-specific variable that should be synced
