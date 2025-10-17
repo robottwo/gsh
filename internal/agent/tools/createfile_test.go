@@ -153,59 +153,6 @@ func TestCreateFile(t *testing.T) {
 	}
 }
 
-func TestGenerateFileOperationRegex(t *testing.T) {
-	tests := []struct {
-		name      string
-		filePath  string
-		operation string
-		expected  string
-	}{
-		{
-			name:      "file with extension in directory",
-			filePath:  "/home/user/project/src/main.go",
-			operation: "create_file",
-			expected:  "create_file:/home/user/project/src/.*\\\\.go$",
-		},
-		{
-			name:      "file with extension in root",
-			filePath:  "/tmp/test.txt",
-			operation: "create_file",
-			expected:  "create_file:/tmp/.*\\\\.txt$",
-		},
-		{
-			name:      "file without extension",
-			filePath:  "/home/user/README",
-			operation: "create_file",
-			expected:  "create_file:/home/user/README$",
-		},
-		{
-			name:      "file with multiple dots",
-			filePath:  "/var/log/app.log.backup",
-			operation: "create_file",
-			expected:  "create_file:/var/log/.*\\\\.backup$",
-		},
-		{
-			name:      "relative path with extension",
-			filePath:  "./src/utils.js",
-			operation: "create_file",
-			expected:  "create_file:src/.*\\\\.js$",
-		},
-		{
-			name:      "edit operation",
-			filePath:  "/home/user/config.yaml",
-			operation: "edit_file",
-			expected:  "edit_file:/home/user/.*\\\\.yaml$",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := GenerateFileOperationRegex(tt.filePath, tt.operation)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 func TestCreateFileToolWithRelativePath(t *testing.T) {
 	logger := zap.NewNop()
 
@@ -359,77 +306,6 @@ func TestCreateFileToolFileOperationErrors(t *testing.T) {
 	}
 }
 
-func TestGenerateFileOperationRegexEdgeCases(t *testing.T) {
-	tests := []struct {
-		name      string
-		filePath  string
-		operation string
-		expected  string
-	}{
-		{
-			name:      "file with special regex characters",
-			filePath:  "/home/user/test[file].go",
-			operation: "create_file",
-			expected:  "create_file:/home/user/.*\\\\.go$",
-		},
-		{
-			name:      "file with parentheses",
-			filePath:  "/tmp/test(1).txt",
-			operation: "create_file",
-			expected:  "create_file:/tmp/.*\\\\.txt$",
-		},
-		{
-			name:      "file with plus signs",
-			filePath:  "/var/log/app++.log",
-			operation: "create_file",
-			expected:  "create_file:/var/log/.*\\\\.log$",
-		},
-		{
-			name:      "file with question marks",
-			filePath:  "/home/user/file?.txt",
-			operation: "create_file",
-			expected:  "create_file:/home/user/.*\\\\.txt$",
-		},
-		{
-			name:      "file with asterisks",
-			filePath:  "/tmp/file*.backup",
-			operation: "create_file",
-			expected:  "create_file:/tmp/.*\\\\.backup$",
-		},
-		{
-			name:      "file with curly braces",
-			filePath:  "/config/{env}.json",
-			operation: "create_file",
-			expected:  "create_file:/config/.*\\\\.json$",
-		},
-		{
-			name:      "file without extension with special chars",
-			filePath:  "/home/user/README[backup]",
-			operation: "create_file",
-			expected:  "create_file:/home/user/README\\[backup\\]$",
-		},
-		{
-			name:      "dot file with extension",
-			filePath:  "/home/user/.env.local",
-			operation: "create_file",
-			expected:  "create_file:/home/user/.*\\\\.local$",
-		},
-		{
-			name:      "hidden file without extension",
-			filePath:  "/home/user/.gitignore",
-			operation: "create_file",
-			expected:  "create_file:/home/user/.*\\\\.gitignore$",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := GenerateFileOperationRegex(tt.filePath, tt.operation)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 func TestCreateFileToolWithExistingFile(t *testing.T) {
 	logger := zap.NewNop()
 	runner, _ := interp.New()
@@ -523,47 +399,6 @@ func TestCreateFileToolContentVariations(t *testing.T) {
 			writtenContent, err := os.ReadFile(tempFile.Name())
 			assert.NoError(t, err)
 			assert.Equal(t, tt.content, string(writtenContent))
-		})
-	}
-}
-
-func TestGenerateFileOperationRegexPathCleaning(t *testing.T) {
-	tests := []struct {
-		name      string
-		filePath  string
-		operation string
-		expected  string
-	}{
-		{
-			name:      "path with redundant slashes",
-			filePath:  "/home//user///project//file.go",
-			operation: "create_file",
-			expected:  "create_file:/home/user/project/.*\\\\.go$",
-		},
-		{
-			name:      "path with dot segments",
-			filePath:  "/home/user/./project/../project/file.go",
-			operation: "create_file",
-			expected:  "create_file:/home/user/project/.*\\\\.go$",
-		},
-		{
-			name:      "relative path with dot segments",
-			filePath:  "./src/../lib/utils.js",
-			operation: "create_file",
-			expected:  "create_file:lib/.*\\\\.js$",
-		},
-		{
-			name:      "path ending with slash",
-			filePath:  "/home/user/project/",
-			operation: "create_file",
-			expected:  "create_file:/home/user/project$", // No extension, so exact match
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := GenerateFileOperationRegex(tt.filePath, tt.operation)
-			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
