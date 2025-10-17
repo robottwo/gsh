@@ -211,7 +211,9 @@ func executeCommand(ctx context.Context, input string, historyManager *history.H
 
 	// Add timeout protection for preprocessing
 	preprocessStart := time.Now()
+	logger.Debug("calling bash.PreprocessTypesetCommands", zap.String("input", input))
 	processedInput := bash.PreprocessTypesetCommands(input)
+	logger.Debug("bash.PreprocessTypesetCommands completed", zap.String("output", processedInput))
 	preprocessDuration := time.Since(preprocessStart)
 
 	logger.Debug("preprocessing completed",

@@ -258,7 +258,7 @@ func initializeRunner(analyticsManager *analytics.AnalyticsManager, historyManag
 		if stat, err := os.Stat(configFile); err == nil && stat.Size() > 0 {
 			if err := bash.RunBashScriptFromFile(context.Background(), runner, configFile); err != nil {
 				// Enhanced error reporting with context
-				fmt.Fprintf(os.Stderr, "Configuration file '%s' contains errors: %v\n", configFile, err)
+				fmt.Fprintf(os.Stderr, "Configuration file %s contains errors: %v\n", configFile, err)
 
 				if *strictConfig {
 					// In strict mode (like bash 'set -e'), fail fast on configuration errors

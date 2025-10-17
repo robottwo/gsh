@@ -81,6 +81,7 @@ func preprocessWithParsing(input string) string {
 	)
 
 	state := StateNormal
+	var delimiter string // Store the heredoc delimiter
 
 	// Helper function to check if we should transform at current position
 	shouldTransformAt := func(pos int) bool {
@@ -199,6 +200,37 @@ func preprocessWithParsing(input string) string {
 				result.WriteByte(ch)
 				result.WriteByte(input[i+1])
 				i += 2
+
+				// Extract the delimiter - read until whitespace or newline
+				// But don't consume the delimiter characters, just note where it starts
+				delimiterStart := i
+				tempI := i
+
+				// Skip any leading whitespace in the delimiter
+				for tempI < len(input) && isWhitespace(input[tempI]) && input[tempI] != '\n' {
+					tempI++
+				}
+
+				// Handle <<- (indented heredoc) - skip the dash
+				if tempI < len(input) && input[tempI] == '-' {
+					tempI++
+					// Skip more whitespace after dash
+					for tempI < len(input) && isWhitespace(input[tempI]) && input[tempI] != '\n' {
+						tempI++
+					}
+				}
+
+				// Now extract the actual delimiter
+				delimiterStart = tempI
+				for tempI < len(input) && !isWhitespace(input[tempI]) && input[tempI] != '\n' {
+					tempI++
+				}
+				if tempI > delimiterStart {
+					// Store the delimiter for later matching
+					delimiter = input[delimiterStart:tempI]
+				}
+
+				// Continue processing from current position (don't advance i)
 				continue
 			}
 
@@ -235,12 +267,34 @@ func preprocessWithParsing(input string) string {
 			i++
 
 		case StateHeredoc:
-			// In heredoc, just copy everything until we hit the delimiter
-			// For simplicity, we'll treat the entire heredoc content as protected
+			// In heredoc, copy everything and check for delimiter match
 			result.WriteByte(ch)
+
+			if ch == '\n' {
+				if delimiter != "" {
+					remaining := input[i+1:]
+
+					// Check if the next line starts with our delimiter at the beginning
+					lines := strings.Split(remaining, "\n")
+					if len(lines) > 0 {
+						nextLine := lines[0]
+
+						if nextLine == delimiter {
+							// This is our delimiter line - exit heredoc state
+							state = StateNormal
+							delimiter = "" // Reset delimiter
+						} else if strings.HasPrefix(nextLine, delimiter) {
+							// Check if it's followed by whitespace or end of line
+							afterDelimiter := len(delimiter)
+							if afterDelimiter >= len(nextLine) || isWhitespace(nextLine[afterDelimiter]) {
+								state = StateNormal
+								delimiter = "" // Reset delimiter
+							}
+						}
+					}
+				}
+			}
 			i++
-			// Stay in heredoc state until we encounter a newline that might end it
-			// This is a simplified approach - in reality we'd need to track the delimiter
 		}
 	}
 
@@ -252,8 +306,25 @@ func isWhitespace(ch byte) bool {
 	return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
 }
 
+// min returns the minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func RunBashScriptFromReader(ctx context.Context, runner *interp.Runner, reader io.Reader, name string) error {
-	prog, err := syntax.NewParser().Parse(reader, name)
+	// Read all input first
+	content, err := io.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+
+	// Preprocess the input to transform typeset/declare commands
+	processedContent := PreprocessTypesetCommands(string(content))
+
+	prog, err := syntax.NewParser().Parse(strings.NewReader(processedContent), name)
 	if err != nil {
 		return err
 	}
