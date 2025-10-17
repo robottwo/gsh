@@ -196,6 +196,9 @@ func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, log
 		return failedToolResponse(fmt.Sprintf("`%s` is not a valid bash command: %s", command, err))
 	}
 
+	// Always display the command first for consistent behavior
+	fmt.Print(gline.RESET_CURSOR_COLUMN + environment.GetAgentPrompt(runner, logger) + command + "\n")
+
 	// Check if the command matches any pre-approved patterns using secure compound command validation
 	approvedPatterns := environment.GetApprovedBashCommandRegex(runner, logger)
 	isPreApproved, err := ValidateCompoundCommand(command, approvedPatterns)
@@ -210,8 +213,8 @@ func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, log
 	} else {
 		confirmResponse = userConfirmation(
 			logger,
-			"gsh: Do I have your permission to run the following command?",
-			fmt.Sprintf("%s\n\n%s", command, reason),
+			"gsh: Do I have your permission to run this command?",
+			reason, // Only pass reason, not command (already displayed)
 		)
 	}
 	if confirmResponse == "n" {
@@ -238,8 +241,6 @@ func BashTool(runner *interp.Runner, historyManager *history.HistoryManager, log
 	} else if confirmResponse != "y" {
 		return failedToolResponse(fmt.Sprintf("User declined this request: %s", confirmResponse))
 	}
-
-	fmt.Print(gline.RESET_CURSOR_COLUMN + environment.GetPrompt(runner, logger) + command + "\n")
 
 	outBuf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
