@@ -2,6 +2,7 @@ package bash
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -78,15 +79,26 @@ func preprocessWithParsing(input string) string {
 		StateDoubleQuote
 		StateComment
 		StateHeredoc
+		StateCommandSubstitution
+		StateArray
 	)
 
 	state := StateNormal
 	var delimiter string // Store the heredoc delimiter
+	parenDepth := 0      // Track parentheses nesting for command substitution and arrays
 
 	// Helper function to check if we should transform at current position
 	shouldTransformAt := func(pos int) bool {
-		// Log for debugging (can be disabled in production)
-		// fmt.Printf("Checking transform at pos %d: %.20s\n", pos, input[pos:])
+		// Don't transform inside quotes, comments, heredocs, command substitution, or arrays
+		if state != StateNormal {
+			return false
+		}
+
+		// Don't transform if we're inside command substitution or arrays
+		if parenDepth > 0 {
+			return false
+		}
+
 		// Check if we're at a command position (start of line or after delimiter)
 		if pos > 0 {
 			prev := input[pos-1]
@@ -116,7 +128,7 @@ func preprocessWithParsing(input string) string {
 	// Helper function to transform command starting at position
 	transformCommandAt := func(pos int) (string, int) {
 		// Log for debugging (can be disabled in production)
-		// fmt.Printf("Transforming at pos %d: %.30s\n", pos, input[pos:])
+		fmt.Printf("Transforming at pos %d: %.30s\n", pos, input[pos:])
 		// Find the command name and flag
 		start := pos
 		for start < len(input) && isWhitespace(input[start]) {
@@ -194,6 +206,16 @@ func preprocessWithParsing(input string) string {
 				continue
 			}
 
+			// Check for command substitution start
+			if ch == '$' && i+1 < len(input) && input[i+1] == '(' {
+				state = StateCommandSubstitution
+				parenDepth = 1
+				result.WriteByte(ch)
+				result.WriteByte(input[i+1])
+				i += 2
+				continue
+			}
+
 			// Check for heredoc start (<< followed by delimiter)
 			if ch == '<' && i+1 < len(input) && input[i+1] == '<' {
 				state = StateHeredoc
@@ -234,6 +256,31 @@ func preprocessWithParsing(input string) string {
 				continue
 			}
 
+			// Track parentheses for command substitution and arrays, but not function definitions
+			if ch == '(' {
+				// Only track parentheses if we're in command substitution or array state
+				if state == StateCommandSubstitution || state == StateArray {
+					parenDepth++
+				} else if i > 0 && input[i-1] == '$' {
+					// This is command substitution: $(
+					state = StateCommandSubstitution
+					parenDepth = 1
+				} else if i > 0 && input[i-1] == '=' {
+					// This might be array assignment: VAR=(
+					// For now, assume any ( after = is an array
+					state = StateArray
+					parenDepth = 1
+				}
+			} else if ch == ')' {
+				if parenDepth > 0 && (state == StateCommandSubstitution || state == StateArray) {
+					parenDepth--
+					if parenDepth == 0 {
+						// Exit the special state
+						state = StateNormal
+					}
+				}
+			}
+
 			// Check for potential command transformation
 			if shouldTransformAt(i) {
 				transformed, consumed := transformCommandAt(i)
@@ -263,6 +310,34 @@ func preprocessWithParsing(input string) string {
 			result.WriteByte(ch)
 			if ch == '\n' {
 				state = StateNormal
+			}
+			i++
+
+		case StateCommandSubstitution:
+			// In command substitution, track parentheses nesting
+			result.WriteByte(ch)
+			if ch == '(' {
+				parenDepth++
+			} else if ch == ')' {
+				parenDepth--
+				if parenDepth == 0 {
+					// Exit command substitution state
+					state = StateNormal
+				}
+			}
+			i++
+
+		case StateArray:
+			// In array, track parentheses nesting
+			result.WriteByte(ch)
+			if ch == '(' {
+				parenDepth++
+			} else if ch == ')' {
+				parenDepth--
+				if parenDepth == 0 {
+					// Exit array state
+					state = StateNormal
+				}
 			}
 			i++
 

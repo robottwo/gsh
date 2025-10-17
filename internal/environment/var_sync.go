@@ -129,7 +129,6 @@ func SyncVariableToEnv(runner *interp.Runner, varName string) {
 		delete(dynamicEnv.gshVars, varName)
 	}
 }
-}
 
 // IsGSHVariable checks if a variable name is a gsh-specific variable that should be synced
 func IsGSHVariable(name string) bool {
